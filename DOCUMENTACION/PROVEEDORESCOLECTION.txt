@@ -1,0 +1,126 @@
+{
+  "info": {
+    "name": "Proveedores API",
+    "_postman_id": "12345678-1234-1234-1234-123456789000",
+    "description": "CRUD de Proveedores",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Get Proveedores",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/proveedores",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "proveedores"]
+        }
+      }
+    },
+    {
+      "name": "Get Proveedor By ID",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/proveedores/1",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "proveedores", "1"]
+        }
+      }
+    },
+    {
+      "name": "Create Proveedor",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}",
+            "type": "text"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"empresa_id\": 1,\n  \"razon_social\": \"Proveedor Test\",\n  \"cuit\": \"30-12345678-9\",\n  \"tipo\": \"Nacional\",\n  \"rubro\": \"Materiales\",\n  \"score_conformidad\": 95.5,\n  \"categoria_abc\": \"A\",\n  \"total_entregas\": 10,\n  \"entregas_en_fecha\": 9,\n  \"nc_asociadas\": 1\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/proveedores",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "proveedores"]
+        }
+      }
+    },
+    {
+      "name": "Update Proveedor",
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}",
+            "type": "text"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"empresa_id\": 1,\n  \"razon_social\": \"Proveedor Actualizado\",\n  \"cuit\": \"30-12345678-9\",\n  \"tipo\": \"Internacional\",\n  \"rubro\": \"Insumos\",\n  \"score_conformidad\": 90,\n  \"categoria_abc\": \"B\",\n  \"total_entregas\": 20,\n  \"entregas_en_fecha\": 18,\n  \"nc_asociadas\": 2\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/proveedores/1",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "proveedores", "1"]
+        }
+      }
+    },
+    {
+      "name": "Delete Proveedor",
+      "request": {
+        "method": "DELETE",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/proveedores/1",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "proveedores", "1"]
+        }
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3000"
+    },
+    {
+      "key": "token",
+      "value": "TU_TOKEN_AQUI"
+    }
+  ]
+}

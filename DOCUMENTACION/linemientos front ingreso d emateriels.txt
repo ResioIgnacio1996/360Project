@@ -1,0 +1,973 @@
+-- stuctura de proyecto 
+Necesito que actúes como desarrollador frontend Angular experto para continuar el desarrollo de DB360.
+
+Contexto general:
+DB360 es una aplicación web administrativa hecha en Angular moderno con componentes standalone. El backend corre en:
+
+http://localhost:3000
+
+El frontend corre en:
+
+http://localhost:4200
+
+El diseño debe mantenerse profesional, limpio y consistente, usando gama de azules/celestes pastel, estilo corporativo, tarjetas blancas, bordes suaves y sombras sutiles.
+
+IMPORTANTE:
+Este proyecto ya tiene desarrollado el módulo Seguridad, login, layout, navbar/header y sidebar. No rehacer eso salvo que se pida explícitamente. Los nuevos módulos deben respetar la estructura, navegación y estilos existentes.
+
+Estructura general del proyecto:
+
+src/app/
+
+core/
+guards/
+auth-guard.ts
+
+interceptors/
+auth-interceptor.ts
+
+services/
+auth.ts
+usuario.ts
+rol.ts
+
+layout/
+layout/
+layout.ts
+layout.html
+layout.css
+
+sidebar/
+sidebar.ts
+sidebar.html
+sidebar.css
+
+features/
+login/
+login.ts
+login.html
+login.css
+
+dashboard/
+dashboard.ts
+dashboard.html
+dashboard.css
+
+seguridad/
+seguridad-home/
+seguridad-home.ts
+seguridad-home.html
+seguridad-home.css
+
+```
+usuarios/
+  usuarios-master/
+  usuario-form/
+  usuario-permisos/
+
+roles/
+  roles-master/
+  rol-form/
+```
+
+proyectos/
+proveedores/
+configuracion/
+
+shared/
+interfaces/
+auth.interface.ts
+rol.interface.ts
+
+Dependencias instaladas/usadas:
+
+* Angular moderno con standalone components
+* Angular Router
+* ReactiveFormsModule
+* FormsModule
+* HttpClient
+* Angular Material
+* MatSlideToggleModule para switches de activo/inactivo
+* RxJS
+* JWT guardado y enviado por interceptor
+
+Configuración importante:
+El proyecto NO usa SSR. Si Angular pregunta SSR/SSG, debe ser NO.
+
+app.config.ts debe proveer:
+
+* provideRouter(routes)
+* provideHttpClient(withInterceptors([authInterceptor]))
+
+El interceptor agrega:
+Authorization: Bearer TOKEN
+
+El guard protege las rutas internas.
+
+Rutas base:
+
+/login
+/dashboard
+
+/seguridad
+/seguridad/usuarios
+/seguridad/usuarios/nuevo
+/seguridad/usuarios/editar/:id
+/seguridad/usuarios/:id/permisos
+
+/seguridad/roles
+/seguridad/roles/nuevo
+/seguridad/roles/editar/:id
+
+/proyectos
+/proveedores
+/configuracion
+
+Regla de layout:
+Todas las pantallas internas viven dentro del Layout.
+El Layout contiene:
+
+* Header superior fijo
+* Botón para abrir/cerrar sidebar
+* Usuario logueado visible
+* Sidebar flotante/ocultable
+* router-outlet para renderizar las pantallas internas
+
+No crear headers propios en cada módulo. Cada módulo solo debe renderizar su contenido dentro del router-outlet.
+
+Estilo visual obligatorio para masters:
+Usar el mismo patrón visual que Usuarios y Roles.
+
+Estructura HTML de master:
+
+<div class="modulo-page">
+
+  <div class="page-header">
+    <div>
+      <h1>Título</h1>
+      <p>Descripción breve del módulo.</p>
+    </div>
+
+```
+<button class="primary-button">
+  + Nuevo
+</button>
+```
+
+  </div>
+
+  <div class="card">
+
+```
+<div class="toolbar">
+  <div class="search-box">
+    <label>Buscar</label>
+    <input type="text" placeholder="Buscar..." />
+  </div>
+</div>
+
+<div class="table-container">
+  <table>
+    <thead>
+      <tr>
+        <th>Campo</th>
+        <th>Campo</th>
+        <th>Activo</th>
+        <th class="actions-column">Acciones</th>
+      </tr>
+    </thead>
+
+    <tbody>
+      ...
+    </tbody>
+  </table>
+</div>
+```
+
+  </div>
+
+</div>
+
+CSS base para masters:
+Adaptar el nombre raíz según el módulo. Ejemplo:
+.proyectos-page
+.proveedores-page
+.roles-page
+.usuarios-page
+
+Mantener estos lineamientos:
+
+* max-width: 1200px
+* card blanca
+* border #e2edf7
+* border-radius 18px
+* sombra suave rgba(15, 76, 129, 0.08)
+* header tabla con background #f1f7fd
+* botones primary en #0f4c81
+* botones secundarios celeste suave
+
+CSS recomendado:
+
+.modulo-page {
+max-width: 1200px;
+}
+
+.page-header {
+display: flex;
+justify-content: space-between;
+align-items: center;
+margin-bottom: 24px;
+}
+
+.page-header h1 {
+margin: 0;
+color: #12344d;
+font-size: 32px;
+}
+
+.page-header p {
+margin-top: 8px;
+color: #64748b;
+}
+
+.primary-button {
+border: none;
+background: #0f4c81;
+color: white;
+padding: 12px 18px;
+border-radius: 12px;
+cursor: pointer;
+font-weight: 700;
+}
+
+.primary-button:hover {
+background: #0b3d66;
+}
+
+.card {
+background: white;
+border: 1px solid #e2edf7;
+border-radius: 18px;
+padding: 22px;
+box-shadow: 0 8px 24px rgba(15, 76, 129, 0.08);
+}
+
+.toolbar {
+display: flex;
+justify-content: space-between;
+margin-bottom: 18px;
+}
+
+.search-box {
+width: 420px;
+}
+
+.search-box label {
+display: block;
+color: #334155;
+font-weight: 700;
+margin-bottom: 6px;
+font-size: 14px;
+}
+
+.search-box input {
+width: 100%;
+padding: 11px 13px;
+border: 1px solid #dbeafe;
+border-radius: 10px;
+outline: none;
+box-sizing: border-box;
+}
+
+.search-box input:focus {
+border-color: #0f4c81;
+}
+
+.table-container {
+width: 100%;
+overflow-x: auto;
+}
+
+table {
+width: 100%;
+border-collapse: collapse;
+}
+
+thead {
+background: #f1f7fd;
+}
+
+th {
+text-align: left;
+color: #334155;
+font-size: 13px;
+padding: 14px;
+border-bottom: 1px solid #e2edf7;
+}
+
+td {
+padding: 14px;
+border-bottom: 1px solid #eef2f7;
+color: #334155;
+font-size: 14px;
+}
+
+tr:hover {
+background: #f8fbff;
+}
+
+.actions-column {
+width: 190px;
+}
+
+.actions {
+display: flex;
+gap: 8px;
+}
+
+.icon-button {
+border: none;
+background: #eaf4ff;
+color: #0f4c81;
+padding: 8px 10px;
+border-radius: 9px;
+cursor: pointer;
+font-weight: 700;
+font-size: 12px;
+}
+
+.icon-button:hover {
+background: #dbeafe;
+}
+
+.icon-button.secondary {
+background: #f1f5f9;
+color: #475569;
+}
+
+.state-message {
+padding: 18px;
+background: #f8fbff;
+border: 1px dashed #c7ddf3;
+border-radius: 12px;
+color: #64748b;
+}
+
+.error-message {
+padding: 14px;
+background: #fee2e2;
+color: #991b1b;
+border-radius: 12px;
+margin-bottom: 14px;
+}
+
+Estilo visual obligatorio para formularios:
+Usar el mismo patrón que usuario-form y rol-form.
+
+Estructura:
+
+<div class="form-page">
+
+  <div class="page-header">
+    <div>
+      <h1>Nuevo / Editar</h1>
+      <p>Descripción breve.</p>
+    </div>
+  </div>
+
+  <div class="card">
+    <form>
+      <div class="form-grid">
+        ...
+      </div>
+
+```
+  <div class="actions">
+    <button class="secondary-button">Cancelar</button>
+    <button class="primary-button">Guardar</button>
+  </div>
+</form>
+```
+
+  </div>
+
+</div>
+
+CSS base para forms:
+
+.form-page {
+max-width: 900px;
+margin: 0 auto;
+}
+
+.page-header {
+margin-bottom: 24px;
+}
+
+.page-header h1 {
+margin: 0;
+color: #12344d;
+font-size: 32px;
+}
+
+.page-header p {
+margin-top: 8px;
+color: #64748b;
+}
+
+.card {
+background: white;
+border: 1px solid #e2edf7;
+border-radius: 18px;
+padding: 28px;
+box-shadow: 0 8px 24px rgba(15, 76, 129, 0.08);
+}
+
+.form-grid {
+display: grid;
+grid-template-columns: repeat(2, 1fr);
+gap: 22px;
+}
+
+.full-width {
+grid-column: span 2;
+}
+
+.form-group {
+display: flex;
+flex-direction: column;
+}
+
+label {
+margin-bottom: 7px;
+color: #334155;
+font-weight: 700;
+font-size: 14px;
+}
+
+input,
+select,
+textarea {
+border: 1px solid #cbdff1;
+border-radius: 10px;
+padding: 12px;
+font-size: 14px;
+}
+
+textarea {
+min-height: 110px;
+resize: vertical;
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+outline: none;
+border-color: #0f4c81;
+}
+
+small {
+margin-top: 6px;
+color: #dc2626;
+}
+
+.actions {
+display: flex;
+justify-content: flex-end;
+gap: 12px;
+margin-top: 28px;
+}
+
+.primary-button,
+.secondary-button {
+border: none;
+padding: 12px 18px;
+border-radius: 10px;
+cursor: pointer;
+font-weight: 700;
+}
+
+.primary-button {
+background: #0f4c81;
+color: white;
+}
+
+.secondary-button {
+background: #e2e8f0;
+color: #334155;
+}
+
+.primary-button:disabled {
+opacity: 0.6;
+cursor: not-allowed;
+}
+
+Módulo Seguridad terminado:
+Usuarios:
+
+* Master con tabla
+* Buscador
+* Alta
+* Edición
+* Activar/desactivar con MatSlideToggle
+* Consumo de roles
+
+Roles:
+
+* Master con tabla
+* Buscador
+* Alta
+* Edición
+* Activar/desactivar con MatSlideToggle
+* Formulario con matriz dinámica Entidades x Acciones
+* Permisos enviados junto con POST /api/roles y PUT /api/roles/:id
+
+Contrato Roles:
+GET /api/roles
+GET /api/roles/:id
+POST /api/roles
+PUT /api/roles/:id
+PUT /api/roles/:id/estado
+GET /api/roles/:id/permisos
+GET /api/acciones
+GET /api/entidades
+
+Para crear/editar rol, el frontend envía:
+
+{
+"nombre": "SUPERVISOR",
+"descripcion": "Supervisor del sistema",
+"activo": true,
+"permisos": [
+{
+"accion_id": 1,
+"entidad_id": 1,
+"permitido": true
+}
+]
+}
+
+Reglas importantes:
+
+* No usar localStorage directamente en componentes.
+* El acceso a token/usuario debe pasar por AuthService.
+* Para mobile futuro, no acoplar lógica a localStorage salvo token mínimo.
+* No duplicar lógica visual.
+* Nuevos módulos deben copiar patrón de master/form existente.
+* No modificar Layout, Sidebar, Auth, Guard o Interceptor salvo pedido explícito.
+* Toda pantalla interna debe vivir dentro del router-outlet del Layout.
+* Mantener consistencia visual con Usuarios y Roles.
+
+
+--requerimientos
+
+# Módulo Ingreso de Materiales - Integración Frontend (Angular)
+
+## Objetivo
+
+El backend del módulo de Ingreso de Materiales ya cuenta con una primera versión funcional del circuito completo de ingreso de materiales.
+
+El objetivo del frontend es implementar las pantallas respetando este flujo de negocio y consumiendo los endpoints existentes.
+
+---
+
+# Flujo funcional
+
+El flujo del sistema es el siguiente:
+
+```text
+Proveedor
+        ↓
+Registro de Compra (Orden de Compra)
+        ↓
+Detalle Registro de Compra
+        ↓
+Remito
+        ↓
+Detalle Remito
+        ↓
+Liberación del Remito
+        ↓
+Stock General
+        ↓
+Asignación de Stock a Proyecto
+        ↓
+Conteiner (Stock del Proyecto)
+```
+
+El usuario nunca carga stock manualmente.
+
+El stock solamente se genera cuando un Remito es liberado.
+
+---
+
+# Pantallas a desarrollar
+
+## 1 Registro de Compra
+
+Master de registros de compra.
+
+Debe permitir:
+
+* Buscar
+* Filtrar
+* Ver estado
+* Crear
+* Editar
+* Cancelar
+* Ver detalle
+
+Columnas sugeridas
+
+* Número
+* Fecha
+* Fecha entrega
+* Proveedor
+* Estado
+* Proyecto
+* Activo
+
+---
+
+## 2 Alta / Edición Registro de Compra
+
+Cabecera
+
+* Número
+* Fecha
+* Fecha entrega
+* Proveedor
+* Proyecto
+* Observaciones
+
+Detalle
+
+Tabla editable
+
+Columnas
+
+* Material
+* Cantidad
+* Unidad
+
+El usuario puede agregar y quitar materiales.
+
+Si el material no existe, el backend lo creará automáticamente.
+
+Si el proveedor no existe, el backend lo creará automáticamente utilizando el CUIT.
+
+---
+
+## 3 Carga de Registro de Compra por Documento
+
+Drag & Drop
+
+Debe permitir subir:
+
+* PDF
+* JPG
+* JPEG
+* PNG
+* WEBP
+
+Máximo
+
+10 MB
+
+El backend procesa el documento mediante IA y devuelve:
+
+* proveedor
+* CUIT
+* fecha
+* materiales
+* cantidades
+* unidades
+* observaciones
+
+El frontend solamente deberá mostrar los datos detectados para confirmación del usuario.
+
+---
+
+## 4 Remitos
+
+Master de remitos.
+
+Columnas
+
+* Número
+* Fecha
+* Registro Compra
+* Liberado
+
+Acciones
+
+* Ver
+* Liberar
+
+No se elimina.
+
+---
+
+## 5 Alta Remito
+
+Cabecera
+
+* Número
+* Fecha
+* Registro Compra
+
+Detalle
+
+* Material
+* Cantidad
+* Unidad
+
+El Remito NO genera stock.
+
+Simplemente queda registrado.
+
+---
+
+## 6 Liberar Remito
+
+Acción desde el listado.
+
+Botón
+
+"Liberar"
+
+El usuario no ingresa ningún dato.
+
+Al liberar:
+
+* actualiza Stock General
+* recalcula automáticamente el estado de la Orden de Compra
+
+---
+
+## 7 Stock General
+
+Solo consulta.
+
+Columnas
+
+* Material
+* Cantidad Total
+* Cantidad Disponible
+* Cantidad Asignada
+
+Acción
+
+Asignar a Proyecto.
+
+---
+
+## 8 Asignar Stock
+
+Modal.
+
+Campos
+
+Proyecto
+
+Cantidad
+
+Al confirmar
+
+El backend:
+
+* descuenta Stock General
+* crea o actualiza Conteiner del proyecto
+
+---
+
+## 9 Stock del Proyecto (Conteiner)
+
+Listado por proyecto.
+
+Columnas
+
+* Material
+* Cantidad Disponible
+
+Solo lectura por el momento.
+
+---
+
+# Estados de Registro de Compra
+
+El frontend NO modifica estados.
+
+Los calcula automáticamente el backend.
+
+Estados
+
+* CREADA
+* PARCIAL
+* COMPLETADA
+* CANCELADA
+* PARCIAL CON DEMORAS (pendiente)
+
+---
+
+# Endpoints disponibles
+
+## Registro de Compra
+
+GET
+
+```
+/api/registro-compra
+```
+
+GET
+
+```
+/api/registro-compra/:id
+```
+
+POST
+
+```
+/api/registro-compra
+```
+
+PUT
+
+```
+/api/registro-compra/:id
+```
+
+PUT
+
+```
+/api/registro-compra/:id/cancelar
+```
+
+POST
+
+```
+/api/registro-compra/documento
+```
+
+---
+
+## Remitos
+
+GET
+
+```
+/api/remitos
+```
+
+GET
+
+```
+/api/remitos/:id
+```
+
+GET
+
+```
+/api/remitos/registro-compra/:id
+```
+
+POST
+
+```
+/api/remitos
+```
+
+PUT
+
+```
+/api/remitos/:id/liberar
+```
+
+POST
+
+```
+/api/remitos/documento
+```
+
+(Próximamente)
+
+---
+
+## Stock General
+
+GET
+
+```
+/api/stock-general
+```
+
+POST
+
+```
+/api/stock-general/asignar-proyecto
+```
+
+---
+
+## Conteiner
+
+GET
+
+```
+/api/conteiner
+```
+
+GET
+
+```
+/api/conteiner/proyecto/:id
+```
+
+(Próximamente)
+
+---
+
+# Autenticación
+
+Todos los endpoints requieren JWT.
+
+Enviar:
+
+```
+Authorization: Bearer TOKEN
+```
+
+---
+
+# Reglas importantes
+
+El frontend nunca calcula estados.
+
+El frontend nunca calcula stock.
+
+El frontend nunca modifica Stock General manualmente.
+
+Toda la lógica de negocio está implementada en el backend.
+
+El frontend solamente consume endpoints y representa la información.
+
+---
+
+# Diseño esperado
+
+Mantener exactamente la línea visual del resto del ERP.
+
+* Azul corporativo
+* Celestes pastel
+* Tarjetas blancas
+* Bordes redondeados
+* Angular Material
+* Reactive Forms
+* Tablas con filtros
+* Dialogs para altas y asignaciones
+* Responsive
+* Sidebar existente
+* Sin cambiar el layout general
+
+El nuevo módulo debe integrarse visualmente con el resto del sistema sin romper la identidad gráfica ya implementada.

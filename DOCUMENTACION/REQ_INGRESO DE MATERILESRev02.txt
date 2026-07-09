@@ -1,0 +1,51 @@
+se agregan 3  entidades nuevas para gestionar la ordenes de compra 
+remito 
+detalle de remito
+conteiner(stock de matariles), qui va a estar relacionada  con la entidad de material
+
+para poder completar la orden de compra es decir ya se recibieron todos los materiales con sus cantidades, se debe agrupar todos los remitos perteneciente a esa orden de compra
+agrupar lo materiales con su detalle a ir haciendo la resta por items de esa oc 
+
+el sistema debe mostrar la cantidad a recibir y la cantidad recibida.
+ ---LIBERACION DE STOCK 
+ -----La liberación d e stock se  va a realizar por remito, el stock  se le va a asignar al proyecto por medio de la entidad conteiner(stock material), donde el usuario debe indicar que cantidad del material
+seleccionado va ser asignada a cierto proyecto.
+----DEFINICION DE MATERILES
+Para este items, a al hora de cargar una orden de compra  el sistema por defecto le va a asignar un tipo de material general, pero si se encuentran diferente tipo de ese mismo se le va a dar la posibilidad al 
+usuario en seleccionar el tipo correcto de material. 
+
+Tiene que haber una UI de definición de materiales, donde el usuario pueda realizar el ABM de esta entidad.
+
+Ejemplo me llegan 3 tipo de ladrillos distintos, por defecto el tipo de material va a ser ladrillo pero el usuario va a poder definir que   material es cada items de esa orden de compra. 
+
+Se agrega otra tabla para gestionar los estados de EL REGISTRO DE COMPRA
+
+Estados: 
+CREADA --> APENAS SE CARGA LA REGISTRO DE COMPRA YA SEA MANUAL O EN DOCUMENTO.
+PARCIAL --> CUANDO SE CARGA EL PRIMER REMITO DE ESA OC, ACA EL REGISTRO DE COMPRA NO SE PUEDE EDITAR MAS PARA ESO SE DEBE CANCELAR Y COMPLETADA
+COMPLETADA --> CUANOD SE ENTREGA TODAS LAS CANTIDADES DE LOS MATERIALES DE EL REGISTRO DE COMPRA, CON RESPECTO A LOS REMITOS CARGADOS
+CANCELADA --> CUANDO EL USUARIO DECIDE CANCELARLA PERO NO PUEDE ESTAR EN COMPLETADA.
+PARCIAL CON DEMORAS
+
+
+
+Actualización de STOCK de materiales.
+El stock de materiales  se va a ir actualizan con respecto a los detalles de los remitos cargados, siempre y cuando el remito esta en liberado en true.
+
+IA
+
+el registro de orden de compra va a ser un documento donde van a estar registrados todos lo materiles con sus cantidades la idea de esto es poder aprovechar al maximo la informacion que dice el documento,
+la informacion que se debe obtener son los materiales, esto se deben insertar en la tabla de matariles, tambien se tiene que fijar si tinene informacion del proveedor donde va a tener que sacar el cuit y el nombre para poder  darlo de alta en la tabla proveedor. 
+el remito tambien se va a tener que procesar por ia para poder extraer todos los materiles con sus cantidades para poder dar ingreso a eso materiles al sistema
+
+
+
+basate en el der que te voy a adjuntar para hacerlo 
+
+
+
+
+
+
+ 
+

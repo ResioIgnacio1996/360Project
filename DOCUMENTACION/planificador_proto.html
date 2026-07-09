@@ -1,0 +1,1394 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OBRA360 — Flujo Planificador</title>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;900&family=Archivo+Narrow:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #f0ede8;
+  --surface: #faf8f5;
+  --surface2: #f0ece6;
+  --border: #ddd8d0;
+  --border2: #c8c0b5;
+  --ink: #1a1814;
+  --ink-dim: #5a5248;
+  --ink-muted: #9a9088;
+  --accent: #c8501a;
+  --accent2: #2a6e4a;
+  --accent3: #1a3a6a;
+  --accent4: #8a3a1a;
+  --warn: #c8960a;
+  --sidebar: #1a1814;
+  --sidebar-text: #c8c0b5;
+  --fd: 'Archivo', sans-serif;
+  --fn: 'Archivo Narrow', sans-serif;
+  --fm: 'DM Mono', monospace;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:var(--fn);background:var(--bg);color:var(--ink);height:100vh;overflow:hidden;display:flex;flex-direction:column;}
+
+/* TOP BAR */
+.topbar{height:48px;background:var(--sidebar);display:flex;align-items:center;padding:0 20px;gap:16px;flex-shrink:0;border-bottom:2px solid var(--accent);}
+.tb-logo{font-family:var(--fd);font-size:18px;font-weight:900;color:var(--accent);letter-spacing:3px;}
+.tb-sep{width:1px;height:20px;background:#333;}
+.tb-flow{font-family:var(--fm);font-size:9px;color:#888;letter-spacing:2px;}
+.tb-right{margin-left:auto;display:flex;align-items:center;gap:10px;}
+.tb-user{display:flex;align-items:center;gap:8px;}
+.tb-avatar{width:28px;height:28px;border-radius:4px;background:var(--accent);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:11px;color:#fff;}
+.tb-uname{font-family:var(--fm);font-size:10px;color:#888;}
+
+/* PROGRESS BAR */
+.progress-bar{height:3px;background:#222;flex-shrink:0;position:relative;}
+.progress-fill{height:100%;background:var(--accent);transition:width .4s ease;}
+
+/* STEP BREADCRUMB */
+.breadcrumb{height:40px;background:var(--surface2);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 20px;gap:0;overflow-x:auto;flex-shrink:0;}
+.bc-step{display:flex;align-items:center;gap:0;cursor:pointer;}
+.bc-label{font-family:var(--fm);font-size:8px;letter-spacing:1px;padding:6px 12px;color:var(--ink-muted);transition:all .15s;white-space:nowrap;border-bottom:2px solid transparent;margin-bottom:-1px;}
+.bc-step:hover .bc-label{color:var(--ink-dim);}
+.bc-step.active .bc-label{color:var(--accent);border-bottom-color:var(--accent);font-weight:500;}
+.bc-step.done .bc-label{color:var(--accent2);}
+.bc-arr{font-size:10px;color:var(--border2);flex-shrink:0;}
+
+/* MAIN LAYOUT */
+.main{display:flex;flex:1;overflow:hidden;}
+
+/* LEFT NAV */
+.leftnav{width:200px;min-width:200px;background:var(--sidebar);border-right:none;display:flex;flex-direction:column;overflow-y:auto;}
+.ln-section{padding:16px 14px 6px;font-family:var(--fm);font-size:7px;color:#444;letter-spacing:3px;}
+.ln-item{display:flex;align-items:center;gap:10px;padding:9px 14px;cursor:pointer;color:var(--sidebar-text);font-size:11px;font-weight:500;letter-spacing:.3px;transition:all .15s;border-left:2px solid transparent;}
+.ln-item:hover{background:#252015;color:#e8e0d0;}
+.ln-item.active{background:rgba(200,80,26,.12);color:var(--accent);border-left-color:var(--accent);}
+.ln-icon{font-size:13px;width:16px;text-align:center;}
+.ln-badge{margin-left:auto;background:var(--accent);color:#fff;font-family:var(--fm);font-size:7px;padding:1px 5px;border-radius:8px;}
+
+/* CONTENT */
+.content{flex:1;overflow-y:auto;overflow-x:hidden;}
+::-webkit-scrollbar{width:4px;height:4px;}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px;}
+
+/* SCREENS */
+.screen{display:none;padding:28px;animation:fadeUp .25s ease both;}
+.screen.active{display:block;}
+@keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+
+/* SCREEN HEADER */
+.sh{margin-bottom:24px;}
+.sh-eyebrow{font-family:var(--fm);font-size:8px;color:var(--ink-muted);letter-spacing:3px;margin-bottom:6px;}
+.sh-title{font-family:var(--fd);font-size:28px;font-weight:900;color:var(--ink);letter-spacing:-0.5px;line-height:1.1;}
+.sh-sub{font-size:13px;color:var(--ink-dim);margin-top:6px;max-width:600px;line-height:1.5;}
+
+/* CARDS GRID */
+.cards-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:24px;}
+.proj-card{background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:18px;cursor:pointer;transition:all .2s;position:relative;overflow:hidden;}
+.proj-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:var(--pc-color,#888);}
+.proj-card:hover{border-color:var(--border2);box-shadow:0 4px 16px rgba(0,0,0,.08);transform:translateY(-1px);}
+.pc-id{font-family:var(--fm);font-size:8px;color:var(--ink-muted);letter-spacing:2px;margin-bottom:6px;}
+.pc-name{font-family:var(--fd);font-size:16px;font-weight:700;margin-bottom:3px;}
+.pc-client{font-size:11px;color:var(--ink-dim);margin-bottom:14px;}
+.pc-bar{height:4px;background:var(--surface2);border-radius:3px;margin-bottom:6px;overflow:hidden;}
+.pc-fill{height:100%;border-radius:3px;background:var(--pc-color,#888);}
+.pc-pct{display:flex;justify-content:space-between;font-family:var(--fm);font-size:9px;margin-bottom:12px;}
+.pc-ops{display:flex;flex-direction:column;gap:4px;}
+.pc-op{font-size:10px;color:var(--ink-dim);display:flex;align-items:center;gap:6px;}
+.pc-op::before{content:'';width:6px;height:6px;border-radius:50%;background:var(--warn);flex-shrink:0;}
+.pc-chips{display:flex;gap:6px;margin-top:10px;flex-wrap:wrap;}
+.new-card{background:var(--surface2);border:2px dashed var(--border2);border-radius:6px;padding:18px;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:160px;gap:10px;transition:all .2s;}
+.new-card:hover{border-color:var(--accent);background:rgba(200,80,26,.04);}
+.nc-icon{font-size:28px;color:var(--ink-muted);}
+.nc-label{font-family:var(--fm);font-size:9px;color:var(--ink-muted);letter-spacing:2px;text-align:center;}
+
+/* CHIPS */
+.chip{display:inline-block;font-family:var(--fm);font-size:8px;font-weight:600;padding:2px 8px;border-radius:3px;letter-spacing:.5px;}
+.chip-green{background:rgba(42,110,74,.1);color:var(--accent2);border:1px solid rgba(42,110,74,.2);}
+.chip-orange{background:rgba(200,80,26,.1);color:var(--accent);border:1px solid rgba(200,80,26,.2);}
+.chip-red{background:rgba(180,30,30,.1);color:#b41e1e;border:1px solid rgba(180,30,30,.2);}
+.chip-blue{background:rgba(26,58,106,.1);color:var(--accent3);border:1px solid rgba(26,58,106,.2);}
+.chip-gray{background:rgba(0,0,0,.06);color:var(--ink-muted);border:1px solid var(--border);}
+.chip-warn{background:rgba(200,150,10,.1);color:var(--warn);border:1px solid rgba(200,150,10,.2);}
+
+/* MODAL */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:1000;display:none;align-items:center;justify-content:center;}
+.modal-overlay.open{display:flex;animation:fadeIn .2s ease;}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+.modal{background:var(--surface);border-radius:8px;padding:28px;width:540px;max-width:95vw;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.3);animation:modalIn .2s ease;}
+@keyframes modalIn{from{opacity:0;transform:scale(.96)}to{opacity:1;transform:scale(1)}}
+.modal-title{font-family:var(--fd);font-size:22px;font-weight:900;margin-bottom:4px;}
+.modal-sub{font-size:12px;color:var(--ink-dim);margin-bottom:20px;}
+.modal-step-indicator{display:flex;gap:4px;margin-bottom:20px;}
+.msi-dot{height:3px;flex:1;border-radius:3px;background:var(--border);}
+.msi-dot.done{background:var(--accent2);}
+.msi-dot.active{background:var(--accent);}
+
+/* FORM */
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:16px;}
+.form-grid.single{grid-template-columns:1fr;}
+.field{display:flex;flex-direction:column;gap:4px;}
+.field.span2{grid-column:span 2;}
+.field label{font-family:var(--fm);font-size:8px;color:var(--ink-muted);letter-spacing:2px;text-transform:uppercase;}
+.field input,.field select,.field textarea{border:1px solid var(--border2);border-radius:4px;padding:9px 11px;font-family:var(--fn);font-size:12px;color:var(--ink);background:var(--bg);outline:none;transition:border-color .15s;}
+.field input:focus,.field select:focus,.field textarea:focus{border-color:var(--accent);}
+.field textarea{resize:none;min-height:64px;}
+.field-hint{font-size:10px;color:var(--ink-muted);}
+.field-badge{font-family:var(--fm);font-size:8px;color:var(--accent2);background:rgba(42,110,74,.1);padding:1px 6px;border-radius:3px;width:fit-content;margin-top:2px;}
+
+/* CALENDAR CONFIG */
+.cal-days{display:flex;gap:6px;margin-bottom:12px;}
+.cal-day-btn{width:36px;height:36px;border-radius:4px;border:1px solid var(--border2);background:var(--bg);font-family:var(--fm);font-size:9px;cursor:pointer;transition:all .15s;display:flex;align-items:center;justify-content:center;}
+.cal-day-btn.on{background:var(--accent2);color:#fff;border-color:var(--accent2);}
+
+/* SECTION COLLAPSE */
+.collapsible{border:1px solid var(--border);border-radius:6px;overflow:hidden;margin-bottom:14px;}
+.coll-header{padding:10px 14px;background:var(--surface2);cursor:pointer;display:flex;align-items:center;justify-content:space-between;font-family:var(--fm);font-size:9px;letter-spacing:1px;color:var(--ink-dim);}
+.coll-header:hover{background:var(--border);}
+.coll-body{padding:14px;display:none;}
+.coll-body.open{display:block;}
+.coll-arrow{transition:transform .2s;}
+.coll-arrow.open{transform:rotate(180deg);}
+
+/* BUTTONS */
+.btn{font-family:var(--fm);font-size:9px;letter-spacing:1px;padding:10px 18px;border-radius:4px;border:none;cursor:pointer;transition:all .15s;font-weight:500;}
+.btn-primary{background:var(--accent);color:#fff;}
+.btn-primary:hover{background:#a83f12;}
+.btn-secondary{background:var(--surface2);border:1px solid var(--border2);color:var(--ink-dim);}
+.btn-secondary:hover{border-color:var(--accent);color:var(--accent);}
+.btn-ghost{background:transparent;border:1px solid var(--border2);color:var(--ink-muted);}
+.btn-success{background:var(--accent2);color:#fff;}
+.btn-row{display:flex;gap:10px;justify-content:flex-end;margin-top:20px;}
+.btn-row-left{display:flex;gap:10px;justify-content:flex-start;margin-top:20px;}
+
+/* PROJECT SCREEN */
+.proj-header{background:var(--sidebar);border-radius:6px;padding:18px 22px;margin-bottom:20px;display:flex;align-items:flex-start;gap:20px;}
+.ph-info{flex:1;}
+.ph-eyebrow{font-family:var(--fm);font-size:8px;color:#555;letter-spacing:2px;margin-bottom:4px;}
+.ph-title{font-family:var(--fd);font-size:22px;font-weight:900;color:#f0ece6;letter-spacing:-0.5px;}
+.ph-client{font-size:12px;color:#888;margin-top:2px;}
+.ph-kpis{display:flex;gap:16px;margin-top:14px;}
+.ph-kpi{text-align:center;}
+.ph-kpi-val{font-family:var(--fd);font-size:24px;font-weight:900;line-height:1;}
+.ph-kpi-label{font-family:var(--fm);font-size:7px;color:#555;letter-spacing:2px;margin-top:2px;}
+.ph-right{text-align:right;}
+.ph-pct-big{font-family:var(--fd);font-size:40px;font-weight:900;color:var(--accent);line-height:1;}
+.ph-pct-label{font-family:var(--fm);font-size:7px;color:#555;letter-spacing:2px;}
+
+/* KPI ROW */
+.kpi-row{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px;}
+.kpi-card{background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:14px;position:relative;overflow:hidden;}
+.kpi-card::after{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:var(--kc);}
+.kpi-label{font-family:var(--fm);font-size:7px;color:var(--ink-muted);letter-spacing:2px;margin-bottom:6px;}
+.kpi-val{font-family:var(--fd);font-size:30px;font-weight:900;color:var(--kc);line-height:1;}
+.kpi-sub{font-family:var(--fm);font-size:8px;color:var(--ink-muted);margin-top:3px;}
+
+/* TABS */
+.tabs{display:flex;border-bottom:1px solid var(--border);margin-bottom:0;}
+.tab{padding:10px 16px;font-family:var(--fm);font-size:9px;letter-spacing:1px;cursor:pointer;color:var(--ink-muted);border-bottom:2px solid transparent;margin-bottom:-1px;transition:all .15s;}
+.tab:hover{color:var(--ink-dim);}
+.tab.active{color:var(--accent);border-bottom-color:var(--accent);}
+
+/* OPS TABLE */
+.ops-table{width:100%;border-collapse:collapse;font-size:11px;}
+.ops-table th{font-family:var(--fm);font-size:7px;color:var(--ink-muted);letter-spacing:2px;padding:8px 10px;border-bottom:1px solid var(--border);text-align:left;background:var(--surface2);}
+.ops-table td{padding:9px 10px;border-bottom:1px solid rgba(200,192,180,.4);vertical-align:middle;}
+.ops-table tr:hover td{background:var(--surface2);cursor:pointer;}
+.ops-table tr.selected td{background:rgba(200,80,26,.05);}
+.op-seq{font-family:var(--fm);font-size:10px;font-weight:600;color:var(--accent);}
+.op-name{font-weight:600;}
+.op-meta{font-size:9px;color:var(--ink-muted);}
+.dep-chip{font-family:var(--fm);font-size:8px;background:rgba(26,58,106,.08);color:var(--accent3);padding:1px 6px;border-radius:3px;}
+
+/* GANTT */
+.gantt-wrap{overflow-x:auto;margin-top:2px;}
+.gantt-header{display:flex;margin-bottom:2px;}
+.gantt-label-col{width:240px;min-width:240px;flex-shrink:0;}
+.gantt-months{flex:1;display:flex;}
+.gantt-month{flex:1;font-family:var(--fm);font-size:7px;color:var(--ink-muted);letter-spacing:1px;text-align:center;padding:4px 0;background:var(--surface2);border:1px solid var(--border);}
+.gantt-rows{display:flex;flex-direction:column;gap:0;}
+.gantt-row{display:flex;height:28px;border-bottom:1px solid rgba(200,192,180,.3);}
+.gantt-row:hover{background:rgba(200,80,26,.03);}
+.gantt-row-label{width:240px;min-width:240px;display:flex;align-items:center;padding:0 10px;gap:8px;background:var(--surface);border-right:1px solid var(--border);}
+.grl-seq{font-family:var(--fm);font-size:9px;color:var(--accent);width:30px;flex-shrink:0;}
+.grl-name{font-size:10px;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.gantt-track{flex:1;position:relative;background:var(--bg);}
+.gantt-bg-cell{position:absolute;top:0;bottom:0;}
+.gantt-bar{position:absolute;top:4px;bottom:4px;border-radius:3px;display:flex;align-items:center;padding:0 6px;font-family:var(--fm);font-size:8px;color:#fff;font-weight:600;cursor:pointer;transition:opacity .15s;overflow:hidden;white-space:nowrap;}
+.gantt-bar:hover{opacity:.85;}
+.gantt-today{position:absolute;top:0;bottom:0;width:1px;background:var(--accent3);opacity:.6;z-index:10;}
+.gantt-today::before{content:'HOY';position:absolute;top:-16px;left:2px;font-family:var(--fm);font-size:6px;color:var(--accent3);letter-spacing:1px;}
+
+/* IMPORT SCREEN */
+.import-section{background:var(--surface);border:1px solid var(--border);border-radius:6px;overflow:hidden;margin-bottom:14px;}
+.is-header{padding:12px 16px;background:var(--surface2);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px;}
+.is-letter{width:28px;height:28px;border-radius:4px;background:var(--accent);color:#fff;font-family:var(--fd);font-size:14px;font-weight:900;display:flex;align-items:center;justify-content:center;}
+.is-title{font-family:var(--fn);font-size:13px;font-weight:700;flex:1;}
+.is-status{font-family:var(--fm);font-size:8px;}
+.is-body{padding:14px 16px;}
+.drop-zone{border:2px dashed var(--border2);border-radius:6px;padding:20px;text-align:center;cursor:pointer;transition:all .2s;margin-bottom:10px;}
+.drop-zone:hover{border-color:var(--accent);background:rgba(200,80,26,.03);}
+.dz-icon{font-size:24px;margin-bottom:8px;}
+.dz-title{font-size:12px;font-weight:600;margin-bottom:4px;}
+.dz-sub{font-family:var(--fm);font-size:9px;color:var(--ink-muted);letter-spacing:.5px;}
+.is-footer{display:flex;gap:8px;align-items:center;}
+
+/* IMPORT LOG */
+.import-log{display:flex;flex-direction:column;gap:6px;}
+.log-item{display:flex;align-items:center;gap:10px;padding:8px 12px;background:var(--surface2);border-radius:4px;border:1px solid var(--border);}
+.log-icon{font-size:14px;flex-shrink:0;}
+.log-name{font-size:11px;font-weight:500;flex:1;}
+.log-sub{font-family:var(--fm);font-size:8px;color:var(--ink-muted);}
+.log-status{font-family:var(--fm);font-size:8px;font-weight:700;}
+.log-status.ok{color:var(--accent2);}
+.log-status.pend{color:var(--warn);}
+.log-status.err{color:#b41e1e;}
+
+/* CALENDAR PREVIEW */
+.cal-preview{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;margin-top:10px;}
+.cal-day{height:28px;border-radius:3px;display:flex;align-items:center;justify-content:center;font-family:var(--fm);font-size:9px;font-weight:600;}
+.cd-header{background:transparent;color:var(--ink-muted);font-size:7px;letter-spacing:1px;}
+.cd-work{background:rgba(42,110,74,.15);color:var(--accent2);}
+.cd-feria{background:rgba(180,30,30,.12);color:#b41e1e;}
+.cd-off{background:var(--surface2);color:var(--ink-muted);}
+.cd-short{background:rgba(200,150,10,.15);color:var(--warn);}
+.cd-today{background:var(--accent3);color:#fff;}
+
+/* SIDE PANEL */
+.side-panel{position:fixed;right:0;top:48px;bottom:0;width:360px;background:var(--surface);border-left:1px solid var(--border);z-index:500;transform:translateX(100%);transition:transform .3s cubic-bezier(.4,0,.2,1);overflow-y:auto;}
+.side-panel.open{transform:translateX(0);}
+.sp-header{padding:18px 20px 14px;border-bottom:1px solid var(--border);position:sticky;top:0;background:var(--surface);z-index:10;}
+.sp-close{position:absolute;top:14px;right:14px;font-size:16px;cursor:pointer;color:var(--ink-muted);transition:color .15s;}
+.sp-close:hover{color:var(--ink);}
+.sp-seq{font-family:var(--fm);font-size:9px;color:var(--accent);letter-spacing:2px;margin-bottom:4px;}
+.sp-name{font-family:var(--fd);font-size:18px;font-weight:900;line-height:1.2;}
+.sp-section{padding:14px 20px;border-bottom:1px solid var(--border);}
+.sp-section-title{font-family:var(--fm);font-size:7px;color:var(--ink-muted);letter-spacing:3px;margin-bottom:10px;display:flex;align-items:center;gap:8px;}
+.sp-section-title::after{content:'';flex:1;height:1px;background:var(--border);}
+.sp-attr{display:flex;justify-content:space-between;align-items:flex-start;padding:5px 0;border-bottom:1px solid rgba(200,192,180,.3);}
+.sp-attr:last-child{border-bottom:none;}
+.sp-attr-key{font-family:var(--fm);font-size:8px;color:var(--ink-muted);}
+.sp-attr-val{font-size:11px;font-weight:500;text-align:right;max-width:200px;}
+.sp-criterio{background:var(--surface2);border:1px solid var(--border);border-radius:4px;padding:10px;font-size:11px;color:var(--ink-dim);line-height:1.5;font-style:italic;}
+.sp-hist-item{display:flex;gap:10px;padding:8px 0;border-bottom:1px solid rgba(200,192,180,.3);}
+.sp-hist-dot{width:8px;height:8px;border-radius:50%;margin-top:3px;flex-shrink:0;}
+.sp-hist-val{font-family:var(--fd);font-size:14px;font-weight:700;}
+.sp-hist-meta{font-family:var(--fm);font-size:8px;color:var(--ink-muted);margin-top:1px;}
+
+/* DIFF TABLE */
+.diff-table{width:100%;border-collapse:collapse;font-size:11px;margin-top:10px;}
+.diff-table th{font-family:var(--fm);font-size:7px;color:var(--ink-muted);padding:6px 8px;border-bottom:1px solid var(--border);text-align:left;background:var(--surface2);}
+.diff-table td{padding:7px 8px;border-bottom:1px solid rgba(200,192,180,.4);}
+.diff-new{color:var(--accent2);font-weight:600;}
+.diff-mod{color:var(--warn);}
+.diff-del{color:#b41e1e;text-decoration:line-through;}
+
+/* TOAST */
+.toast{position:fixed;bottom:20px;right:20px;background:var(--sidebar);color:#e8e0d0;padding:12px 18px;border-radius:6px;font-family:var(--fm);font-size:10px;letter-spacing:1px;display:flex;align-items:center;gap:10px;box-shadow:0 8px 24px rgba(0,0,0,.3);transform:translateY(80px);opacity:0;transition:all .3s cubic-bezier(.4,0,.2,1);z-index:2000;border-left:3px solid var(--accent2);}
+.toast.show{transform:translateY(0);opacity:1;}
+
+/* VERSION HISTORY */
+.ver-list{display:flex;flex-direction:column;gap:8px;}
+.ver-item{display:flex;align-items:center;gap:12px;padding:10px 12px;background:var(--surface2);border-radius:4px;border:1px solid var(--border);cursor:pointer;transition:all .15s;}
+.ver-item:hover{border-color:var(--border2);}
+.ver-item.current{border-color:var(--accent2);}
+.ver-badge{font-family:var(--fd);font-size:16px;font-weight:900;color:var(--accent);width:36px;}
+.ver-info{flex:1;}
+.ver-name{font-size:12px;font-weight:600;}
+.ver-meta{font-family:var(--fm);font-size:8px;color:var(--ink-muted);margin-top:2px;}
+
+/* STEP NAV */
+.step-nav{display:flex;gap:10px;align-items:center;margin-top:24px;padding-top:16px;border-top:1px solid var(--border);}
+.step-indicator{font-family:var(--fm);font-size:9px;color:var(--ink-muted);flex:1;text-align:center;}
+</style>
+</head>
+<body>
+
+<!-- TOP BAR -->
+<div class="topbar">
+  <div class="tb-logo">OBRA360</div>
+  <div class="tb-sep"></div>
+  <div class="tb-flow">FLUJO PLANIFICADOR — PROTOTIPO INTERACTIVO</div>
+  <div class="tb-right">
+    <div class="tb-user">
+      <div class="tb-avatar">JR</div>
+      <span class="tb-uname">Juan Romero · Planificador</span>
+    </div>
+  </div>
+</div>
+
+<!-- PROGRESS -->
+<div class="progress-bar"><div class="progress-fill" id="progressFill" style="width:14%"></div></div>
+
+<!-- BREADCRUMB -->
+<div class="breadcrumb">
+  <div class="bc-step active" id="bc-0" onclick="goStep(0)">
+    <span class="bc-label">1.1 PANTALLA PRINCIPAL</span>
+  </div>
+  <span class="bc-arr">›</span>
+  <div class="bc-step" id="bc-1" onclick="goStep(1)">
+    <span class="bc-label">1.2 NUEVO PROYECTO</span>
+  </div>
+  <span class="bc-arr">›</span>
+  <div class="bc-step" id="bc-2" onclick="goStep(2)">
+    <span class="bc-label">1.3 CONFIRMACIÓN</span>
+  </div>
+  <span class="bc-arr">›</span>
+  <div class="bc-step" id="bc-3" onclick="goStep(3)">
+    <span class="bc-label">1.4 PANTALLA PROYECTO</span>
+  </div>
+  <span class="bc-arr">›</span>
+  <div class="bc-step" id="bc-4" onclick="goStep(4)">
+    <span class="bc-label">1.5 CARGA MASIVA</span>
+  </div>
+  <span class="bc-arr">›</span>
+  <div class="bc-step" id="bc-5" onclick="goStep(5)">
+    <span class="bc-label">1.5c CALENDARIO</span>
+  </div>
+  <span class="bc-arr">›</span>
+  <div class="bc-step" id="bc-6" onclick="goStep(6)">
+    <span class="bc-label">1.6 MODIFICAR PLAN</span>
+  </div>
+  <span class="bc-arr">›</span>
+  <div class="bc-step" id="bc-7" onclick="goStep(7)">
+    <span class="bc-label">1.7 HISTORIAL VERSIONES</span>
+  </div>
+</div>
+
+<!-- MAIN -->
+<div class="main">
+
+  <!-- LEFT NAV -->
+  <nav class="leftnav">
+    <div class="ln-section">PLANIFICACIÓN</div>
+    <div class="ln-item active" onclick="goStep(3)"><span class="ln-icon">📋</span>Operaciones</div>
+    <div class="ln-item" onclick="goStep(4)"><span class="ln-icon">📥</span>Importar Datos</div>
+    <div class="ln-item" onclick="goStep(5)"><span class="ln-icon">📅</span>Calendario</div>
+    <div class="ln-item" onclick="goStep(7)"><span class="ln-icon">🕐</span>Historial Plan</div>
+    <div class="ln-section">SEGUIMIENTO</div>
+    <div class="ln-item"><span class="ln-icon">📦</span>BOM Materiales</div>
+    <div class="ln-item"><span class="ln-icon">⚠️</span>No Conformidades<span class="ln-badge">3</span></div>
+    <div class="ln-item"><span class="ln-icon">🛒</span>Compras</div>
+    <div class="ln-item"><span class="ln-icon">👷</span>Cuadrillas</div>
+    <div class="ln-item"><span class="ln-icon">🏢</span>Proveedores</div>
+    <div class="ln-section">ANÁLISIS</div>
+    <div class="ln-item"><span class="ln-icon">📊</span>Dashboard</div>
+    <div class="ln-item"><span class="ln-icon">🔔</span>Alertas<span class="ln-badge">2</span></div>
+  </nav>
+
+  <!-- SCREENS -->
+  <div class="content">
+
+    <!-- ══ SCREEN 0: PANTALLA PRINCIPAL ══ -->
+    <div class="screen active" id="screen-0">
+      <div class="sh">
+        <div class="sh-eyebrow">PASO 1.1</div>
+        <div class="sh-title">Mis Proyectos</div>
+        <div class="sh-sub">Seleccioná un proyecto para trabajar o creá uno nuevo.</div>
+      </div>
+
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+        <div style="display:flex;gap:8px;">
+          <button class="btn btn-ghost" style="font-size:8px">TODOS</button>
+          <button class="btn btn-ghost" style="font-size:8px">EN PLAZO</button>
+          <button class="btn btn-ghost" style="font-size:8px">ATRASADOS</button>
+        </div>
+        <button class="btn btn-primary" onclick="goStep(1)">+ NUEVO PROYECTO</button>
+      </div>
+
+      <div class="cards-grid">
+        <div class="proj-card" style="--pc-color:var(--accent)" onclick="goStep(3)">
+          <div class="pc-id">PRJ-2024-047</div>
+          <div class="pc-name">Torre Nordeste</div>
+          <div class="pc-client">Desarrollos Colón S.A. · Córdoba Capital</div>
+          <div class="pc-bar"><div class="pc-fill" style="width:34%"></div></div>
+          <div class="pc-pct"><span style="color:var(--accent);font-weight:600">34% avance</span><span style="color:var(--ink-muted)">Plan: 31%</span></div>
+          <div class="pc-ops">
+            <div class="pc-op">Armado hierro losa PB · CUA-C</div>
+            <div class="pc-op">Mampostería cerramiento PB · CUA-D</div>
+            <div class="pc-op">Inst. sanitaria subsuelo · SUB-02</div>
+          </div>
+          <div class="pc-chips">
+            <span class="chip chip-green">EN PLAZO</span>
+            <span class="chip chip-orange">E2 ACTIVA</span>
+            <span class="chip chip-warn">3 NC</span>
+          </div>
+        </div>
+        <div class="proj-card" style="--pc-color:var(--accent3)">
+          <div class="pc-id">PRJ-2024-031</div>
+          <div class="pc-name">Residencial Buen Pastor</div>
+          <div class="pc-client">Inversiones BP S.R.L. · Jardín</div>
+          <div class="pc-bar"><div class="pc-fill" style="width:78%;background:var(--accent3)"></div></div>
+          <div class="pc-pct"><span style="color:var(--accent3);font-weight:600">78% avance</span><span style="color:var(--ink-muted)">Plan: 80%</span></div>
+          <div class="pc-ops">
+            <div class="pc-op">Pintura interior · CUA-E</div>
+            <div class="pc-op">Colocación pisos · SUB-03</div>
+          </div>
+          <div class="pc-chips">
+            <span class="chip chip-orange">LEVE ATRASO</span>
+            <span class="chip chip-blue">E5 ACTIVA</span>
+          </div>
+        </div>
+        <div class="new-card" onclick="goStep(1)">
+          <div class="nc-icon">+</div>
+          <div class="nc-label">NUEVO PROYECTO<br>Crear desde cero</div>
+        </div>
+      </div>
+
+      <div class="step-nav">
+        <div class="step-indicator">PASO 1 DE 8</div>
+        <button class="btn btn-primary" onclick="goStep(1)">CREAR NUEVO PROYECTO →</button>
+        <button class="btn btn-secondary" onclick="goStep(3)">ABRIR TORRE NORDESTE →</button>
+      </div>
+    </div>
+
+    <!-- ══ SCREEN 1: NUEVO PROYECTO MODAL ══ -->
+    <div class="screen" id="screen-1">
+      <div class="sh">
+        <div class="sh-eyebrow">PASO 1.2</div>
+        <div class="sh-title">Nuevo Proyecto</div>
+        <div class="sh-sub">Completá los datos básicos. Los campos marcados con * son obligatorios.</div>
+      </div>
+
+      <div style="max-width:560px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:24px;">
+        <div class="modal-step-indicator">
+          <div class="msi-dot active"></div>
+          <div class="msi-dot"></div>
+          <div class="msi-dot"></div>
+        </div>
+
+        <div class="form-grid">
+          <div class="field span2">
+            <label>Nombre del Proyecto *</label>
+            <input type="text" id="f-nombre" value="Edificio Mitre Centro" placeholder="Ej: Torre Norte, Complejo Belgrano...">
+          </div>
+          <div class="field">
+            <label>CUIT / CUIL Cliente *</label>
+            <input type="text" id="f-cuit" value="30-71234567-8" placeholder="XX-XXXXXXXX-X">
+            <div class="field-badge">✓ Cliente conocido: Desarrollos Mitre</div>
+          </div>
+          <div class="field">
+            <label>Nombre Cliente</label>
+            <input type="text" id="f-client" value="Desarrollos Mitre S.A." placeholder="Se autocompleta con CUIT">
+          </div>
+          <div class="field span2">
+            <label>Dirección de Obra</label>
+            <input type="text" value="Av. Mitre 1240, Córdoba Capital" placeholder="Dirección completa">
+          </div>
+          <div class="field">
+            <label>Responsable del Proyecto</label>
+            <select>
+              <option>Juan Romero</option>
+              <option>María López</option>
+              <option>Carlos Méndez</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Estado inicial</label>
+            <select><option>PLANIFICACIÓN</option></select>
+          </div>
+          <div class="field">
+            <label>Fecha Inicio de Obra</label>
+            <input type="date" value="2025-05-01">
+          </div>
+          <div class="field">
+            <label>Fecha Fin Estimada</label>
+            <input type="date" value="2026-08-30">
+          </div>
+        </div>
+
+        <!-- CALENDARIO COLAPSABLE -->
+        <div class="collapsible">
+          <div class="coll-header" onclick="toggleColl(this)">
+            <span>📅 CALENDARIO DE TRABAJO (opcional — se puede configurar después)</span>
+            <span class="coll-arrow">▼</span>
+          </div>
+          <div class="coll-body">
+            <div style="font-family:var(--fm);font-size:8px;color:var(--ink-muted);letter-spacing:2px;margin-bottom:8px;">DÍAS LABORALES</div>
+            <div class="cal-days">
+              <div class="cal-day-btn on" onclick="this.classList.toggle('on')">L</div>
+              <div class="cal-day-btn on" onclick="this.classList.toggle('on')">M</div>
+              <div class="cal-day-btn on" onclick="this.classList.toggle('on')">X</div>
+              <div class="cal-day-btn on" onclick="this.classList.toggle('on')">J</div>
+              <div class="cal-day-btn on" onclick="this.classList.toggle('on')">V</div>
+              <div class="cal-day-btn" onclick="this.classList.toggle('on')">S</div>
+              <div class="cal-day-btn" onclick="this.classList.toggle('on')">D</div>
+            </div>
+            <div class="form-grid" style="margin-top:12px">
+              <div class="field">
+                <label>Hs. Jornada Estándar</label>
+                <input type="number" value="9" min="1" max="24">
+              </div>
+              <div class="field">
+                <label>Hora Inicio</label>
+                <input type="time" value="07:00">
+              </div>
+              <div class="field">
+                <label>Hora Fin</label>
+                <input type="time" value="16:00">
+              </div>
+              <div class="field">
+                <label>Hs. Almuerzo (descontar)</label>
+                <input type="number" value="1" min="0" max="3">
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="btn-row">
+          <button class="btn btn-ghost" onclick="goStep(0)">CANCELAR</button>
+          <button class="btn btn-primary" onclick="goStep(2)">CONTINUAR →</button>
+        </div>
+      </div>
+
+      <div class="step-nav">
+        <button class="btn btn-secondary" onclick="goStep(0)">← VOLVER</button>
+        <div class="step-indicator">PASO 2 DE 8</div>
+        <button class="btn btn-primary" onclick="goStep(2)">CONTINUAR →</button>
+      </div>
+    </div>
+
+    <!-- ══ SCREEN 2: CONFIRMACIÓN ══ -->
+    <div class="screen" id="screen-2">
+      <div class="sh">
+        <div class="sh-eyebrow">PASO 1.3</div>
+        <div class="sh-title">Confirmar Creación</div>
+        <div class="sh-sub">Revisá los datos antes de crear el proyecto.</div>
+      </div>
+
+      <div style="max-width:560px;">
+        <div style="background:var(--surface);border:1px solid var(--accent2);border-radius:8px;padding:20px;margin-bottom:16px;">
+          <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">
+            <span style="font-size:28px">🏗️</span>
+            <div>
+              <div style="font-family:var(--fd);font-size:20px;font-weight:900">Edificio Mitre Centro</div>
+              <div style="font-family:var(--fm);font-size:8px;color:var(--ink-muted);letter-spacing:2px;margin-top:2px">NUEVO PROYECTO · PRJ-2025-NUEVO</div>
+            </div>
+            <span class="chip chip-gray" style="margin-left:auto">PLANIFICACIÓN</span>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;font-size:11px;">
+            <div><div style="font-family:var(--fm);font-size:8px;color:var(--ink-muted);margin-bottom:2px">CLIENTE</div><div style="font-weight:600">Desarrollos Mitre S.A.</div></div>
+            <div><div style="font-family:var(--fm);font-size:8px;color:var(--ink-muted);margin-bottom:2px">CUIT</div><div style="font-weight:600">30-71234567-8</div></div>
+            <div><div style="font-family:var(--fm);font-size:8px;color:var(--ink-muted);margin-bottom:2px">DIRECCIÓN</div><div style="font-weight:600">Av. Mitre 1240, CBA</div></div>
+            <div><div style="font-family:var(--fm);font-size:8px;color:var(--ink-muted);margin-bottom:2px">RESPONSABLE</div><div style="font-weight:600">Juan Romero</div></div>
+            <div><div style="font-family:var(--fm);font-size:8px;color:var(--ink-muted);margin-bottom:2px">INICIO</div><div style="font-weight:600">01/05/2025</div></div>
+            <div><div style="font-family:var(--fm);font-size:8px;color:var(--ink-muted);margin-bottom:2px">FIN ESTIMADO</div><div style="font-weight:600">30/08/2026</div></div>
+            <div><div style="font-family:var(--fm);font-size:8px;color:var(--ink-muted);margin-bottom:2px">CALENDARIO</div><div style="font-weight:600">L–V · 9hs/día · 07:00–16:00</div></div>
+            <div><div style="font-family:var(--fm);font-size:8px;color:var(--ink-muted);margin-bottom:2px">VERSIÓN PLAN</div><div style="font-weight:600">v0 (sin operaciones)</div></div>
+          </div>
+        </div>
+
+        <div style="background:rgba(42,110,74,.06);border:1px solid rgba(42,110,74,.2);border-radius:6px;padding:14px;">
+          <div style="font-family:var(--fm);font-size:8px;color:var(--accent2);letter-spacing:2px;margin-bottom:8px;">PRÓXIMOS PASOS</div>
+          <div style="font-size:11px;color:var(--ink-dim);line-height:1.8;">
+            1. Importar el Excel de Operaciones (BOP) para cargar el cronograma<br>
+            2. Configurar el Calendario de Trabajo con feriados<br>
+            3. Importar el BOM de Revit para gestionar materiales<br>
+            4. Asignar cuadrillas y responsables
+          </div>
+        </div>
+
+        <div class="btn-row">
+          <button class="btn btn-ghost" onclick="goStep(1)">← EDITAR DATOS</button>
+          <button class="btn btn-success" onclick="confirmCreate()">✓ CONFIRMAR Y CREAR PROYECTO</button>
+        </div>
+      </div>
+
+      <div class="step-nav">
+        <button class="btn btn-secondary" onclick="goStep(1)">← VOLVER</button>
+        <div class="step-indicator">PASO 3 DE 8</div>
+        <button class="btn btn-success" onclick="confirmCreate()">CONFIRMAR →</button>
+      </div>
+    </div>
+
+    <!-- ══ SCREEN 3: PANTALLA DE PROYECTO ══ -->
+    <div class="screen" id="screen-3">
+      <div class="sh" style="margin-bottom:14px;">
+        <div class="sh-eyebrow">PASO 1.4</div>
+        <div class="sh-title">Pantalla de Proyecto</div>
+      </div>
+
+      <div class="proj-header">
+        <div class="ph-info">
+          <div class="ph-eyebrow">PRJ-2024-047</div>
+          <div class="ph-title">Torre Nordeste</div>
+          <div class="ph-client">Desarrollos Colón S.A. · Semana 14 · 22 Abr 2025</div>
+          <div class="ph-kpis">
+            <div class="ph-kpi">
+              <div class="ph-kpi-val" style="color:var(--accent)">12/36</div>
+              <div class="ph-kpi-label">OPS COMPLETAS</div>
+            </div>
+            <div class="ph-kpi">
+              <div class="ph-kpi-val" style="color:var(--warn)">4</div>
+              <div class="ph-kpi-label">EN CURSO</div>
+            </div>
+            <div class="ph-kpi">
+              <div class="ph-kpi-val" style="color:#b41e1e">3</div>
+              <div class="ph-kpi-label">NC ABIERTAS</div>
+            </div>
+            <div class="ph-kpi">
+              <div class="ph-kpi-val" style="color:var(--accent3)">5</div>
+              <div class="ph-kpi-label">STOCK CRÍTICO</div>
+            </div>
+          </div>
+        </div>
+        <div class="ph-right">
+          <div class="ph-pct-big">34%</div>
+          <div class="ph-pct-label">AVANCE GENERAL</div>
+          <div style="margin-top:6px"><span class="chip chip-green">+3% VS PLAN</span></div>
+        </div>
+      </div>
+
+      <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;">
+        <button class="btn btn-primary" onclick="showOpModal()">+ AGREGAR OP</button>
+        <button class="btn btn-secondary" onclick="goStep(4)">📥 IMPORTAR DATOS</button>
+        <button class="btn btn-ghost" onclick="goStep(5)">📅 CALENDARIO</button>
+        <button class="btn btn-ghost">📤 EXPORTAR PDF</button>
+        <div style="margin-left:auto;display:flex;gap:6px;align-items:center">
+          <span class="chip chip-gray">FILTRO: TODO</span>
+          <button class="btn btn-ghost" style="font-size:8px">CONFIGURAR COLUMNAS</button>
+        </div>
+      </div>
+
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:6px;overflow:hidden;margin-bottom:16px;">
+        <div class="tabs">
+          <div class="tab active">OPERACIONES</div>
+          <div class="tab" onclick="showGanttNote()">DIAGRAMA GANTT</div>
+        </div>
+        <div style="overflow-x:auto;">
+          <table class="ops-table">
+            <thead>
+              <tr>
+                <th>SEQ</th><th>OPERACIÓN</th><th>ETAPA</th><th>DEPENDE DE</th>
+                <th>RESPONSABLE</th><th>INICIO</th><th>FIN EST.</th>
+                <th>UNIDAD</th><th>% AVANCE</th><th>ESTADO</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr onclick="openPanel('500')" title="Click para ver detalle">
+                <td class="op-seq">500</td>
+                <td><div class="op-name">Encofrado losa PB</div></td>
+                <td><span class="chip chip-blue" style="font-size:7px">E2</span></td>
+                <td><span class="dep-chip">300 +72hs</span></td>
+                <td style="font-size:10px">CUA-B</td>
+                <td style="font-family:var(--fm);font-size:9px">01/06</td>
+                <td style="font-family:var(--fm);font-size:9px">05/06</td>
+                <td><span class="chip chip-gray" style="font-size:7px">BINARIO</span></td>
+                <td><div style="display:flex;align-items:center;gap:6px"><div style="width:50px;height:4px;background:var(--surface2);border-radius:3px;overflow:hidden"><div style="width:100%;height:100%;background:var(--accent2)"></div></div><span style="font-family:var(--fm);font-size:9px;color:var(--accent2)">100%</span></div></td>
+                <td><span class="chip chip-green">COMPLETA</span></td>
+              </tr>
+              <tr class="selected" onclick="openPanel('600')">
+                <td class="op-seq">600</td>
+                <td><div class="op-name">Armado hierro losa PB</div></td>
+                <td><span class="chip chip-blue" style="font-size:7px">E2</span></td>
+                <td><span class="dep-chip">500</span></td>
+                <td style="font-size:10px">CUA-C</td>
+                <td style="font-family:var(--fm);font-size:9px">06/06</td>
+                <td style="font-family:var(--fm);font-size:9px">10/06</td>
+                <td><span class="chip chip-warn" style="font-size:7px">PORC.</span></td>
+                <td><div style="display:flex;align-items:center;gap:6px"><div style="width:50px;height:4px;background:var(--surface2);border-radius:3px;overflow:hidden"><div style="width:75%;height:100%;background:var(--accent)"></div></div><span style="font-family:var(--fm);font-size:9px;color:var(--accent)">75%</span></div></td>
+                <td><span class="chip chip-orange">EN CURSO</span></td>
+              </tr>
+              <tr onclick="openPanel('700')">
+                <td class="op-seq">700</td>
+                <td><div class="op-name">Colado hormigón losa PB</div></td>
+                <td><span class="chip chip-blue" style="font-size:7px">E2</span></td>
+                <td><span class="dep-chip">600</span></td>
+                <td style="font-size:10px">CUA-A+B</td>
+                <td style="font-family:var(--fm);font-size:9px">11/06</td>
+                <td style="font-family:var(--fm);font-size:9px">12/06</td>
+                <td><span class="chip chip-gray" style="font-size:7px">BINARIO</span></td>
+                <td><div style="display:flex;align-items:center;gap:6px"><div style="width:50px;height:4px;background:var(--surface2);border-radius:3px;overflow:hidden"></div><span style="font-family:var(--fm);font-size:9px;color:var(--ink-muted)">—</span></div></td>
+                <td><span class="chip chip-gray">PENDIENTE</span></td>
+              </tr>
+              <tr onclick="openPanel('800')">
+                <td class="op-seq">800</td>
+                <td><div class="op-name">Mampostería cerramiento PB</div><div class="op-meta">Dep. múltiple</div></td>
+                <td><span class="chip chip-blue" style="font-size:7px">E2</span></td>
+                <td><span class="dep-chip">700;800</span></td>
+                <td style="font-size:10px">CUA-D</td>
+                <td style="font-family:var(--fm);font-size:9px">14/06</td>
+                <td style="font-family:var(--fm);font-size:9px">20/06</td>
+                <td><span class="chip chip-blue" style="font-size:7px">CANT.</span></td>
+                <td><div style="display:flex;align-items:center;gap:6px"><div style="width:50px;height:4px;background:var(--surface2);border-radius:3px;overflow:hidden"></div><span style="font-family:var(--fm);font-size:9px;color:var(--ink-muted)">—</span></div></td>
+                <td><span class="chip chip-gray">PENDIENTE</span></td>
+              </tr>
+              <tr>
+                <td class="op-seq">850</td>
+                <td><div class="op-name">Instalación eléctrica PB</div></td>
+                <td><span class="chip chip-blue" style="font-size:7px">E2</span></td>
+                <td><span class="dep-chip">700</span></td>
+                <td style="font-size:10px">SUB-01 ElecSur</td>
+                <td style="font-family:var(--fm);font-size:9px">21/06</td>
+                <td style="font-family:var(--fm);font-size:9px">26/06</td>
+                <td><span class="chip chip-warn" style="font-size:7px">PORC.</span></td>
+                <td><div style="display:flex;align-items:center;gap:6px"><div style="width:50px;height:4px;background:var(--surface2);border-radius:3px;overflow:hidden"></div><span style="font-family:var(--fm);font-size:9px;color:var(--ink-muted)">—</span></div></td>
+                <td><span class="chip chip-red">BLOQUEADA</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- GANTT SIMPLIFICADO -->
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:6px;overflow:hidden;margin-bottom:16px;">
+        <div style="padding:12px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;">
+          <span style="font-family:var(--fm);font-size:9px;color:var(--ink-muted);letter-spacing:2px;">DIAGRAMA GANTT — JUNIO 2025</span>
+          <div style="margin-left:auto;display:flex;gap:6px;">
+            <button class="btn btn-ghost" style="font-size:8px">◀ MES</button>
+            <button class="btn btn-ghost" style="font-size:8px">SEMANA</button>
+            <button class="btn btn-ghost" style="font-size:8px">MES ▶</button>
+            <button class="btn btn-ghost" style="font-size:8px">TODO</button>
+          </div>
+        </div>
+        <div style="padding:12px;overflow-x:auto;">
+          <div style="min-width:700px;">
+            <!-- Month header -->
+            <div style="display:flex;margin-bottom:4px;">
+              <div style="width:200px;flex-shrink:0;"></div>
+              <div style="flex:1;display:grid;grid-template-columns:repeat(30,1fr);gap:0;">
+                <div style="grid-column:span 5;text-align:center;font-family:var(--fm);font-size:7px;color:var(--ink-muted);padding:2px;background:var(--surface2);border:1px solid var(--border)">Sem 1</div>
+                <div style="grid-column:span 7;text-align:center;font-family:var(--fm);font-size:7px;color:var(--ink-muted);padding:2px;background:var(--surface2);border:1px solid var(--border)">Sem 2</div>
+                <div style="grid-column:span 7;text-align:center;font-family:var(--fm);font-size:7px;color:var(--ink-muted);padding:2px;background:var(--surface2);border:1px solid var(--border)">Sem 3</div>
+                <div style="grid-column:span 7;text-align:center;font-family:var(--fm);font-size:7px;color:var(--ink-muted);padding:2px;background:var(--surface2);border:1px solid var(--border)">Sem 4</div>
+                <div style="grid-column:span 4;text-align:center;font-family:var(--fm);font-size:7px;color:var(--ink-muted);padding:2px;background:var(--surface2);border:1px solid var(--border)">Sem 5</div>
+              </div>
+            </div>
+            <!-- Rows -->
+            <div id="gantt-rows" style="display:flex;flex-direction:column;gap:2px;">
+              <!-- rendered by JS -->
+            </div>
+            <!-- Legend -->
+            <div style="display:flex;gap:12px;margin-top:10px;font-family:var(--fm);font-size:8px;color:var(--ink-muted);align-items:center;flex-wrap:wrap;">
+              <span>LEYENDA:</span>
+              <span style="display:flex;align-items:center;gap:4px"><span style="width:12px;height:8px;background:#f0f0e8;border:1px solid var(--border);border-radius:1px"></span>Fin de semana</span>
+              <span style="display:flex;align-items:center;gap:4px"><span style="width:12px;height:8px;background:rgba(180,30,30,.1);border-radius:1px"></span>Feriado</span>
+              <span style="display:flex;align-items:center;gap:4px"><span style="width:12px;height:8px;background:rgba(200,150,10,.1);border-radius:1px"></span>Jornada reducida</span>
+              <span style="display:flex;align-items:center;gap:4px"><span style="width:3px;height:14px;background:var(--accent3)"></span>Hoy</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="step-nav">
+        <button class="btn btn-secondary" onclick="goStep(2)">← VOLVER</button>
+        <div class="step-indicator">PASO 4 DE 8</div>
+        <button class="btn btn-primary" onclick="goStep(4)">IMPORTAR DATOS →</button>
+      </div>
+    </div>
+
+    <!-- ══ SCREEN 4: CARGA MASIVA ══ -->
+    <div class="screen" id="screen-4">
+      <div class="sh">
+        <div class="sh-eyebrow">PASO 1.5</div>
+        <div class="sh-title">Importar Datos del Proyecto</div>
+        <div class="sh-sub">Cargá el Excel de Operaciones, el Calendario, el BOM de Revit y las Cuadrillas. Cada sección es independiente.</div>
+      </div>
+
+      <!-- SECCIÓN A -->
+      <div class="import-section">
+        <div class="is-header">
+          <div class="is-letter">A</div>
+          <div>
+            <div class="is-title">Plan de Operaciones · BOP</div>
+            <div style="font-family:var(--fm);font-size:8px;color:var(--ink-muted);">OBRA360_Operaciones_vX.xlsx</div>
+          </div>
+          <div style="margin-left:auto;display:flex;align-items:center;gap:8px;">
+            <span class="chip chip-orange">v1 CARGADA · 15/04/2025</span>
+            <button class="btn btn-ghost" style="font-size:8px">⬇ DESCARGAR v1</button>
+            <button class="btn btn-ghost" style="font-size:8px">⬇ PLANTILLA</button>
+          </div>
+        </div>
+        <div class="is-body">
+          <div class="drop-zone" id="dz-a" onclick="simulateImport('a')">
+            <div class="dz-icon">📋</div>
+            <div class="dz-title">Arrastrá OBRA360_Operaciones_v2.xlsx</div>
+            <div class="dz-sub">O hacé click para seleccionar · Versión nueva detectada: incrementar Version_Plan en el Excel</div>
+          </div>
+          <div class="import-log" id="log-a" style="display:none">
+            <div class="log-item"><span class="log-icon">✓</span><div><div class="log-name">Leyendo hoja Etapas</div><div class="log-sub">5 etapas · pesos suman 100%</div></div><span class="log-status ok">OK</span></div>
+            <div class="log-item"><span class="log-icon">✓</span><div><div class="log-name">Leyendo Responsables</div><div class="log-sub">7 responsables (5 cuadrillas + 2 subcontratistas)</div></div><span class="log-status ok">OK</span></div>
+            <div class="log-item"><span class="log-icon">✓</span><div><div class="log-name">Leyendo Operaciones</div><div class="log-sub">36 operaciones · 4 con dependencias múltiples (;)</div></div><span class="log-status ok">OK</span></div>
+            <div class="log-item"><span class="log-icon">✓</span><div><div class="log-name">Calculando cronograma</div><div class="log-sub">Fechas calculadas con calendario activo · v1 guardada en historial</div></div><span class="log-status ok">OK</span></div>
+            <div class="log-item"><span class="log-icon">⊡</span><div><div class="log-name">Generando filas BOM</div><div class="log-sub">32 ítems generados · Completar Cod. Material y Cantidad</div></div><span class="log-status pend">PENDIENTE COMPLETAR</span></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- SECCIÓN B -->
+      <div class="import-section">
+        <div class="is-header">
+          <div class="is-letter" style="background:var(--accent3)">B</div>
+          <div>
+            <div class="is-title">Calendario de Trabajo</div>
+            <div style="font-family:var(--fm);font-size:8px;color:var(--ink-muted);">OBRA360_Calendario.xlsx</div>
+          </div>
+          <div style="margin-left:auto;display:flex;align-items:center;gap:8px;">
+            <span class="chip chip-green">ACTIVO · L–V · 9hs/día</span>
+            <button class="btn btn-ghost" style="font-size:8px" onclick="goStep(5)">⚙ CONFIGURAR</button>
+            <button class="btn btn-ghost" style="font-size:8px">⬇ PLANTILLA</button>
+          </div>
+        </div>
+        <div class="is-body">
+          <div class="drop-zone" style="padding:14px;" onclick="showToast('Calendario importado — cronograma recalculado')">
+            <div class="dz-icon">📅</div>
+            <div class="dz-title">Arrastrá OBRA360_Calendario.xlsx</div>
+            <div class="dz-sub">O configurá el calendario directamente en la app · Botón ⚙ CONFIGURAR</div>
+          </div>
+          <!-- Mini calendar preview -->
+          <div style="margin-top:10px;">
+            <div style="font-family:var(--fm);font-size:8px;color:var(--ink-muted);letter-spacing:2px;margin-bottom:6px;">PREVIEW — MAYO 2025</div>
+            <div class="cal-preview">
+              <div class="cal-day cd-header">LUN</div><div class="cal-day cd-header">MAR</div><div class="cal-day cd-header">MIÉ</div><div class="cal-day cd-header">JUE</div><div class="cal-day cd-header">VIE</div><div class="cal-day cd-header">SÁB</div><div class="cal-day cd-header">DOM</div>
+              <div class="cal-day cd-off"></div><div class="cal-day cd-off"></div><div class="cal-day cd-off"></div><div class="cal-day cd-work">2</div><div class="cal-day cd-work">3</div><div class="cal-day cd-off">4</div><div class="cal-day cd-off">5</div>
+              <div class="cal-day cd-work">6</div><div class="cal-day cd-work">7</div><div class="cal-day cd-work">8</div><div class="cal-day cd-work">9</div><div class="cal-day cd-work">10</div><div class="cal-day cd-off">11</div><div class="cal-day cd-off">12</div>
+              <div class="cal-day cd-work">13</div><div class="cal-day cd-work">14</div><div class="cal-day cd-work">15</div><div class="cal-day cd-work">16</div><div class="cal-day cd-work">17</div><div class="cal-day cd-off">18</div><div class="cal-day cd-off">19</div>
+              <div class="cal-day cd-work">20</div><div class="cal-day cd-work">21</div><div class="cal-day cd-work">22</div><div class="cal-day cd-work">23</div><div class="cal-day cd-work">24</div><div class="cal-day cd-off">25</div><div class="cal-day cd-off">26</div>
+              <div class="cal-day cd-feria">27</div><div class="cal-day cd-work">28</div><div class="cal-day cd-work">29</div><div class="cal-day cd-work">30</div><div class="cal-day cd-feria">31</div><div class="cal-day cd-off"></div><div class="cal-day cd-off"></div>
+            </div>
+            <div style="display:flex;gap:10px;margin-top:8px;font-family:var(--fm);font-size:8px;color:var(--ink-muted);flex-wrap:wrap;">
+              <span>🟢 Laboral normal</span><span>🔴 Feriado (27 mayo, 31 mayo)</span><span>⬜ No laboral (S/D)</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- SECCIÓN C -->
+      <div class="import-section">
+        <div class="is-header">
+          <div class="is-letter" style="background:var(--accent2)">C</div>
+          <div>
+            <div class="is-title">BOM — Lista de Materiales (Revit)</div>
+            <div style="font-family:var(--fm);font-size:8px;color:var(--ink-muted);">BOM_Revit.csv</div>
+          </div>
+          <div style="margin-left:auto;display:flex;align-items:center;gap:8px;">
+            <span class="chip chip-warn">27 SIN CÓDIGO</span>
+            <button class="btn btn-ghost" style="font-size:8px">⬇ BOM ACTUAL</button>
+          </div>
+        </div>
+        <div class="is-body">
+          <div class="drop-zone" onclick="showToast('BOM de Revit importado — 48 ítems mapeados')">
+            <div class="dz-icon">📦</div>
+            <div class="dz-title">Arrastrá BOM_Revit.csv</div>
+            <div class="dz-sub">Exportación directa de Revit · El sistema mapea columnas automáticamente</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- SECCIÓN D -->
+      <div class="import-section">
+        <div class="is-header">
+          <div class="is-letter" style="background:#5a3a8a">D</div>
+          <div>
+            <div class="is-title">Cuadrillas y Responsables</div>
+            <div style="font-family:var(--fm);font-size:8px;color:var(--ink-muted);">OBRA360_Responsables.xlsx (o importado desde hoja Responsables del BOP)</div>
+          </div>
+          <div style="margin-left:auto;display:flex;align-items:center;gap:8px;">
+            <span class="chip chip-green">7 ACTIVOS</span>
+          </div>
+        </div>
+        <div class="is-body" style="padding-bottom:10px;">
+          <div style="display:flex;gap:6px;flex-wrap:wrap;">
+            <span class="chip chip-blue">CUA-A · Cuadrilla A</span>
+            <span class="chip chip-blue">CUA-B · Cuadrilla B</span>
+            <span class="chip chip-blue">CUA-C · Cuadrilla C</span>
+            <span class="chip chip-blue">CUA-D · Cuadrilla D</span>
+            <span class="chip chip-orange">SUB-01 · ElecSur S.A.</span>
+            <span class="chip chip-orange">SUB-02 · HidroPlus</span>
+            <span class="chip chip-blue">CUA-E · Cuadrilla E</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="step-nav">
+        <button class="btn btn-secondary" onclick="goStep(3)">← VOLVER</button>
+        <div class="step-indicator">PASO 5 DE 8</div>
+        <button class="btn btn-primary" onclick="goStep(5)">CONFIGURAR CALENDARIO →</button>
+      </div>
+    </div>
+
+    <!-- ══ SCREEN 5: CALENDARIO ══ -->
+    <div class="screen" id="screen-5">
+      <div class="sh">
+        <div class="sh-eyebrow">PASO 1.5c</div>
+        <div class="sh-title">Calendario de Trabajo</div>
+        <div class="sh-sub">Configurá los días laborales y las excepciones. Cada cambio recalcula automáticamente el cronograma.</div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
+        <div>
+          <!-- Config general -->
+          <div style="background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:18px;margin-bottom:16px;">
+            <div style="font-family:var(--fm);font-size:9px;color:var(--ink-muted);letter-spacing:2px;margin-bottom:14px;">CONFIGURACIÓN GENERAL</div>
+            <div style="font-family:var(--fm);font-size:8px;color:var(--ink-muted);letter-spacing:2px;margin-bottom:8px;">DÍAS LABORALES</div>
+            <div class="cal-days" style="margin-bottom:16px;">
+              <div class="cal-day-btn on" onclick="this.classList.toggle('on');recalcNote()">L</div>
+              <div class="cal-day-btn on" onclick="this.classList.toggle('on');recalcNote()">M</div>
+              <div class="cal-day-btn on" onclick="this.classList.toggle('on');recalcNote()">X</div>
+              <div class="cal-day-btn on" onclick="this.classList.toggle('on');recalcNote()">J</div>
+              <div class="cal-day-btn on" onclick="this.classList.toggle('on');recalcNote()">V</div>
+              <div class="cal-day-btn" onclick="this.classList.toggle('on');recalcNote()">S</div>
+              <div class="cal-day-btn" onclick="this.classList.toggle('on');recalcNote()">D</div>
+            </div>
+            <div class="form-grid">
+              <div class="field"><label>Hs. Jornada Estándar</label><input type="number" value="9" min="1" max="24" oninput="recalcNote()"></div>
+              <div class="field"><label>Hs. Almuerzo</label><input type="number" value="1" min="0" max="3" oninput="recalcNote()"></div>
+              <div class="field"><label>Hora Inicio</label><input type="time" value="07:00"></div>
+              <div class="field"><label>Hora Fin</label><input type="time" value="16:00"></div>
+            </div>
+          </div>
+
+          <!-- Excepciones -->
+          <div style="background:var(--surface);border:1px solid var(--border);border-radius:6px;overflow:hidden;margin-bottom:16px;">
+            <div style="padding:12px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;">
+              <span style="font-family:var(--fm);font-size:9px;color:var(--ink-muted);letter-spacing:2px;">EXCEPCIONES</span>
+              <button class="btn btn-ghost" style="font-size:8px" onclick="addException()">+ AGREGAR</button>
+            </div>
+            <table style="width:100%;border-collapse:collapse;font-size:10px;" id="exc-table">
+              <thead>
+                <tr style="background:var(--surface2);">
+                  <th style="padding:6px 10px;font-family:var(--fm);font-size:7px;color:var(--ink-muted);letter-spacing:1px;text-align:left;">FECHA</th>
+                  <th style="padding:6px 10px;font-family:var(--fm);font-size:7px;color:var(--ink-muted);text-align:left;">TIPO</th>
+                  <th style="padding:6px 10px;font-family:var(--fm);font-size:7px;color:var(--ink-muted);text-align:center;">HS</th>
+                  <th style="padding:6px 10px;font-family:var(--fm);font-size:7px;color:var(--ink-muted);text-align:left;">MOTIVO</th>
+                  <th style="padding:6px 10px;"></th>
+                </tr>
+              </thead>
+              <tbody id="exc-body">
+                <tr style="border-bottom:1px solid rgba(200,192,180,.4)"><td style="padding:7px 10px">01/05/2025</td><td><span class="chip chip-red" style="font-size:7px">FERIADO</span></td><td style="text-align:center;font-family:var(--fm)">0</td><td style="color:var(--ink-dim)">Día del Trabajador</td><td style="text-align:right;padding-right:10px"><button class="btn btn-ghost" style="font-size:8px;padding:2px 6px" onclick="this.closest('tr').remove()">✕</button></td></tr>
+                <tr style="border-bottom:1px solid rgba(200,192,180,.4)"><td style="padding:7px 10px">25/05/2025</td><td><span class="chip chip-red" style="font-size:7px">FERIADO</span></td><td style="text-align:center;font-family:var(--fm)">0</td><td style="color:var(--ink-dim)">25 de Mayo</td><td style="text-align:right;padding-right:10px"><button class="btn btn-ghost" style="font-size:8px;padding:2px 6px" onclick="this.closest('tr').remove()">✕</button></td></tr>
+                <tr style="border-bottom:1px solid rgba(200,192,180,.4)"><td style="padding:7px 10px">31/12/2025</td><td><span class="chip chip-warn" style="font-size:7px">JORN. REDUCIDA</span></td><td style="text-align:center;font-family:var(--fm)">4</td><td style="color:var(--ink-dim)">Fin de año</td><td style="text-align:right;padding-right:10px"><button class="btn btn-ghost" style="font-size:8px;padding:2px 6px" onclick="this.closest('tr').remove()">✕</button></td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div id="recalc-note" style="display:none;background:rgba(200,150,10,.08);border:1px solid rgba(200,150,10,.3);border-radius:4px;padding:10px 12px;font-size:11px;color:var(--warn);margin-bottom:12px;">
+            ⚠ Cambios sin guardar — guardar recalculará 32 fechas del cronograma.
+          </div>
+          <button class="btn btn-primary" onclick="saveCalendar()">GUARDAR CALENDARIO</button>
+        </div>
+
+        <!-- PREVIEW CALENDARIO -->
+        <div>
+          <div style="background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:18px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+              <span style="font-family:var(--fm);font-size:9px;color:var(--ink-muted);letter-spacing:2px;">PREVIEW — MAYO 2025</span>
+              <div style="display:flex;gap:4px;"><button class="btn btn-ghost" style="font-size:9px;padding:4px 8px">◀</button><button class="btn btn-ghost" style="font-size:9px;padding:4px 8px">▶</button></div>
+            </div>
+            <div class="cal-preview">
+              <div class="cal-day cd-header">L</div><div class="cal-day cd-header">M</div><div class="cal-day cd-header">X</div><div class="cal-day cd-header">J</div><div class="cal-day cd-header">V</div><div class="cal-day cd-header">S</div><div class="cal-day cd-header">D</div>
+              <div class="cal-day cd-off"></div><div class="cal-day cd-off"></div><div class="cal-day cd-off"></div><div class="cal-day cd-work">2</div><div class="cal-day cd-work">3</div><div class="cal-day cd-off">4</div><div class="cal-day cd-off">5</div>
+              <div class="cal-day cd-work">6</div><div class="cal-day cd-work">7</div><div class="cal-day cd-work">8</div><div class="cal-day cd-work">9</div><div class="cal-day cd-work">10</div><div class="cal-day cd-off">11</div><div class="cal-day cd-off">12</div>
+              <div class="cal-day cd-work">13</div><div class="cal-day cd-work">14</div><div class="cal-day cd-today">15</div><div class="cal-day cd-work">16</div><div class="cal-day cd-work">17</div><div class="cal-day cd-off">18</div><div class="cal-day cd-off">19</div>
+              <div class="cal-day cd-work">20</div><div class="cal-day cd-work">21</div><div class="cal-day cd-work">22</div><div class="cal-day cd-work">23</div><div class="cal-day cd-work">24</div><div class="cal-day cd-off">25</div><div class="cal-day cd-off">26</div>
+              <div class="cal-day cd-feria">27</div><div class="cal-day cd-work">28</div><div class="cal-day cd-work">29</div><div class="cal-day cd-work">30</div><div class="cal-day cd-feria">31</div><div class="cal-day cd-off"></div><div class="cal-day cd-off"></div>
+            </div>
+            <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;">
+              <span class="chip chip-green" style="font-size:7px">🟢 Laboral · 21 días</span>
+              <span class="chip chip-red" style="font-size:7px">🔴 Feriados · 2</span>
+              <span class="chip chip-gray" style="font-size:7px">⬜ No laboral · 8</span>
+            </div>
+            <div style="margin-top:12px;padding:10px;background:var(--surface2);border-radius:4px;">
+              <div style="font-family:var(--fm);font-size:8px;color:var(--ink-muted);letter-spacing:2px;margin-bottom:6px;">RESUMEN MAYO</div>
+              <div style="display:flex;justify-content:space-between;font-size:11px;">
+                <span>Días hábiles</span><span style="font-weight:600">21</span>
+              </div>
+              <div style="display:flex;justify-content:space-between;font-size:11px;">
+                <span>Horas disponibles</span><span style="font-weight:600">189 hs</span>
+              </div>
+              <div style="display:flex;justify-content:space-between;font-size:11px;">
+                <span>Feriados</span><span style="font-weight:600;color:#b41e1e">2</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="step-nav">
+        <button class="btn btn-secondary" onclick="goStep(4)">← VOLVER</button>
+        <div class="step-indicator">PASO 6 DE 8</div>
+        <button class="btn btn-primary" onclick="goStep(6)">GESTIÓN DE CAMBIOS →</button>
+      </div>
+    </div>
+
+    <!-- ══ SCREEN 6: MODIFICAR PLAN ══ -->
+    <div class="screen" id="screen-6">
+      <div class="sh">
+        <div class="sh-eyebrow">PASO 1.6</div>
+        <div class="sh-title">Modificar Plan</div>
+        <div class="sh-sub">Reimportá el Excel con la nueva versión del plan. El sistema detecta y muestra los cambios antes de confirmar.</div>
+      </div>
+
+      <div style="max-width:680px;">
+        <div style="background:rgba(200,150,10,.08);border:1px solid rgba(200,150,10,.3);border-radius:6px;padding:14px;margin-bottom:18px;display:flex;align-items:flex-start;gap:12px;">
+          <span style="font-size:20px">⚠</span>
+          <div>
+            <div style="font-weight:600;font-size:12px;margin-bottom:4px;">Versión v2 detectada — reemplaza v1</div>
+            <div style="font-size:11px;color:var(--ink-dim);">El archivo cargado tiene Version_Plan = v2. La versión actual en la app es v1 (importada el 15/04/2025 por Juan Romero).</div>
+          </div>
+        </div>
+
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:16px;margin-bottom:14px;">
+          <label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-size:12px;">
+            <input type="checkbox" checked id="save-hist" style="width:16px;height:16px;accent-color:var(--accent2)">
+            <div>
+              <div style="font-weight:600">Guardar v1 en historial de versiones</div>
+              <div style="font-family:var(--fm);font-size:9px;color:var(--ink-muted);margin-top:2px;">Recomendado — podrás consultar o restaurar la versión anterior</div>
+            </div>
+          </label>
+        </div>
+
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:6px;overflow:hidden;margin-bottom:14px;">
+          <div style="padding:12px 16px;border-bottom:1px solid var(--border);font-family:var(--fm);font-size:9px;color:var(--ink-muted);letter-spacing:2px;">DIFERENCIAS DETECTADAS (v1 → v2)</div>
+          <table class="diff-table">
+            <thead><tr><th>TIPO</th><th>SEQ</th><th>OPERACIÓN</th><th>CAMPO</th><th>VALOR v1</th><th>VALOR v2</th></tr></thead>
+            <tbody>
+              <tr><td><span class="chip chip-green" style="font-size:7px">NUEVA</span></td><td style="font-family:var(--fm);font-size:9px;color:var(--accent)">950</td><td class="diff-new">Impermeabilización losa PB</td><td>—</td><td>—</td><td class="diff-new">OP nueva</td></tr>
+              <tr><td><span class="chip chip-warn" style="font-size:7px">MODIF.</span></td><td style="font-family:var(--fm);font-size:9px;color:var(--accent)">600</td><td>Armado hierro losa PB</td><td>Duración_Hs</td><td class="diff-mod">20 hs</td><td class="diff-new">24 hs</td></tr>
+              <tr><td><span class="chip chip-warn" style="font-size:7px">MODIF.</span></td><td style="font-family:var(--fm);font-size:9px;color:var(--accent)">800</td><td>Mampostería cerramiento</td><td>Responsable</td><td class="diff-mod">CUA-D</td><td class="diff-new">CUA-B</td></tr>
+              <tr><td><span class="chip chip-red" style="font-size:7px">ARCHIV.</span></td><td style="font-family:var(--fm);font-size:9px;color:var(--accent)">820</td><td class="diff-del">Revoque interior provisional</td><td>—</td><td class="diff-del">Existía en v1</td><td>Archivada</td></tr>
+            </tbody>
+          </table>
+          <div style="padding:10px 16px;background:var(--surface2);font-family:var(--fm);font-size:9px;color:var(--ink-muted);">
+            Resumen: 1 OP nueva · 2 modificadas · 1 archivada · 32 fechas serán recalculadas
+          </div>
+        </div>
+
+        <div style="display:flex;gap:10px;">
+          <button class="btn btn-ghost" onclick="goStep(3)">CANCELAR</button>
+          <button class="btn btn-secondary" onclick="goStep(7)">VER HISTORIAL</button>
+          <button class="btn btn-primary" onclick="confirmReimport()">CONFIRMAR REIMPORTACIÓN v2</button>
+        </div>
+      </div>
+
+      <div class="step-nav">
+        <button class="btn btn-secondary" onclick="goStep(5)">← VOLVER</button>
+        <div class="step-indicator">PASO 7 DE 8</div>
+        <button class="btn btn-primary" onclick="goStep(7)">HISTORIAL VERSIONES →</button>
+      </div>
+    </div>
+
+    <!-- ══ SCREEN 7: HISTORIAL VERSIONES ══ -->
+    <div class="screen" id="screen-7">
+      <div class="sh">
+        <div class="sh-eyebrow">PASO 1.7</div>
+        <div class="sh-title">Historial de Versiones</div>
+        <div class="sh-sub">Consultá, compará o restaurá versiones anteriores del plan de operaciones.</div>
+      </div>
+
+      <div style="max-width:580px;">
+        <div class="ver-list">
+          <div class="ver-item current">
+            <div class="ver-badge">v2</div>
+            <div class="ver-info">
+              <div class="ver-name">Versión 2 — ACTUAL</div>
+              <div class="ver-meta">Importada por Juan Romero · 22/04/2025 · 36 ops · 1 nueva · 2 modificadas</div>
+            </div>
+            <span class="chip chip-green">ACTIVA</span>
+          </div>
+          <div class="ver-item">
+            <div class="ver-badge">v1</div>
+            <div class="ver-info">
+              <div class="ver-name">Versión 1</div>
+              <div class="ver-meta">Importada por Juan Romero · 15/04/2025 · 36 ops · Import inicial</div>
+            </div>
+            <div style="display:flex;gap:6px;">
+              <button class="btn btn-ghost" style="font-size:8px" onclick="showToast('Vista de v1 cargada en modo lectura')">VER</button>
+              <button class="btn btn-secondary" style="font-size:8px" onclick="confirmRestore()">RESTAURAR</button>
+            </div>
+          </div>
+        </div>
+
+        <div style="margin-top:20px;background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:16px;">
+          <div style="font-family:var(--fm);font-size:9px;color:var(--ink-muted);letter-spacing:2px;margin-bottom:12px;">COMPARACIÓN v1 vs v2</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;font-size:11px;">
+            <div style="padding:10px;background:var(--surface2);border-radius:4px;border:1px solid var(--border);">
+              <div style="font-family:var(--fm);font-size:8px;color:var(--ink-muted);margin-bottom:6px;">VERSIÓN 1</div>
+              <div>35 operaciones</div>
+              <div>Fin estimado: 28/08/2026</div>
+              <div>OP 600: 20hs</div>
+              <div>OP 800: CUA-D</div>
+            </div>
+            <div style="padding:10px;background:rgba(42,110,74,.06);border-radius:4px;border:1px solid rgba(42,110,74,.2);">
+              <div style="font-family:var(--fm);font-size:8px;color:var(--accent2);margin-bottom:6px;">VERSIÓN 2 (ACTUAL)</div>
+              <div>36 operaciones <span class="chip chip-green" style="font-size:7px">+1</span></div>
+              <div>Fin estimado: 02/09/2026 <span class="chip chip-warn" style="font-size:7px">+5 días</span></div>
+              <div>OP 600: 24hs <span class="chip chip-warn" style="font-size:7px">+4hs</span></div>
+              <div>OP 800: CUA-B <span class="chip chip-warn" style="font-size:7px">CAMBIO</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="step-nav">
+        <button class="btn btn-secondary" onclick="goStep(6)">← VOLVER</button>
+        <div class="step-indicator">PASO 8 DE 8</div>
+        <button class="btn btn-success" onclick="goStep(3)">✓ VOLVER AL PROYECTO</button>
+      </div>
+    </div>
+
+  </div><!-- /content -->
+</div><!-- /main -->
+
+<!-- SIDE PANEL: DETALLE DE OP -->
+<div class="side-panel" id="sidePanel">
+  <div class="sp-header">
+    <div class="sp-seq" id="sp-seq">OP-600</div>
+    <div class="sp-name" id="sp-name">Armado hierro losa PB</div>
+    <div style="margin-top:8px;display:flex;gap:6px;" id="sp-chips">
+      <span class="chip chip-orange">EN CURSO</span>
+      <span class="chip chip-blue">E2 — Estructura PB</span>
+    </div>
+    <span class="sp-close" onclick="closePanel()">✕</span>
+  </div>
+
+  <div class="sp-section">
+    <div class="sp-section-title">ATRIBUTOS</div>
+    <div class="sp-attr"><span class="sp-attr-key">Responsable</span><span class="sp-attr-val">Cuadrilla C (CUA-C)</span></div>
+    <div class="sp-attr"><span class="sp-attr-key">Fecha inicio calc.</span><span class="sp-attr-val">06/06/2025</span></div>
+    <div class="sp-attr"><span class="sp-attr-key">Fecha fin calc.</span><span class="sp-attr-val">10/06/2025</span></div>
+    <div class="sp-attr"><span class="sp-attr-key">Duración</span><span class="sp-attr-val">24 hs</span></div>
+    <div class="sp-attr"><span class="sp-attr-key">Peso en proyecto</span><span class="sp-attr-val">6.8%</span></div>
+    <div class="sp-attr"><span class="sp-attr-key">Unidad de avance</span><span class="sp-attr-val">PORCENTAJE</span></div>
+    <div class="sp-attr"><span class="sp-attr-key">Depende de</span><span class="sp-attr-val"><span class="dep-chip">OP-500</span></span></div>
+  </div>
+
+  <div class="sp-section">
+    <div class="sp-section-title">CRITERIO DE CIERRE</div>
+    <div class="sp-criterio">"100% del hierro colocado y atado según plano E-PB-02. Director de obra firma conformidad."</div>
+  </div>
+
+  <div class="sp-section">
+    <div class="sp-section-title">HISTORIAL DE AVANCES</div>
+    <div class="sp-hist-item">
+      <div class="sp-hist-dot" style="background:var(--accent)"></div>
+      <div>
+        <div class="sp-hist-val" style="color:var(--accent)">75%</div>
+        <div class="sp-hist-meta">Hoy 09:30 · Cuadrilla C · "Avanzando bien, terminamos la mitad norte"</div>
+      </div>
+    </div>
+    <div class="sp-hist-item">
+      <div class="sp-hist-dot" style="background:var(--accent)"></div>
+      <div>
+        <div class="sp-hist-val" style="color:var(--accent)">40%</div>
+        <div class="sp-hist-meta">Ayer 16:00 · Cuadrilla C</div>
+      </div>
+    </div>
+    <div class="sp-hist-item">
+      <div class="sp-hist-dot" style="background:var(--ink-muted)"></div>
+      <div>
+        <div class="sp-hist-val" style="color:var(--ink-muted)">0%</div>
+        <div class="sp-hist-meta">06/06 08:00 · Sistema · Operación iniciada</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="sp-section">
+    <div class="sp-section-title">MATERIALES BOM (3)</div>
+    <div style="font-size:10px;">
+      <div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--border);"><span style="font-family:var(--fm);color:var(--accent3)">MAT-034</span><span>Hierro Ø12</span><span style="color:var(--accent2);font-weight:600">−12%</span></div>
+      <div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--border);"><span style="font-family:var(--fm);color:var(--accent3)">MAT-036</span><span>Hierro Ø16</span><span style="color:var(--ink-muted)">—</span></div>
+      <div style="display:flex;justify-content:space-between;padding:5px 0;"><span style="font-family:var(--fm);color:var(--accent3)">MAT-035</span><span>Hierro Ø8</span><span style="color:var(--accent);font-weight:600">+4%</span></div>
+    </div>
+  </div>
+
+  <div style="padding:14px 20px;display:flex;gap:8px;flex-wrap:wrap;">
+    <button class="btn btn-primary" style="flex:1" onclick="showToast('Modo edición habilitado para OP-600')">EDITAR OP</button>
+    <button class="btn btn-secondary" style="flex:1" onclick="showToast('Avance registrado — 75%')">REGISTRAR AVANCE</button>
+    <button class="btn btn-ghost" style="flex:1" onclick="closePanel();goStep(3)">+ NC</button>
+  </div>
+</div>
+
+<!-- MODAL: NUEVA OP -->
+<div class="modal-overlay" id="modal-op">
+  <div class="modal" style="max-width:600px;">
+    <div class="modal-title">Nueva Operación</div>
+    <div class="modal-sub">Torre Nordeste · Los campos con * son obligatorios</div>
+    <div class="form-grid">
+      <div class="field"><label>Etapa *</label><select><option>E2 - Estructura PB-P3</option><option>E3 - Estructura P4-P8</option></select></div>
+      <div class="field"><label>Secuencia *</label><input type="number" value="860" placeholder="Siguiente disponible: 860"></div>
+      <div class="field span2"><label>Nombre de la Operación *</label><input type="text" placeholder="Ej: Encofrado losa P2"></div>
+      <div class="field"><label>Depende De</label><input type="text" placeholder="Ej: 700 o 700;800 (múltiple)"></div>
+      <div class="field"><label>Desfase Inicio (hs)</label><input type="number" value="0" min="0"></div>
+      <div class="field"><label>Duración (hs) *</label><input type="number" placeholder="Ej: 24"></div>
+      <div class="field"><label>Unidad de Avance *</label><select><option>PORCENTAJE</option><option>CANTIDAD</option><option>BINARIO</option></select></div>
+      <div class="field"><label>Cantidad Meta</label><input type="number" placeholder="Solo si CANTIDAD" disabled></div>
+      <div class="field span2"><label>Criterio de Cierre</label><textarea placeholder="¿Cuándo se considera completada esta OP?"></textarea></div>
+      <div class="field"><label>Responsable</label><select><option>CUA-A</option><option>CUA-B</option><option>CUA-C</option><option>SUB-01 ElecSur</option></select></div>
+      <div class="field"><label>Cant. Materiales</label><input type="number" value="0" min="0" max="50"></div>
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-ghost" onclick="closeModal('modal-op')">CANCELAR</button>
+      <button class="btn btn-secondary" onclick="showToast('OP guardada — Agregar otra')">GUARDAR Y AGREGAR OTRA</button>
+      <button class="btn btn-primary" onclick="closeModal('modal-op');showToast('OP-860 creada — cronograma recalculado')">GUARDAR</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"><span id="toast-msg">Operación completada</span></div>
+
+<script>
+let currentStep = 0;
+const totalSteps = 8;
+const stepTitles = [
+  'PANTALLA PRINCIPAL','NUEVO PROYECTO','CONFIRMAR CREACIÓN','PANTALLA DE PROYECTO',
+  'IMPORTAR DATOS','CALENDARIO DE TRABAJO','MODIFICAR PLAN','HISTORIAL VERSIONES'
+];
+
+// ── GANTT DATA ────────────────────────────────────────────────────────────────
+const ganttOps = [
+  {seq:'500',name:'Encofrado losa PB',start:1,dur:5,color:'#2a6e4a',pct:100,state:'COMPLETA'},
+  {seq:'600',name:'Armado hierro losa PB',start:5,dur:5,color:'#c8501a',pct:75,state:'EN CURSO'},
+  {seq:'700',name:'Colado hormigón losa PB',start:10,dur:2,color:'#888',pct:0,state:'PENDIENTE'},
+  {seq:'800',name:'Mampostería cerramiento',start:14,dur:7,color:'#888',pct:0,state:'PENDIENTE'},
+  {seq:'850',name:'Instalación eléctrica PB',start:21,dur:6,color:'#b41e1e',pct:0,state:'BLOQUEADA'},
+];
+const totalDays = 30;
+const todayDay = 7;
+// Weekends and holidays in June (simplified)
+const specialDays = {1:'off',2:'off',8:'off',9:'off',15:'off',16:'off',20:'feria',22:'off',23:'off',29:'off',30:'off'};
+
+function buildGantt(){
+  const container = document.getElementById('gantt-rows');
+  if(!container) return;
+  container.innerHTML = '';
+  ganttOps.forEach(op => {
+    const row = document.createElement('div');
+    row.style.cssText = 'display:flex;height:28px;border-bottom:1px solid rgba(200,192,180,.25);';
+    // Label
+    const lbl = document.createElement('div');
+    lbl.style.cssText = 'width:200px;min-width:200px;display:flex;align-items:center;padding:0 10px;gap:6px;background:var(--surface);border-right:1px solid var(--border);cursor:pointer;';
+    lbl.innerHTML = `<span style="font-family:var(--fm);font-size:9px;color:var(--accent);width:30px">${op.seq}</span><span style="font-size:10px;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${op.name}</span>`;
+    lbl.onclick = () => openPanel(op.seq);
+    // Track
+    const track = document.createElement('div');
+    track.style.cssText = 'flex:1;position:relative;background:var(--bg);';
+    // Background cells
+    for(let d=1;d<=totalDays;d++){
+      const cell = document.createElement('div');
+      const pct = ((d-1)/totalDays*100).toFixed(2);
+      const w = (1/totalDays*100).toFixed(2);
+      let bg = 'transparent';
+      if(specialDays[d]==='off') bg='rgba(0,0,0,.04)';
+      if(specialDays[d]==='feria') bg='rgba(180,30,30,.08)';
+      cell.style.cssText = `position:absolute;left:${pct}%;width:${w}%;top:0;bottom:0;background:${bg};`;
+      track.appendChild(cell);
+    }
+    // Today line
+    const today = document.createElement('div');
+    today.style.cssText = `position:absolute;left:${((todayDay-0.5)/totalDays*100).toFixed(2)}%;top:0;bottom:0;width:1px;background:var(--accent3);opacity:.5;z-index:5;`;
+    track.appendChild(today);
+    // Bar
+    const left = ((op.start-1)/totalDays*100).toFixed(2);
+    const width = (op.dur/totalDays*100).toFixed(2);
+    const bar = document.createElement('div');
+    bar.style.cssText = `position:absolute;left:${left}%;width:${width}%;top:4px;bottom:4px;border-radius:3px;background:${op.color};opacity:${op.state==='PENDIENTE'?'.35':'1'};display:flex;align-items:center;padding:0 6px;cursor:pointer;`;
+    bar.innerHTML = `<span style="font-family:var(--fm);font-size:8px;color:#fff;font-weight:600;white-space:nowrap;overflow:hidden;">${op.pct>0?op.pct+'%':''}</span>`;
+    bar.onclick = () => openPanel(op.seq);
+    track.appendChild(bar);
+    row.appendChild(lbl);
+    row.appendChild(track);
+    container.appendChild(row);
+  });
+}
+
+// ── NAVIGATION ────────────────────────────────────────────────────────────────
+function goStep(n){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('.bc-step').forEach(b=>b.classList.remove('active'));
+  document.getElementById(`screen-${n}`).classList.add('active');
+  document.getElementById(`bc-${n}`)?.classList.add('active');
+  // Mark done
+  for(let i=0;i<n;i++) document.getElementById(`bc-${i}`)?.classList.add('done');
+  currentStep = n;
+  document.getElementById('progressFill').style.width = ((n+1)/totalSteps*100)+'%';
+  document.querySelector('.content').scrollTop = 0;
+  if(n===3) { setTimeout(buildGantt,100); }
+  // Update sidebar active
+  document.querySelectorAll('.ln-item').forEach(i=>i.classList.remove('active'));
+}
+
+// ── PANEL ─────────────────────────────────────────────────────────────────────
+const opData = {
+  '500': {seq:'OP-500', name:'Encofrado losa PB', chips:'<span class="chip chip-green">COMPLETA</span><span class="chip chip-blue">E2</span>'},
+  '600': {seq:'OP-600', name:'Armado hierro losa PB', chips:'<span class="chip chip-orange">EN CURSO</span><span class="chip chip-blue">E2</span>'},
+  '700': {seq:'OP-700', name:'Colado hormigón losa PB', chips:'<span class="chip chip-gray">PENDIENTE</span><span class="chip chip-blue">E2</span>'},
+  '800': {seq:'OP-800', name:'Mampostería cerramiento PB', chips:'<span class="chip chip-gray">PENDIENTE</span><span class="chip chip-blue">E2</span>'},
+  '850': {seq:'OP-850', name:'Instalación eléctrica PB', chips:'<span class="chip chip-red">BLOQUEADA</span><span class="chip chip-blue">E2</span>'},
+};
+function openPanel(seq){
+  const d = opData[seq];
+  if(!d) return;
+  document.getElementById('sp-seq').textContent = d.seq;
+  document.getElementById('sp-name').textContent = d.name;
+  document.getElementById('sp-chips').innerHTML = d.chips;
+  document.getElementById('sidePanel').classList.add('open');
+}
+function closePanel(){ document.getElementById('sidePanel').classList.remove('open'); }
+
+// ── MODALS ────────────────────────────────────────────────────────────────────
+function showOpModal(){ document.getElementById('modal-op').classList.add('open'); }
+function closeModal(id){ document.getElementById(id).classList.remove('open'); }
+document.querySelectorAll('.modal-overlay').forEach(m=>{
+  m.addEventListener('click',e=>{ if(e.target===m) m.classList.remove('open'); });
+});
+
+// ── IMPORT SIMULATION ─────────────────────────────────────────────────────────
+function simulateImport(section){
+  const dz = document.getElementById(`dz-${section}`);
+  const log = document.getElementById(`log-${section}`);
+  if(!dz||!log) return;
+  dz.innerHTML = `<div class="dz-icon">⏳</div><div class="dz-title">Procesando archivo...</div>`;
+  setTimeout(()=>{
+    dz.style.display='none';
+    log.style.display='flex';
+    showToast('Archivo importado — 36 operaciones cargadas');
+  },1200);
+}
+
+// ── CALENDAR ──────────────────────────────────────────────────────────────────
+let calChanged = false;
+function recalcNote(){
+  calChanged = true;
+  document.getElementById('recalc-note').style.display='block';
+}
+function saveCalendar(){
+  document.getElementById('recalc-note').style.display='none';
+  showToast('Calendario guardado — 32 fechas recalculadas');
+  calChanged = false;
+}
+function addException(){
+  const tbody = document.getElementById('exc-body');
+  const tr = document.createElement('tr');
+  tr.style.borderBottom='1px solid rgba(200,192,180,.4)';
+  tr.innerHTML=`<td style="padding:7px 10px"><input type="date" style="font-family:var(--fm);font-size:9px;border:1px solid var(--border2);border-radius:3px;padding:3px 6px;"></td><td><select style="font-family:var(--fm);font-size:8px;border:1px solid var(--border2);border-radius:3px;padding:3px 6px;"><option>FERIADO</option><option>JORNADA_REDUCIDA</option><option>JORNADA_EXTENDIDA</option></select></td><td style="text-align:center"><input type="number" value="0" style="width:40px;font-family:var(--fm);font-size:9px;border:1px solid var(--border2);border-radius:3px;padding:3px 4px;text-align:center;"></td><td><input type="text" placeholder="Motivo..." style="width:100%;font-family:var(--fn);font-size:10px;border:1px solid var(--border2);border-radius:3px;padding:3px 6px;"></td><td style="text-align:right;padding-right:10px"><button class="btn btn-ghost" style="font-size:8px;padding:2px 6px" onclick="this.closest('tr').remove()">✕</button></td>`;
+  tbody.appendChild(tr);
+  recalcNote();
+}
+
+// ── CONFIRM ACTIONS ───────────────────────────────────────────────────────────
+function confirmCreate(){ showToast('Proyecto creado exitosamente'); goStep(3); }
+function confirmReimport(){ showToast('v2 importada — cronograma recalculado · v1 guardada en historial'); goStep(7); }
+function confirmRestore(){ if(confirm('¿Restaurar v1? Los cambios de v2 quedarán archivados.')) showToast('v1 restaurada como plan activo'); }
+function showGanttNote(){ showToast('Vista Gantt — click en barra para ver detalle de OP'); buildGantt(); }
+
+// ── TOGGLES ───────────────────────────────────────────────────────────────────
+function toggleColl(header){
+  const body = header.nextElementSibling;
+  const arrow = header.querySelector('.coll-arrow');
+  body.classList.toggle('open');
+  arrow.classList.toggle('open');
+}
+
+// ── TOAST ─────────────────────────────────────────────────────────────────────
+function showToast(msg){
+  const t = document.getElementById('toast');
+  document.getElementById('toast-msg').textContent = msg;
+  t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'), 3000);
+}
+
+// INIT
+buildGantt();
+</script>
+</body>
+</html>

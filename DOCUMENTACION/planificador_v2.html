@@ -1,0 +1,1792 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OBRA360 — Flujo Planificador</title>
+<link href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@300;400;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --navy:     #0a0f1e;
+  --navy2:    #0f1628;
+  --navy3:    #151d35;
+  --navy4:    #1c2845;
+  --teal:     #00c5a5;
+  --teal2:    #00a88a;
+  --teal3:    #00856e;
+  --teal-dim: rgba(0,197,165,.15);
+  --blue:     #1e6fff;
+  --blue2:    #3385ff;
+  --gray:     #7c8fa8;
+  --gray2:    #4a5a72;
+  --border:   rgba(255,255,255,.07);
+  --border2:  rgba(255,255,255,.14);
+  --text:     #e8edf5;
+  --text-dim: #94a3bc;
+  --text-muted: #5a6a82;
+  --orange:   #ff8c42;
+  --red:      #ff4d6a;
+  --green:    #2dd4a0;
+  --yellow:   #ffc542;
+  --purple:   #9c6fff;
+  --f: 'Source Sans 3', sans-serif;
+  --fm: 'DM Mono', monospace;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:var(--f);background:var(--navy);color:var(--text);height:100vh;overflow:hidden;display:flex;flex-direction:column;}
+
+/* ── TOP NAVIGATION BAR ── */
+.topnav {
+  height:44px; flex-shrink:0;
+  background:var(--navy2);
+  border-bottom:1px solid var(--border);
+  display:flex; align-items:center;
+  padding:0 20px; gap:0;
+}
+.tn-logo{
+  font-family:var(--fm); font-size:13px; font-weight:500;
+  color:var(--teal); letter-spacing:2px; margin-right:28px;
+}
+.tn-tabs{display:flex;gap:0;height:44px;}
+.tn-tab{
+  padding:0 20px; display:flex; align-items:center;
+  font-size:13px; color:var(--text-dim); cursor:pointer;
+  border-bottom:2px solid transparent; transition:all .15s;
+  font-weight:400; letter-spacing:.2px;
+}
+.tn-tab:hover{color:var(--text); background:rgba(255,255,255,.04);}
+.tn-tab.active{color:var(--teal); border-bottom-color:var(--teal); font-weight:600;}
+.tn-right{margin-left:auto; display:flex; align-items:center; gap:14px;}
+.tn-icon{font-size:16px; cursor:pointer; color:var(--text-dim); transition:color .15s;}
+.tn-icon:hover{color:var(--text);}
+.tn-avatar{
+  width:28px; height:28px; border-radius:50%;
+  background:linear-gradient(135deg,var(--teal3),var(--blue));
+  display:flex; align-items:center; justify-content:center;
+  font-size:11px; font-weight:700; color:#fff; cursor:pointer;
+}
+
+/* ── BREADCRUMB / STEP INDICATOR ── */
+.stepbar{
+  height:36px; flex-shrink:0; background:var(--navy2);
+  border-bottom:1px solid var(--border);
+  display:flex; align-items:center; padding:0 20px; gap:0;
+  overflow-x:auto;
+}
+.sbar-step{display:flex;align-items:center;gap:0;cursor:pointer;}
+.sbar-label{
+  font-family:var(--fm); font-size:9px; letter-spacing:1px;
+  color:var(--text-muted); padding:0 12px; height:36px;
+  display:flex; align-items:center;
+  border-bottom:2px solid transparent; margin-bottom:-1px;
+  transition:all .15s; white-space:nowrap;
+}
+.sbar-step:hover .sbar-label{color:var(--text-dim);}
+.sbar-step.active .sbar-label{color:var(--teal); border-bottom-color:var(--teal);}
+.sbar-step.done .sbar-label{color:var(--green);}
+.sbar-arr{color:var(--text-muted); font-size:10px; opacity:.5;}
+
+/* ── PROGRESS LINE ── */
+.prog-line{height:2px; background:var(--navy3); flex-shrink:0;}
+.prog-fill{height:100%; background:var(--teal); transition:width .4s ease;}
+
+/* ── MAIN LAYOUT ── */
+.layout{display:flex; flex:1; overflow:hidden;}
+
+/* ── SIDEBAR ── */
+.sidebar{
+  width:52px; flex-shrink:0;
+  background:var(--navy2);
+  border-right:1px solid var(--border);
+  display:flex; flex-direction:column; align-items:center;
+  padding:12px 0; gap:4px; overflow:hidden;
+}
+.sb-icon{
+  width:36px; height:36px; border-radius:8px;
+  display:flex; align-items:center; justify-content:center;
+  font-size:16px; cursor:pointer; transition:all .15s;
+  color:var(--text-muted);
+}
+.sb-icon:hover{background:var(--navy4); color:var(--text);}
+.sb-icon.active{background:var(--teal-dim); color:var(--teal);}
+.sb-sep{width:28px; height:1px; background:var(--border); margin:4px 0;}
+
+/* ── CONTENT ── */
+.content{flex:1; overflow:hidden; position:relative;}
+
+/* ── SCREENS ── */
+.screen{position:absolute;inset:0;display:none;overflow-y:auto;animation:fadeIn .2s ease both;}
+.screen.active{display:flex;flex-direction:column;}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+
+/* ══════════════════════════════════════════════════════
+   SCREEN 0 — HOME (INSIGHTS HUB STYLE)
+════════════════════════════════════════════════════════ */
+.home-wrap{flex:1; padding:32px 36px; overflow-y:auto;}
+.home-title{
+  font-size:13px; color:var(--text-dim); font-weight:400;
+  margin-bottom:28px; letter-spacing:.3px;
+}
+.ih-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(170px,1fr));
+  gap:20px;
+}
+.ih-card{
+  display:flex; flex-direction:column; align-items:center;
+  cursor:pointer; gap:0; transition:transform .15s;
+  text-align:center;
+}
+.ih-card:hover{transform:translateY(-2px);}
+.ih-icon-wrap{
+  width:144px; height:144px; border-radius:12px;
+  display:flex; align-items:center; justify-content:center;
+  position:relative; overflow:hidden;
+  margin-bottom:10px;
+}
+.ih-card:not(.new-proj) .ih-icon-wrap{background:var(--teal);}
+.ih-card.gray .ih-icon-wrap{background:#3a4a62;}
+.ih-card.new-proj .ih-icon-wrap{
+  background:transparent;
+  border:2px dashed var(--border2);
+}
+.ih-card:hover .ih-icon-wrap{filter:brightness(1.08);}
+.ih-card.new-proj:hover .ih-icon-wrap{border-color:var(--teal); background:var(--teal-dim);}
+.ih-icon{font-size:58px; color:#fff; z-index:1;}
+.ih-card.new-proj .ih-icon{color:var(--text-muted); font-size:42px;}
+.ih-meta{font-family:var(--f); font-size:11px; color:var(--text-muted); margin-bottom:2px;}
+.ih-name{font-size:14px; font-weight:600; color:var(--text); line-height:1.2;}
+/* Status overlay on card */
+.ih-status{
+  position:absolute; bottom:8px; right:8px;
+  font-family:var(--fm); font-size:8px; font-weight:600;
+  padding:2px 7px; border-radius:10px; letter-spacing:.5px;
+}
+.st-ok{background:rgba(0,197,165,.2); color:var(--teal);}
+.st-warn{background:rgba(255,197,66,.15); color:var(--yellow);}
+.st-late{background:rgba(255,77,106,.15); color:var(--red);}
+.st-plan{background:rgba(255,255,255,.08); color:var(--text-muted);}
+/* Progress ring on card */
+.ih-progress{
+  position:absolute; top:8px; left:8px;
+  font-family:var(--fm); font-size:10px; font-weight:600; color:#fff;
+  background:rgba(0,0,0,.35); padding:2px 7px; border-radius:8px;
+}
+
+/* ══════════════════════════════════════════════════════
+   SCREEN 1 — NUEVO PROYECTO MODAL
+════════════════════════════════════════════════════════ */
+.form-screen{
+  flex:1; display:flex; align-items:flex-start;
+  justify-content:center; padding:28px; overflow-y:auto;
+}
+.form-card{
+  background:var(--navy3); border:1px solid var(--border2);
+  border-radius:10px; padding:28px; width:100%; max-width:580px;
+}
+.fc-title{font-size:20px; font-weight:700; margin-bottom:4px;}
+.fc-sub{font-size:13px; color:var(--text-dim); margin-bottom:22px;}
+.step-dots{display:flex; gap:5px; margin-bottom:20px;}
+.sd-dot{height:3px; flex:1; border-radius:3px; background:var(--navy4);}
+.sd-dot.done{background:var(--green);}
+.sd-dot.active{background:var(--teal);}
+.fg{display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:14px;}
+.fg.full{grid-template-columns:1fr;}
+.field{display:flex; flex-direction:column; gap:4px;}
+.field.span2{grid-column:span 2;}
+.field label{
+  font-family:var(--fm); font-size:9px; color:var(--text-muted);
+  letter-spacing:2px; text-transform:uppercase;
+}
+.field input,.field select,.field textarea{
+  background:var(--navy4); border:1px solid var(--border2);
+  border-radius:5px; padding:9px 11px;
+  font-family:var(--f); font-size:13px; color:var(--text);
+  outline:none; transition:border-color .15s;
+}
+.field input:focus,.field select:focus,.field textarea:focus{border-color:var(--teal);}
+.field select option{background:var(--navy3);}
+.field textarea{resize:none; min-height:60px;}
+.field-badge{
+  font-family:var(--fm); font-size:8px; color:var(--teal);
+  background:var(--teal-dim); padding:2px 8px; border-radius:3px; width:fit-content; margin-top:3px;
+}
+
+/* Collapsible */
+.coll{border:1px solid var(--border); border-radius:6px; margin-bottom:14px; overflow:hidden;}
+.coll-hdr{
+  padding:10px 14px; background:var(--navy4); cursor:pointer;
+  display:flex; align-items:center; justify-content:space-between;
+  font-family:var(--fm); font-size:9px; color:var(--text-dim);
+  letter-spacing:1px; transition:background .15s;
+}
+.coll-hdr:hover{background:rgba(255,255,255,.06);}
+.coll-body{padding:14px; display:none;}
+.coll-body.open{display:block;}
+.coll-arr{transition:transform .2s;}
+.coll-arr.open{transform:rotate(180deg);}
+.day-btns{display:flex; gap:6px; margin-bottom:14px;}
+.day-btn{
+  width:34px; height:34px; border-radius:5px;
+  border:1px solid var(--border2); background:var(--navy);
+  font-family:var(--fm); font-size:9px; color:var(--text-muted);
+  cursor:pointer; transition:all .15s; display:flex; align-items:center; justify-content:center;
+}
+.day-btn.on{background:var(--teal3); color:#fff; border-color:var(--teal3);}
+
+/* Buttons */
+.btn{
+  font-family:var(--fm); font-size:10px; letter-spacing:1px;
+  padding:9px 18px; border-radius:5px; border:none;
+  cursor:pointer; transition:all .15s; font-weight:500;
+}
+.btn-primary{background:var(--teal); color:var(--navy);}
+.btn-primary:hover{background:var(--teal2);}
+.btn-secondary{background:transparent; border:1px solid var(--border2); color:var(--text-dim);}
+.btn-secondary:hover{border-color:var(--teal); color:var(--teal);}
+.btn-ghost{background:transparent; border:1px solid var(--border); color:var(--text-muted);}
+.btn-ghost:hover{border-color:var(--border2); color:var(--text-dim);}
+.btn-danger{background:transparent; border:1px solid rgba(255,77,106,.4); color:var(--red);}
+.btn-row{display:flex; gap:8px; justify-content:flex-end; margin-top:18px;}
+.btn-row-sp{display:flex; gap:8px; align-items:center; margin-top:18px;}
+
+/* ══════════════════════════════════════════════════════
+   SCREEN 2 — CONFIRMACIÓN
+════════════════════════════════════════════════════════ */
+.confirm-card{
+  background:var(--navy3); border:1px solid var(--teal);
+  border-radius:10px; padding:20px; margin-bottom:14px;
+}
+.cc-header{display:flex; align-items:center; gap:14px; margin-bottom:16px;}
+.cc-icon{font-size:36px;}
+.cc-name{font-size:20px; font-weight:700;}
+.cc-meta{font-family:var(--fm); font-size:9px; color:var(--text-muted); letter-spacing:2px; margin-top:3px;}
+.cc-grid{display:grid; grid-template-columns:1fr 1fr; gap:10px; font-size:12px;}
+.cc-field label{font-family:var(--fm); font-size:8px; color:var(--text-muted); letter-spacing:1px; display:block; margin-bottom:2px;}
+.cc-field span{font-weight:600;}
+.next-steps{
+  background:rgba(0,197,165,.06); border:1px solid rgba(0,197,165,.2);
+  border-radius:8px; padding:14px; font-size:12px;
+  color:var(--text-dim); line-height:1.9;
+}
+.next-steps-title{font-family:var(--fm); font-size:8px; color:var(--teal); letter-spacing:2px; margin-bottom:8px;}
+
+/* ══════════════════════════════════════════════════════
+   SCREEN 3 — PANTALLA DE PROYECTO (APS style)
+════════════════════════════════════════════════════════ */
+.proj-screen{
+  display:flex; flex-direction:column; flex:1; height:100%;
+  background:var(--navy);
+}
+.proj-topbar{
+  height:48px; flex-shrink:0;
+  background:var(--navy2); border-bottom:1px solid var(--border);
+  display:flex; align-items:center; padding:0 16px; gap:12px;
+}
+.ptb-title{font-size:15px; font-weight:700; color:var(--text);}
+.ptb-sub{font-family:var(--fm); font-size:9px; color:var(--text-muted); margin-left:4px;}
+.ptb-right{margin-left:auto; display:flex; align-items:center; gap:8px;}
+/* KPI pills in topbar */
+.kpi-pill{
+  display:flex; align-items:center; gap:5px;
+  background:var(--navy3); border:1px solid var(--border);
+  border-radius:5px; padding:4px 10px;
+  font-family:var(--fm); font-size:9px;
+}
+.kp-val{font-size:13px; font-weight:700;}
+
+/* Toolbar */
+.aps-toolbar{
+  height:40px; flex-shrink:0; background:var(--navy2);
+  border-bottom:1px solid var(--border);
+  display:flex; align-items:center; padding:0 12px; gap:6px;
+}
+.tool-btn{
+  height:26px; padding:0 10px; border-radius:4px;
+  background:transparent; border:1px solid var(--border);
+  font-family:var(--fm); font-size:9px; color:var(--text-muted);
+  cursor:pointer; transition:all .15s; display:flex; align-items:center; gap:5px;
+  letter-spacing:.5px;
+}
+.tool-btn:hover{border-color:var(--border2); color:var(--text);}
+.tool-btn.primary{background:var(--teal); border-color:var(--teal); color:var(--navy); font-weight:600;}
+.tool-btn.primary:hover{background:var(--teal2);}
+.tool-sep{width:1px; height:20px; background:var(--border);}
+.tool-right{margin-left:auto;}
+/* Search */
+.tool-search{
+  height:26px; background:var(--navy4); border:1px solid var(--border);
+  border-radius:4px; padding:0 10px; font-family:var(--fm); font-size:9px;
+  color:var(--text); outline:none; width:180px; transition:border-color .15s;
+}
+.tool-search:focus{border-color:var(--teal);}
+
+/* SPLIT VIEW: table top, gantt bottom */
+.aps-split{
+  flex:1; display:flex; flex-direction:column; overflow:hidden;
+}
+.aps-ops{flex:0 0 42%; overflow-y:auto; border-bottom:1px solid var(--border);}
+.aps-gantt-section{flex:1; overflow:hidden; display:flex; flex-direction:column;}
+.gantt-hdr{
+  height:36px; flex-shrink:0; background:var(--navy2);
+  border-bottom:1px solid var(--border);
+  display:flex; align-items:center; padding:0 12px; gap:8px;
+}
+.gantt-title{font-family:var(--fm); font-size:9px; color:var(--text-muted); letter-spacing:2px;}
+.gantt-range{display:flex; gap:4px; margin-left:auto;}
+.gr-btn{
+  height:22px; padding:0 8px; border-radius:3px;
+  background:transparent; border:1px solid var(--border);
+  font-family:var(--fm); font-size:8px; color:var(--text-muted);
+  cursor:pointer; transition:all .15s;
+}
+.gr-btn:hover{border-color:var(--border2); color:var(--text);}
+.gr-btn.active{background:var(--teal-dim); border-color:var(--teal); color:var(--teal);}
+
+/* APS OPS TABLE */
+.ops-wrap{overflow-x:auto;}
+table.ops{width:100%; border-collapse:collapse; font-size:12px; min-width:900px;}
+table.ops thead tr{background:var(--navy3); position:sticky; top:0; z-index:5;}
+table.ops th{
+  padding:7px 10px; font-family:var(--fm); font-size:8px;
+  color:var(--text-muted); letter-spacing:1.5px; text-align:left;
+  border-bottom:1px solid var(--border); border-right:1px solid var(--border); white-space:nowrap;
+  font-weight:500; user-select:none;
+}
+table.ops th:last-child{border-right:none;}
+table.ops td{
+  padding:7px 10px; border-bottom:1px solid var(--border);
+  border-right:1px solid rgba(255,255,255,.04); vertical-align:middle;
+}
+table.ops td:last-child{border-right:none;}
+table.ops tr:hover td{background:rgba(255,255,255,.03); cursor:pointer;}
+table.ops tr.sel td{background:rgba(0,197,165,.05);}
+.td-seq{
+  font-family:var(--fm); font-size:10px; font-weight:600; color:var(--teal);
+  width:52px; min-width:52px;
+}
+.td-name{font-weight:600; min-width:180px;}
+.td-sub{font-family:var(--fm); font-size:9px; color:var(--text-muted); margin-top:1px;}
+.td-dep{font-family:var(--fm); font-size:9px;}
+.dep-tag{
+  display:inline-block; background:rgba(30,111,255,.15); color:#7aaeff;
+  padding:1px 6px; border-radius:3px; margin-right:3px; font-size:8px; font-weight:600;
+}
+.dep-tag.multi{background:rgba(156,111,255,.15); color:#c9a8ff;}
+/* Progress bar in cell */
+.prog-cell{display:flex; align-items:center; gap:7px; min-width:100px;}
+.prog-mini{flex:1; height:4px; background:var(--navy4); border-radius:3px; overflow:hidden;}
+.prog-mini-fill{height:100%; border-radius:3px;}
+/* Status */
+.st{
+  display:inline-flex; align-items:center; gap:4px;
+  font-family:var(--fm); font-size:8px; font-weight:700;
+  padding:2px 7px; border-radius:3px; letter-spacing:.5px; white-space:nowrap;
+}
+.st-green{background:rgba(45,212,160,.12); color:var(--green);}
+.st-orange{background:rgba(255,140,66,.12); color:var(--orange);}
+.st-gray{background:rgba(255,255,255,.06); color:var(--text-muted);}
+.st-red{background:rgba(255,77,106,.12); color:var(--red);}
+.st-blue{background:rgba(30,111,255,.12); color:var(--blue2);}
+.st::before{content:''; width:5px; height:5px; border-radius:50%; background:currentColor; display:inline-block;}
+
+/* ══════════════════════════════════════════════════════
+   GANTT WITH ARROWS
+════════════════════════════════════════════════════════ */
+.gantt-body{flex:1; overflow:auto; position:relative;}
+.gantt-inner{display:flex; flex-direction:column; min-width:900px;}
+/* Month/week header */
+.gantt-col-header{
+  display:flex; height:28px; flex-shrink:0;
+  background:var(--navy3); border-bottom:1px solid var(--border);
+  position:sticky; top:0; z-index:10;
+}
+.gantt-lbl-col{
+  width:200px; min-width:200px; flex-shrink:0;
+  background:var(--navy3); border-right:1px solid var(--border);
+  display:flex; align-items:center; padding:0 10px;
+  font-family:var(--fm); font-size:8px; color:var(--text-muted); letter-spacing:1px;
+}
+.gantt-track-header{flex:1; display:flex; position:relative;}
+.gantt-day-hdr{
+  flex:1; display:flex; align-items:center; justify-content:center;
+  font-family:var(--fm); font-size:8px; color:var(--text-muted);
+  border-right:1px solid var(--border);
+}
+.gantt-day-hdr.week{background:rgba(255,255,255,.02);}
+/* Gantt rows */
+.gantt-rows-area{
+  position:relative; display:flex; flex-direction:column;
+}
+.g-row{
+  display:flex; height:32px;
+  border-bottom:1px solid rgba(255,255,255,.04);
+}
+.g-row:hover{background:rgba(255,255,255,.02);}
+.g-row.sel{background:rgba(0,197,165,.04);}
+.g-row-label{
+  width:200px; min-width:200px; flex-shrink:0;
+  border-right:1px solid var(--border);
+  display:flex; align-items:center; padding:0 10px; gap:6px;
+  background:var(--navy2);
+}
+.grl-seq{font-family:var(--fm); font-size:9px; color:var(--teal); width:28px;}
+.grl-name{font-size:10px; font-weight:500; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+.g-track{flex:1; position:relative; overflow:visible;}
+/* Day columns background */
+.g-day-bg{
+  position:absolute; top:0; bottom:0; border-right:1px solid rgba(255,255,255,.03);
+}
+.g-day-bg.weekend{background:rgba(255,255,255,.03);}
+.g-day-bg.feria{background:rgba(255,77,106,.07);}
+.g-day-bg.jcorta{background:rgba(255,197,66,.06);}
+/* Gantt bar */
+.g-bar{
+  position:absolute; top:5px; bottom:5px;
+  border-radius:4px; display:flex; align-items:center;
+  padding:0 7px; cursor:pointer; overflow:hidden;
+  transition:filter .15s; min-width:4px;
+}
+.g-bar:hover{filter:brightness(1.15);}
+.g-bar-fill{
+  position:absolute; left:0; top:0; bottom:0;
+  border-radius:4px 0 0 4px; opacity:.35;
+}
+.g-bar-label{
+  font-family:var(--fm); font-size:8px; font-weight:600;
+  color:#fff; white-space:nowrap; position:relative; z-index:1;
+}
+/* Today line */
+.g-today-line{
+  position:absolute; top:0; bottom:0; width:1px;
+  background:var(--blue); opacity:.7; z-index:20; pointer-events:none;
+}
+/* SVG arrows overlay */
+.gantt-svg-overlay{
+  position:absolute; inset:0; pointer-events:none; z-index:15; overflow:visible;
+}
+
+/* ══════════════════════════════════════════════════════
+   SCREEN 4 — IMPORTAR
+════════════════════════════════════════════════════════ */
+.import-screen{flex:1; padding:24px; overflow-y:auto;}
+.imp-section{
+  background:var(--navy3); border:1px solid var(--border);
+  border-radius:8px; margin-bottom:12px; overflow:hidden;
+}
+.imp-hdr{
+  padding:10px 16px; background:var(--navy4);
+  border-bottom:1px solid var(--border);
+  display:flex; align-items:center; gap:12px;
+}
+.imp-letter{
+  width:26px; height:26px; border-radius:5px;
+  background:var(--teal); color:var(--navy);
+  font-family:var(--fm); font-size:12px; font-weight:700;
+  display:flex; align-items:center; justify-content:center; flex-shrink:0;
+}
+.imp-htitle{font-size:13px; font-weight:600; flex:1;}
+.imp-body{padding:12px 16px;}
+.dz{
+  border:2px dashed var(--border2); border-radius:6px;
+  padding:20px; text-align:center; cursor:pointer;
+  transition:all .2s; background:var(--navy);
+}
+.dz:hover{border-color:var(--teal); background:var(--teal-dim);}
+.dz-icon{font-size:22px; margin-bottom:6px;}
+.dz-t{font-size:12px; font-weight:600; margin-bottom:3px;}
+.dz-s{font-family:var(--fm); font-size:9px; color:var(--text-muted);}
+.log-list{display:flex; flex-direction:column; gap:5px;}
+.log-row{
+  display:flex; align-items:center; gap:10px;
+  padding:7px 11px; background:var(--navy4);
+  border-radius:5px; border:1px solid var(--border);
+}
+.log-ico{font-size:13px; flex-shrink:0;}
+.log-info{flex:1;}
+.log-n{font-size:11px; font-weight:600;}
+.log-d{font-family:var(--fm); font-size:9px; color:var(--text-muted);}
+.log-s{font-family:var(--fm); font-size:9px; font-weight:700;}
+.ls-ok{color:var(--green);}
+.ls-pend{color:var(--yellow);}
+.ls-err{color:var(--red);}
+/* Cal mini */
+.cal-mini{display:grid; grid-template-columns:repeat(7,1fr); gap:2px; margin-top:10px;}
+.cm-d{
+  height:24px; border-radius:3px;
+  display:flex; align-items:center; justify-content:center;
+  font-family:var(--fm); font-size:8px; font-weight:600;
+}
+.cm-hdr{background:transparent; color:var(--text-muted); font-size:7px;}
+.cm-work{background:rgba(0,197,165,.15); color:var(--teal);}
+.cm-off{background:rgba(255,255,255,.04); color:var(--text-muted);}
+.cm-feria{background:rgba(255,77,106,.15); color:var(--red);}
+.cm-short{background:rgba(255,197,66,.12); color:var(--yellow);}
+.cm-today{background:var(--blue); color:#fff;}
+
+/* ══════════════════════════════════════════════════════
+   SCREEN 5 — CALENDARIO
+════════════════════════════════════════════════════════ */
+.cal-screen{flex:1; padding:24px; overflow-y:auto;}
+.cal-grid2{display:grid; grid-template-columns:1fr 1fr; gap:20px;}
+.cal-card{background:var(--navy3); border:1px solid var(--border); border-radius:8px; padding:18px;}
+.cal-card-title{font-family:var(--fm); font-size:9px; color:var(--text-muted); letter-spacing:2px; margin-bottom:14px;}
+.exc-table{width:100%; border-collapse:collapse; font-size:11px;}
+.exc-table th{font-family:var(--fm); font-size:8px; color:var(--text-muted); letter-spacing:1px; padding:6px 8px; border-bottom:1px solid var(--border); text-align:left;}
+.exc-table td{padding:7px 8px; border-bottom:1px solid rgba(255,255,255,.04);}
+
+/* ══════════════════════════════════════════════════════
+   SCREEN 6 — MODIFICAR PLAN
+════════════════════════════════════════════════════════ */
+.diff-screen{flex:1; padding:24px; overflow-y:auto;}
+.diff-banner{
+  background:rgba(255,197,66,.08); border:1px solid rgba(255,197,66,.25);
+  border-radius:8px; padding:14px 16px; margin-bottom:16px;
+  display:flex; align-items:flex-start; gap:12px;
+}
+.diff-card{background:var(--navy3); border:1px solid var(--border); border-radius:8px; overflow:hidden; margin-bottom:14px;}
+.diff-card-hdr{padding:10px 14px; border-bottom:1px solid var(--border); font-family:var(--fm); font-size:9px; color:var(--text-muted); letter-spacing:2px;}
+.diff-t{width:100%; border-collapse:collapse; font-size:11px;}
+.diff-t th{font-family:var(--fm); font-size:8px; color:var(--text-muted); padding:7px 10px; border-bottom:1px solid var(--border); text-align:left; background:var(--navy4); letter-spacing:1px;}
+.diff-t td{padding:7px 10px; border-bottom:1px solid rgba(255,255,255,.04);}
+.diff-new{color:var(--green); font-weight:600;}
+.diff-mod{color:var(--yellow);}
+.diff-del{color:var(--red); text-decoration:line-through;}
+/* Radio/checkbox */
+.check-opt{display:flex; align-items:flex-start; gap:10px; padding:12px 14px; background:var(--navy4); border-radius:6px; cursor:pointer; border:1px solid var(--border);}
+.check-opt input{width:15px; height:15px; accent-color:var(--teal);}
+.check-label-main{font-size:12px; font-weight:600; margin-bottom:2px;}
+.check-label-sub{font-family:var(--fm); font-size:9px; color:var(--text-muted);}
+
+/* ══════════════════════════════════════════════════════
+   SCREEN 7 — HISTORIAL VERSIONES
+════════════════════════════════════════════════════════ */
+.vers-screen{flex:1; padding:24px; overflow-y:auto;}
+.ver-grid{display:grid; grid-template-columns:1fr 1fr; gap:20px;}
+.ver-list{display:flex; flex-direction:column; gap:8px;}
+.ver-item{
+  background:var(--navy3); border:1px solid var(--border);
+  border-radius:8px; padding:14px 16px;
+  display:flex; align-items:center; gap:14px; cursor:pointer;
+  transition:border-color .15s;
+}
+.ver-item:hover{border-color:var(--border2);}
+.ver-item.current{border-color:var(--teal);}
+.ver-badge{
+  font-family:var(--fm); font-size:20px; font-weight:700;
+  color:var(--teal); width:36px; text-align:center;
+}
+.ver-info{flex:1;}
+.ver-name{font-size:13px; font-weight:600;}
+.ver-meta{font-family:var(--fm); font-size:9px; color:var(--text-muted); margin-top:2px;}
+.compare-card{background:var(--navy3); border:1px solid var(--border); border-radius:8px; padding:18px;}
+.cmp-grid{display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:12px;}
+.cmp-col{background:var(--navy4); border-radius:6px; padding:12px; border:1px solid var(--border);}
+.cmp-lbl{font-family:var(--fm); font-size:8px; color:var(--text-muted); letter-spacing:1px; margin-bottom:8px;}
+.cmp-row{display:flex; justify-content:space-between; font-size:11px; padding:3px 0;}
+.cmp-change{font-family:var(--fm); font-size:9px; font-weight:600;}
+
+/* ── CHIP ── */
+.chip{
+  display:inline-flex; align-items:center;
+  font-family:var(--fm); font-size:8px; font-weight:600;
+  padding:2px 7px; border-radius:3px; letter-spacing:.5px;
+}
+.c-teal{background:rgba(0,197,165,.12); color:var(--teal);}
+.c-orange{background:rgba(255,140,66,.12); color:var(--orange);}
+.c-red{background:rgba(255,77,106,.12); color:var(--red);}
+.c-blue{background:rgba(30,111,255,.12); color:var(--blue2);}
+.c-gray{background:rgba(255,255,255,.06); color:var(--text-muted);}
+.c-yellow{background:rgba(255,197,66,.12); color:var(--yellow);}
+.c-green{background:rgba(45,212,160,.12); color:var(--green);}
+.c-purple{background:rgba(156,111,255,.12); color:var(--purple);}
+
+/* ── PANEL LATERAL DETALLE ── */
+.side-panel{
+  position:fixed; right:0; top:44px; bottom:0; width:340px;
+  background:var(--navy2); border-left:1px solid var(--border2);
+  z-index:200; transform:translateX(100%);
+  transition:transform .3s cubic-bezier(.4,0,.2,1);
+  overflow-y:auto; display:flex; flex-direction:column;
+}
+.side-panel.open{transform:translateX(0);}
+.sp-hdr{
+  padding:18px 18px 14px; border-bottom:1px solid var(--border);
+  position:sticky; top:0; background:var(--navy2); z-index:10;
+}
+.sp-close{
+  position:absolute; top:14px; right:14px; font-size:14px;
+  cursor:pointer; color:var(--text-muted); transition:color .15s;
+}
+.sp-close:hover{color:var(--text);}
+.sp-sec{padding:14px 18px; border-bottom:1px solid var(--border);}
+.sp-sec-t{
+  font-family:var(--fm); font-size:8px; color:var(--text-muted);
+  letter-spacing:2px; margin-bottom:10px;
+  display:flex; align-items:center; gap:8px;
+}
+.sp-sec-t::after{content:''; flex:1; height:1px; background:var(--border);}
+.sp-attr{display:flex; justify-content:space-between; align-items:flex-start; padding:5px 0; border-bottom:1px solid rgba(255,255,255,.04);}
+.sp-attr:last-child{border-bottom:none;}
+.sp-ak{font-family:var(--fm); font-size:8px; color:var(--text-muted);}
+.sp-av{font-size:11px; font-weight:600; text-align:right; max-width:180px;}
+.sp-crit{
+  background:var(--navy4); border:1px solid var(--border);
+  border-radius:5px; padding:10px; font-size:11px;
+  color:var(--text-dim); line-height:1.6; font-style:italic;
+}
+.sp-hist-row{display:flex; gap:10px; padding:7px 0; border-bottom:1px solid rgba(255,255,255,.04);}
+.sp-hist-dot{width:7px; height:7px; border-radius:50%; margin-top:4px; flex-shrink:0;}
+.sp-hist-val{font-family:var(--fm); font-size:14px; font-weight:700;}
+.sp-hist-meta{font-family:var(--fm); font-size:8px; color:var(--text-muted); margin-top:1px; line-height:1.5;}
+.sp-actions{padding:14px 18px; display:flex; gap:8px; flex-wrap:wrap;}
+
+/* ── MODAL ── */
+.modal-overlay{
+  position:fixed; inset:0; background:rgba(0,0,0,.7);
+  z-index:500; display:none; align-items:center; justify-content:center;
+}
+.modal-overlay.open{display:flex; animation:fadeIn .2s ease;}
+.modal{
+  background:var(--navy3); border:1px solid var(--border2);
+  border-radius:10px; padding:26px; width:560px; max-width:94vw;
+  max-height:88vh; overflow-y:auto;
+  box-shadow:0 24px 60px rgba(0,0,0,.5);
+  animation:scaleIn .2s ease;
+}
+@keyframes scaleIn{from{opacity:0;transform:scale(.96)}to{opacity:1;transform:scale(1)}}
+.m-title{font-size:18px; font-weight:700; margin-bottom:4px;}
+.m-sub{font-size:12px; color:var(--text-dim); margin-bottom:18px;}
+
+/* ── SECTION HEADER ── */
+.sec-hdr{display:flex; align-items:center; justify-content:space-between; margin-bottom:14px;}
+.sec-title{font-size:16px; font-weight:700;}
+.sec-sub{font-size:12px; color:var(--text-dim); margin-top:2px;}
+
+/* ── TOAST ── */
+.toast{
+  position:fixed; bottom:20px; right:20px;
+  background:var(--navy3); border:1px solid var(--teal);
+  color:var(--text); padding:11px 16px; border-radius:6px;
+  font-family:var(--fm); font-size:10px; letter-spacing:.5px;
+  display:flex; align-items:center; gap:8px;
+  box-shadow:0 8px 24px rgba(0,0,0,.4);
+  transform:translateY(60px); opacity:0;
+  transition:all .3s cubic-bezier(.4,0,.2,1); z-index:1000;
+}
+.toast.show{transform:translateY(0); opacity:1;}
+
+/* ── SCROLLBARS ── */
+::-webkit-scrollbar{width:4px; height:4px;}
+::-webkit-scrollbar-thumb{background:var(--navy4); border-radius:3px;}
+::-webkit-scrollbar-track{background:transparent;}
+</style>
+</head>
+<body>
+
+<!-- TOP NAV -->
+<div class="topnav">
+  <span class="tn-logo">OBRA360</span>
+  <div class="tn-tabs">
+    <div class="tn-tab active" onclick="goStep(0)">Applications</div>
+    <div class="tn-tab">System Tools</div>
+    <div class="tn-tab">Guided Tours</div>
+  </div>
+  <div class="tn-right">
+    <span class="tn-icon">🔔</span>
+    <span class="tn-icon">⚙️</span>
+    <span class="tn-icon">❓</span>
+    <div class="tn-avatar">JR</div>
+  </div>
+</div>
+
+<!-- STEP BAR -->
+<div class="stepbar">
+  <div class="sbar-step active" id="sb0" onclick="goStep(0)"><span class="sbar-label">HOME</span></div>
+  <span class="sbar-arr">›</span>
+  <div class="sbar-step" id="sb1" onclick="goStep(1)"><span class="sbar-label">1.2 NUEVO PROYECTO</span></div>
+  <span class="sbar-arr">›</span>
+  <div class="sbar-step" id="sb2" onclick="goStep(2)"><span class="sbar-label">1.3 CONFIRMAR</span></div>
+  <span class="sbar-arr">›</span>
+  <div class="sbar-step" id="sb3" onclick="goStep(3)"><span class="sbar-label">1.4 OPERACIONES + GANTT</span></div>
+  <span class="sbar-arr">›</span>
+  <div class="sbar-step" id="sb4" onclick="goStep(4)"><span class="sbar-label">1.5 IMPORTAR DATOS</span></div>
+  <span class="sbar-arr">›</span>
+  <div class="sbar-step" id="sb5" onclick="goStep(5)"><span class="sbar-label">1.5c CALENDARIO</span></div>
+  <span class="sbar-arr">›</span>
+  <div class="sbar-step" id="sb6" onclick="goStep(6)"><span class="sbar-label">1.6 MODIFICAR PLAN</span></div>
+  <span class="sbar-arr">›</span>
+  <div class="sbar-step" id="sb7" onclick="goStep(7)"><span class="sbar-label">1.7 HISTORIAL</span></div>
+</div>
+<div class="prog-line"><div class="prog-fill" id="pf" style="width:12.5%"></div></div>
+
+<!-- LAYOUT -->
+<div class="layout">
+  <!-- SIDEBAR ICONS -->
+  <nav class="sidebar">
+    <div class="sb-icon active" title="Proyectos" onclick="goStep(0)">🏗️</div>
+    <div class="sb-icon" title="Operaciones" onclick="goStep(3)">📋</div>
+    <div class="sb-icon" title="Importar" onclick="goStep(4)">📥</div>
+    <div class="sb-icon" title="Calendario" onclick="goStep(5)">📅</div>
+    <div class="sb-sep"></div>
+    <div class="sb-icon" title="BOM">📦</div>
+    <div class="sb-icon" title="No Conformidades">⚠️</div>
+    <div class="sb-icon" title="Compras">🛒</div>
+    <div class="sb-icon" title="Cuadrillas">👷</div>
+    <div class="sb-sep"></div>
+    <div class="sb-icon" title="Dashboard">📊</div>
+    <div class="sb-icon" title="Alertas">🔔</div>
+  </nav>
+
+  <!-- CONTENT -->
+  <div class="content">
+
+    <!-- ══════════════ SCREEN 0: HOME (IH STYLE) ══════════════ -->
+    <div class="screen active" id="s0">
+      <div class="home-wrap">
+        <div class="home-title">Applications</div>
+        <div class="ih-grid">
+
+          <!-- Active projects as IH cards -->
+          <div class="ih-card" onclick="goStep(3)">
+            <div class="ih-icon-wrap">
+              <span class="ih-icon">🏗️</span>
+              <span class="ih-progress">34%</span>
+              <span class="ih-status st-ok">EN PLAZO</span>
+            </div>
+            <div class="ih-meta">PRJ-2024-047</div>
+            <div class="ih-name">Torre Nordeste</div>
+          </div>
+
+          <div class="ih-card gray">
+            <div class="ih-icon-wrap">
+              <span class="ih-icon">🏢</span>
+              <span class="ih-progress">78%</span>
+              <span class="ih-status st-warn">LEVE ATRASO</span>
+            </div>
+            <div class="ih-meta">PRJ-2024-031</div>
+            <div class="ih-name">Residencial Buen Pastor</div>
+          </div>
+
+          <div class="ih-card gray">
+            <div class="ih-icon-wrap">
+              <span class="ih-icon">🏘️</span>
+              <span class="ih-progress">12%</span>
+              <span class="ih-status st-ok">EN PLAZO</span>
+            </div>
+            <div class="ih-meta">PRJ-2025-002</div>
+            <div class="ih-name">Complejo San Vicente</div>
+          </div>
+
+          <div class="ih-card gray">
+            <div class="ih-icon-wrap">
+              <span class="ih-icon">🏭</span>
+              <span class="ih-progress">0%</span>
+              <span class="ih-status st-plan">PLANIFICACIÓN</span>
+            </div>
+            <div class="ih-meta">PRJ-2025-003</div>
+            <div class="ih-name">Planta Industrial Norte</div>
+          </div>
+
+          <div class="ih-card gray">
+            <div class="ih-icon-wrap">
+              <span class="ih-icon">🏨</span>
+              <span class="ih-progress">91%</span>
+              <span class="ih-status st-ok">EN PLAZO</span>
+            </div>
+            <div class="ih-meta">PRJ-2023-018</div>
+            <div class="ih-name">Hotel Boutique Centro</div>
+          </div>
+
+          <!-- MÓDULOS DEL SISTEMA -->
+          <div class="ih-card">
+            <div class="ih-icon-wrap" style="background:#1e6fff">
+              <span class="ih-icon">📊</span>
+            </div>
+            <div class="ih-meta">Insights Hub</div>
+            <div class="ih-name">Dashboard Analytics</div>
+          </div>
+
+          <div class="ih-card">
+            <div class="ih-icon-wrap" style="background:#6b4fcb">
+              <span class="ih-icon">📦</span>
+            </div>
+            <div class="ih-meta">Insights Hub</div>
+            <div class="ih-name">BOM Manager</div>
+          </div>
+
+          <div class="ih-card">
+            <div class="ih-icon-wrap" style="background:#d4631a">
+              <span class="ih-icon">⚠️</span>
+            </div>
+            <div class="ih-meta">wccop</div>
+            <div class="ih-name">No Conformidades</div>
+          </div>
+
+          <div class="ih-card">
+            <div class="ih-icon-wrap" style="background:#1a7a5e">
+              <span class="ih-icon">👷</span>
+            </div>
+            <div class="ih-meta">wccop</div>
+            <div class="ih-name">Cuadrillas</div>
+          </div>
+
+          <div class="ih-card">
+            <div class="ih-icon-wrap" style="background:#2e4a7d">
+              <span class="ih-icon">🏢</span>
+            </div>
+            <div class="ih-meta">Insights Hub</div>
+            <div class="ih-name">Proveedores</div>
+          </div>
+
+          <!-- NEW PROJECT CARD -->
+          <div class="ih-card new-proj" onclick="goStep(1)">
+            <div class="ih-icon-wrap">
+              <span class="ih-icon">+</span>
+            </div>
+            <div class="ih-meta">Nuevo</div>
+            <div class="ih-name">Crear Proyecto</div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════ SCREEN 1: NUEVO PROYECTO ══════════════ -->
+    <div class="screen" id="s1">
+      <div class="form-screen">
+        <div class="form-card">
+          <div class="fc-title">Nuevo Proyecto</div>
+          <div class="fc-sub">Completá los datos básicos para crear el proyecto.</div>
+          <div class="step-dots">
+            <div class="sd-dot active"></div>
+            <div class="sd-dot"></div>
+            <div class="sd-dot"></div>
+          </div>
+          <div class="fg">
+            <div class="field span2">
+              <label>Nombre del Proyecto *</label>
+              <input type="text" value="Edificio Mitre Centro" placeholder="Nombre descriptivo">
+            </div>
+            <div class="field">
+              <label>CUIT / CUIL Cliente *</label>
+              <input type="text" value="30-71234567-8">
+              <div class="field-badge">✓ Cliente conocido en sistema</div>
+            </div>
+            <div class="field">
+              <label>Nombre Cliente</label>
+              <input type="text" value="Desarrollos Mitre S.A.">
+            </div>
+            <div class="field span2">
+              <label>Dirección de Obra</label>
+              <input type="text" value="Av. Mitre 1240, Córdoba Capital">
+            </div>
+            <div class="field">
+              <label>Responsable</label>
+              <select>
+                <option>Juan Romero</option>
+                <option>María López</option>
+              </select>
+            </div>
+            <div class="field">
+              <label>Estado Inicial</label>
+              <select><option>PLANIFICACIÓN</option></select>
+            </div>
+            <div class="field">
+              <label>Fecha Inicio</label>
+              <input type="date" value="2025-05-01">
+            </div>
+            <div class="field">
+              <label>Fecha Fin Estimada</label>
+              <input type="date" value="2026-08-30">
+            </div>
+          </div>
+          <div class="coll">
+            <div class="coll-hdr" onclick="togColl(this)">
+              <span>📅 CALENDARIO DE TRABAJO (configurable también después)</span>
+              <span class="coll-arr">▼</span>
+            </div>
+            <div class="coll-body">
+              <div style="font-family:var(--fm);font-size:9px;color:var(--text-muted);letter-spacing:1px;margin-bottom:8px;">DÍAS LABORALES</div>
+              <div class="day-btns">
+                <div class="day-btn on" onclick="this.classList.toggle('on')">L</div>
+                <div class="day-btn on" onclick="this.classList.toggle('on')">M</div>
+                <div class="day-btn on" onclick="this.classList.toggle('on')">X</div>
+                <div class="day-btn on" onclick="this.classList.toggle('on')">J</div>
+                <div class="day-btn on" onclick="this.classList.toggle('on')">V</div>
+                <div class="day-btn" onclick="this.classList.toggle('on')">S</div>
+                <div class="day-btn" onclick="this.classList.toggle('on')">D</div>
+              </div>
+              <div class="fg">
+                <div class="field"><label>Hs. Jornada</label><input type="number" value="9"></div>
+                <div class="field"><label>Hora Inicio</label><input type="time" value="07:00"></div>
+                <div class="field"><label>Hora Fin</label><input type="time" value="16:00"></div>
+                <div class="field"><label>Hs. Almuerzo</label><input type="number" value="1"></div>
+              </div>
+            </div>
+          </div>
+          <div class="btn-row">
+            <button class="btn btn-ghost" onclick="goStep(0)">CANCELAR</button>
+            <button class="btn btn-primary" onclick="goStep(2)">CONTINUAR →</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════ SCREEN 2: CONFIRMACIÓN ══════════════ -->
+    <div class="screen" id="s2">
+      <div class="form-screen">
+        <div style="width:100%;max-width:560px;">
+          <div class="sec-hdr"><div><div class="sec-title">Confirmar Creación</div><div class="sec-sub">Revisá los datos antes de guardar.</div></div></div>
+          <div class="confirm-card">
+            <div class="cc-header">
+              <span class="cc-icon">🏗️</span>
+              <div>
+                <div class="cc-name">Edificio Mitre Centro</div>
+                <div class="cc-meta">NUEVO PROYECTO · PRJ-2025-NUEVO</div>
+              </div>
+              <span class="chip c-gray" style="margin-left:auto">PLANIFICACIÓN</span>
+            </div>
+            <div class="cc-grid">
+              <div class="cc-field"><label>CLIENTE</label><span>Desarrollos Mitre S.A.</span></div>
+              <div class="cc-field"><label>CUIT</label><span>30-71234567-8</span></div>
+              <div class="cc-field"><label>DIRECCIÓN</label><span>Av. Mitre 1240, CBA</span></div>
+              <div class="cc-field"><label>RESPONSABLE</label><span>Juan Romero</span></div>
+              <div class="cc-field"><label>INICIO</label><span>01/05/2025</span></div>
+              <div class="cc-field"><label>FIN ESTIMADO</label><span>30/08/2026</span></div>
+              <div class="cc-field"><label>CALENDARIO</label><span>L–V · 9hs/día</span></div>
+              <div class="cc-field"><label>VERSIÓN PLAN</label><span>v0 (sin operaciones)</span></div>
+            </div>
+          </div>
+          <div class="next-steps">
+            <div class="next-steps-title">PRÓXIMOS PASOS</div>
+            1. Importar Excel de Operaciones (BOP) para el cronograma<br>
+            2. Configurar el Calendario con feriados nacionales<br>
+            3. Importar BOM desde Revit para gestión de materiales<br>
+            4. Asignar cuadrillas y responsables a cada operación
+          </div>
+          <div class="btn-row" style="margin-top:14px;">
+            <button class="btn btn-ghost" onclick="goStep(1)">← EDITAR</button>
+            <button class="btn btn-primary" onclick="createProj()">✓ CONFIRMAR Y CREAR</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════ SCREEN 3: APS + GANTT ══════════════ -->
+    <div class="screen" id="s3">
+      <div class="proj-screen">
+        <!-- Project topbar -->
+        <div class="proj-topbar">
+          <span style="cursor:pointer;color:var(--text-muted);font-size:12px;" onclick="goStep(0)">← Proyectos</span>
+          <span style="color:var(--border);font-size:10px;">/</span>
+          <span class="ptb-title">Torre Nordeste</span>
+          <span class="ptb-sub">PRJ-2024-047 · E2 Activa · Semana 14</span>
+          <div style="display:flex;gap:8px;margin-left:16px;">
+            <div class="kpi-pill"><span style="color:var(--text-muted)">AVANCE</span><span class="kp-val" style="color:var(--teal)">34%</span></div>
+            <div class="kpi-pill"><span style="color:var(--text-muted)">PLAN</span><span class="kp-val" style="color:var(--text-dim)">31%</span></div>
+            <div class="kpi-pill"><span style="color:var(--text-muted)">NC</span><span class="kp-val" style="color:var(--red)">3</span></div>
+            <div class="kpi-pill"><span style="color:var(--text-muted)">STOCK⚠</span><span class="kp-val" style="color:var(--yellow)">5</span></div>
+          </div>
+          <div class="ptb-right">
+            <button class="tool-btn primary" onclick="showOpModal()">+ OP</button>
+            <button class="tool-btn" onclick="goStep(4)">📥 Importar</button>
+            <button class="tool-btn" onclick="goStep(5)">📅 Calendario</button>
+            <button class="tool-btn">📤 PDF</button>
+          </div>
+        </div>
+        <!-- Toolbar -->
+        <div class="aps-toolbar">
+          <button class="tool-btn" onclick="filterOps('all')">TODAS</button>
+          <button class="tool-btn" onclick="filterOps('curso')">EN CURSO</button>
+          <button class="tool-btn" onclick="filterOps('atrasada')">ATRASADAS</button>
+          <button class="tool-btn" onclick="filterOps('bloqueada')">BLOQUEADAS</button>
+          <div class="tool-sep"></div>
+          <button class="tool-btn" onclick="showToast('Etapas colapsadas')">COLAPSAR ETAPAS</button>
+          <button class="tool-btn" onclick="showToast('Columnas configuradas')">COLUMNAS ▾</button>
+          <div class="tool-sep"></div>
+          <button class="tool-btn" onclick="goStep(6)">↗ REIMPORTAR v2</button>
+          <div class="tool-sep"></div>
+          <div class="tool-right">
+            <input class="tool-search" placeholder="🔍  Buscar operación...">
+          </div>
+        </div>
+
+        <!-- SPLIT: table + gantt -->
+        <div class="aps-split">
+          <!-- OPS TABLE -->
+          <div class="aps-ops">
+            <div class="ops-wrap">
+              <table class="ops" id="ops-table">
+                <thead>
+                  <tr>
+                    <th>SEQ</th><th>OPERACIÓN</th><th>ETAPA</th><th>DEPENDE DE</th>
+                    <th>RESPONSABLE</th><th>INICIO</th><th>FIN EST.</th>
+                    <th>DUR.</th><th>UNIDAD</th><th style="min-width:130px">AVANCE</th><th>ESTADO</th>
+                  </tr>
+                </thead>
+                <tbody id="ops-tbody">
+                  <!-- rendered by JS -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- GANTT -->
+          <div class="aps-gantt-section">
+            <div class="gantt-hdr">
+              <span class="gantt-title">DIAGRAMA GANTT — JUNIO 2025</span>
+              <div style="display:flex;align-items:center;gap:8px;margin-left:auto;">
+                <span style="display:flex;align-items:center;gap:4px;font-family:var(--fm);font-size:8px;color:var(--text-muted);">
+                  <span style="width:12px;height:3px;background:var(--blue);border-radius:2px;display:inline-block;"></span>HOY
+                </span>
+                <span style="display:flex;align-items:center;gap:4px;font-family:var(--fm);font-size:8px;color:var(--text-muted);">
+                  <span style="width:12px;height:3px;background:rgba(255,255,255,.15);border-radius:2px;display:inline-block;"></span>FERIADO
+                </span>
+                <span style="display:flex;align-items:center;gap:4px;font-family:var(--fm);font-size:8px;color:var(--text-muted);">
+                  <span style="width:12px;height:3px;background:rgba(255,197,66,.3);border-radius:2px;display:inline-block;"></span>JORN. REDUCIDA
+                </span>
+                <div class="gantt-range">
+                  <button class="gr-btn">◀</button>
+                  <button class="gr-btn active">MES</button>
+                  <button class="gr-btn">TRIMESTRE</button>
+                  <button class="gr-btn">▶</button>
+                </div>
+              </div>
+            </div>
+            <div class="gantt-body" id="gantt-body">
+              <div class="gantt-inner" id="gantt-inner">
+                <!-- rendered by JS -->
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════ SCREEN 4: IMPORTAR ══════════════ -->
+    <div class="screen" id="s4">
+      <div class="import-screen">
+        <div class="sec-hdr"><div><div class="sec-title">Importar Datos del Proyecto</div><div class="sec-sub">Cada sección es independiente. Podés subir uno o varios archivos a la vez.</div></div></div>
+
+        <div class="imp-section">
+          <div class="imp-hdr">
+            <div class="imp-letter">A</div>
+            <div class="imp-htitle">Plan de Operaciones · BOP</div>
+            <span class="chip c-orange">v1 ACTIVA · 15/04</span>
+            <div style="margin-left:auto;display:flex;gap:6px;">
+              <button class="btn btn-ghost" style="font-size:8px">⬇ v1</button>
+              <button class="btn btn-ghost" style="font-size:8px">⬇ PLANTILLA</button>
+            </div>
+          </div>
+          <div class="imp-body">
+            <div class="dz" id="dz-a" onclick="simImport()">
+              <div class="dz-icon">📋</div>
+              <div class="dz-t">Arrastrá OBRA360_Operaciones_v2.xlsx</div>
+              <div class="dz-s">O clickeá para seleccionar · Increment Version_Plan en el Excel</div>
+            </div>
+            <div class="log-list" id="log-a" style="display:none">
+              <div class="log-row"><span class="log-ico">✓</span><div class="log-info"><div class="log-n">Hoja Etapas</div><div class="log-d">5 etapas · pesos = 100%</div></div><span class="log-s ls-ok">OK</span></div>
+              <div class="log-row"><span class="log-ico">✓</span><div class="log-info"><div class="log-n">Responsables</div><div class="log-d">7 cargados</div></div><span class="log-s ls-ok">OK</span></div>
+              <div class="log-row"><span class="log-ico">✓</span><div class="log-info"><div class="log-n">Operaciones</div><div class="log-d">36 ops · 4 con dep. múltiple</div></div><span class="log-s ls-ok">OK</span></div>
+              <div class="log-row"><span class="log-ico">✓</span><div class="log-info"><div class="log-n">Cronograma calculado</div><div class="log-d">v1 guardada en historial</div></div><span class="log-s ls-ok">OK</span></div>
+              <div class="log-row"><span class="log-ico">⊡</span><div class="log-info"><div class="log-n">BOM generado</div><div class="log-d">32 ítems — completar Cód. y Cantidad</div></div><span class="log-s ls-pend">PENDIENTE</span></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="imp-section">
+          <div class="imp-hdr">
+            <div class="imp-letter" style="background:var(--blue2)">B</div>
+            <div class="imp-htitle">Calendario de Trabajo</div>
+            <span class="chip c-teal">ACTIVO · L–V · 9hs</span>
+            <div style="margin-left:auto;display:flex;gap:6px;">
+              <button class="btn btn-ghost" style="font-size:8px" onclick="goStep(5)">⚙ CONFIGURAR</button>
+              <button class="btn btn-ghost" style="font-size:8px">⬇ PLANTILLA</button>
+            </div>
+          </div>
+          <div class="imp-body">
+            <div class="dz" onclick="showToast('Calendario importado — cronograma recalculado')">
+              <div class="dz-icon">📅</div>
+              <div class="dz-t">Arrastrá OBRA360_Calendario.xlsx</div>
+              <div class="dz-s">O configurá directo en la app con el botón ⚙ CONFIGURAR</div>
+            </div>
+            <div style="margin-top:10px;">
+              <div style="font-family:var(--fm);font-size:8px;color:var(--text-muted);letter-spacing:1px;margin-bottom:6px;">PREVIEW — MAYO 2025</div>
+              <div class="cal-mini">
+                <div class="cm-d cm-hdr">L</div><div class="cm-d cm-hdr">M</div><div class="cm-d cm-hdr">X</div><div class="cm-d cm-hdr">J</div><div class="cm-d cm-hdr">V</div><div class="cm-d cm-hdr">S</div><div class="cm-d cm-hdr">D</div>
+                <div class="cm-d cm-off"></div><div class="cm-d cm-off"></div><div class="cm-d cm-off"></div><div class="cm-d cm-work">2</div><div class="cm-d cm-work">3</div><div class="cm-d cm-off">4</div><div class="cm-d cm-off">5</div>
+                <div class="cm-d cm-work">6</div><div class="cm-d cm-work">7</div><div class="cm-d cm-work">8</div><div class="cm-d cm-work">9</div><div class="cm-d cm-work">10</div><div class="cm-d cm-off">11</div><div class="cm-d cm-off">12</div>
+                <div class="cm-d cm-work">13</div><div class="cm-d cm-work">14</div><div class="cm-d cm-today">15</div><div class="cm-d cm-work">16</div><div class="cm-d cm-work">17</div><div class="cm-d cm-off">18</div><div class="cm-d cm-off">19</div>
+                <div class="cm-d cm-work">20</div><div class="cm-d cm-work">21</div><div class="cm-d cm-work">22</div><div class="cm-d cm-work">23</div><div class="cm-d cm-work">24</div><div class="cm-d cm-off">25</div><div class="cm-d cm-off">26</div>
+                <div class="cm-d cm-feria">27</div><div class="cm-d cm-work">28</div><div class="cm-d cm-work">29</div><div class="cm-d cm-work">30</div><div class="cm-d cm-feria">31</div><div class="cm-d cm-off"></div><div class="cm-d cm-off"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="imp-section">
+          <div class="imp-hdr">
+            <div class="imp-letter" style="background:var(--teal3)">C</div>
+            <div class="imp-htitle">BOM — Materiales (Revit CSV)</div>
+            <span class="chip c-yellow">27 SIN CÓDIGO</span>
+            <button class="btn btn-ghost" style="font-size:8px;margin-left:auto">⬇ BOM ACTUAL</button>
+          </div>
+          <div class="imp-body">
+            <div class="dz" onclick="showToast('BOM importado — 48 ítems mapeados desde Revit')">
+              <div class="dz-icon">📦</div>
+              <div class="dz-t">Arrastrá BOM_Revit.csv</div>
+              <div class="dz-s">Exportación directa de Revit · Mapeo automático de columnas</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="imp-section">
+          <div class="imp-hdr">
+            <div class="imp-letter" style="background:#7c3aed">D</div>
+            <div class="imp-htitle">Cuadrillas y Responsables</div>
+            <span class="chip c-teal">7 ACTIVOS</span>
+          </div>
+          <div class="imp-body">
+            <div style="display:flex;gap:6px;flex-wrap:wrap;">
+              <span class="chip c-blue">CUA-A</span><span class="chip c-blue">CUA-B</span><span class="chip c-blue">CUA-C</span><span class="chip c-blue">CUA-D</span><span class="chip c-orange">SUB-01 ElecSur</span><span class="chip c-orange">SUB-02 HidroPlus</span><span class="chip c-blue">CUA-E</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="btn-row-sp" style="justify-content:flex-end;margin-top:10px;">
+          <button class="btn btn-secondary" onclick="goStep(3)">← VOLVER AL PROYECTO</button>
+          <button class="btn btn-primary" onclick="goStep(5)">CONFIGURAR CALENDARIO →</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════ SCREEN 5: CALENDARIO ══════════════ -->
+    <div class="screen" id="s5">
+      <div class="cal-screen">
+        <div class="sec-hdr"><div><div class="sec-title">Calendario de Trabajo</div><div class="sec-sub">Configurá días laborales y excepciones. Cada cambio recalcula el cronograma.</div></div></div>
+        <div class="cal-grid2">
+          <div>
+            <div class="cal-card" style="margin-bottom:14px;">
+              <div class="cal-card-title">CONFIGURACIÓN GENERAL</div>
+              <div style="font-family:var(--fm);font-size:8px;color:var(--text-muted);letter-spacing:1px;margin-bottom:8px;">DÍAS LABORALES</div>
+              <div class="day-btns" style="margin-bottom:16px;">
+                <div class="day-btn on" onclick="this.classList.toggle('on');calChanged()">L</div>
+                <div class="day-btn on" onclick="this.classList.toggle('on');calChanged()">M</div>
+                <div class="day-btn on" onclick="this.classList.toggle('on');calChanged()">X</div>
+                <div class="day-btn on" onclick="this.classList.toggle('on');calChanged()">J</div>
+                <div class="day-btn on" onclick="this.classList.toggle('on');calChanged()">V</div>
+                <div class="day-btn" onclick="this.classList.toggle('on');calChanged()">S</div>
+                <div class="day-btn" onclick="this.classList.toggle('on');calChanged()">D</div>
+              </div>
+              <div class="fg">
+                <div class="field"><label>Hs. Jornada</label><input type="number" value="9" oninput="calChanged()"></div>
+                <div class="field"><label>Hs. Almuerzo</label><input type="number" value="1"></div>
+                <div class="field"><label>Hora Inicio</label><input type="time" value="07:00"></div>
+                <div class="field"><label>Hora Fin</label><input type="time" value="16:00"></div>
+              </div>
+            </div>
+            <div class="cal-card">
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+                <span class="cal-card-title" style="margin-bottom:0">EXCEPCIONES</span>
+                <button class="btn btn-ghost" style="font-size:8px" onclick="addExc()">+ AGREGAR</button>
+              </div>
+              <table class="exc-table">
+                <thead><tr><th>FECHA</th><th>TIPO</th><th>HS</th><th>MOTIVO</th><th></th></tr></thead>
+                <tbody id="exc-body">
+                  <tr><td>01/05/2025</td><td><span class="chip c-red" style="font-size:7px">FERIADO</span></td><td style="font-family:var(--fm);font-size:9px;text-align:center">0</td><td style="color:var(--text-dim)">Día del Trabajador</td><td style="text-align:right"><button class="btn btn-ghost" style="font-size:8px;padding:2px 6px" onclick="this.closest('tr').remove()">✕</button></td></tr>
+                  <tr><td>25/05/2025</td><td><span class="chip c-red" style="font-size:7px">FERIADO</span></td><td style="font-family:var(--fm);font-size:9px;text-align:center">0</td><td style="color:var(--text-dim)">25 de Mayo</td><td style="text-align:right"><button class="btn btn-ghost" style="font-size:8px;padding:2px 6px" onclick="this.closest('tr').remove()">✕</button></td></tr>
+                  <tr><td>31/12/2025</td><td><span class="chip c-yellow" style="font-size:7px">J.REDUCIDA</span></td><td style="font-family:var(--fm);font-size:9px;text-align:center">4</td><td style="color:var(--text-dim)">Fin de año</td><td style="text-align:right"><button class="btn btn-ghost" style="font-size:8px;padding:2px 6px" onclick="this.closest('tr').remove()">✕</button></td></tr>
+                </tbody>
+              </table>
+              <div id="cal-warn" style="display:none;margin-top:12px;background:rgba(255,197,66,.08);border:1px solid rgba(255,197,66,.25);border-radius:5px;padding:10px 12px;font-family:var(--fm);font-size:9px;color:var(--yellow);">
+                ⚠ Cambios sin guardar — afectará 32 fechas del cronograma.
+              </div>
+              <div style="margin-top:12px;display:flex;gap:8px;">
+                <button class="btn btn-primary" onclick="saveCal()">GUARDAR CALENDARIO</button>
+                <button class="btn btn-secondary" onclick="goStep(4)">IMPORTAR DESDE EXCEL</button>
+              </div>
+            </div>
+          </div>
+          <div>
+            <div class="cal-card">
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+                <span class="cal-card-title" style="margin-bottom:0">PREVIEW — MAYO 2025</span>
+                <div style="display:flex;gap:4px;"><button class="btn btn-ghost" style="padding:3px 8px;font-size:9px">◀</button><button class="btn btn-ghost" style="padding:3px 8px;font-size:9px">▶</button></div>
+              </div>
+              <div class="cal-mini">
+                <div class="cm-d cm-hdr">LUN</div><div class="cm-d cm-hdr">MAR</div><div class="cm-d cm-hdr">MIÉ</div><div class="cm-d cm-hdr">JUE</div><div class="cm-d cm-hdr">VIE</div><div class="cm-d cm-hdr">SÁB</div><div class="cm-d cm-hdr">DOM</div>
+                <div class="cm-d cm-off"></div><div class="cm-d cm-off"></div><div class="cm-d cm-off"></div><div class="cm-d cm-work">2</div><div class="cm-d cm-work">3</div><div class="cm-d cm-off">4</div><div class="cm-d cm-off">5</div>
+                <div class="cm-d cm-work">6</div><div class="cm-d cm-work">7</div><div class="cm-d cm-work">8</div><div class="cm-d cm-work">9</div><div class="cm-d cm-work">10</div><div class="cm-d cm-off">11</div><div class="cm-d cm-off">12</div>
+                <div class="cm-d cm-work">13</div><div class="cm-d cm-work">14</div><div class="cm-d cm-today">15</div><div class="cm-d cm-work">16</div><div class="cm-d cm-work">17</div><div class="cm-d cm-off">18</div><div class="cm-d cm-off">19</div>
+                <div class="cm-d cm-work">20</div><div class="cm-d cm-work">21</div><div class="cm-d cm-work">22</div><div class="cm-d cm-work">23</div><div class="cm-d cm-work">24</div><div class="cm-d cm-off">25</div><div class="cm-d cm-off">26</div>
+                <div class="cm-d cm-feria">27</div><div class="cm-d cm-work">28</div><div class="cm-d cm-work">29</div><div class="cm-d cm-work">30</div><div class="cm-d cm-feria">31</div><div class="cm-d cm-off"></div><div class="cm-d cm-off"></div>
+              </div>
+              <div style="background:var(--navy4);border-radius:5px;padding:12px;margin-top:12px;">
+                <div style="font-family:var(--fm);font-size:8px;color:var(--text-muted);letter-spacing:1px;margin-bottom:8px;">RESUMEN MAYO 2025</div>
+                <div style="display:flex;justify-content:space-between;font-size:11px;padding:3px 0;"><span style="color:var(--text-dim)">Días hábiles</span><span style="font-weight:600">21</span></div>
+                <div style="display:flex;justify-content:space-between;font-size:11px;padding:3px 0;"><span style="color:var(--text-dim)">Horas disponibles</span><span style="font-weight:600">189 hs</span></div>
+                <div style="display:flex;justify-content:space-between;font-size:11px;padding:3px 0;"><span style="color:var(--text-dim)">Feriados</span><span style="font-weight:600;color:var(--red)">2</span></div>
+                <div style="display:flex;justify-content:space-between;font-size:11px;padding:3px 0;"><span style="color:var(--text-dim)">Jornadas reducidas</span><span style="font-weight:600;color:var(--yellow)">0</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="btn-row-sp" style="justify-content:flex-end;margin-top:10px;">
+          <button class="btn btn-secondary" onclick="goStep(4)">← VOLVER</button>
+          <button class="btn btn-primary" onclick="goStep(6)">GESTIÓN DE CAMBIOS →</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════ SCREEN 6: MODIFICAR PLAN ══════════════ -->
+    <div class="screen" id="s6">
+      <div class="diff-screen">
+        <div class="sec-hdr"><div><div class="sec-title">Modificar Plan</div><div class="sec-sub">Versión v2 detectada. Revisá los cambios antes de confirmar la reimportación.</div></div></div>
+        <div class="diff-banner">
+          <span style="font-size:20px">⚠</span>
+          <div>
+            <div style="font-weight:600;font-size:13px;margin-bottom:3px;">Versión v2 detectada — reemplaza v1</div>
+            <div style="font-size:12px;color:var(--text-dim);">El archivo tiene Version_Plan = v2. Versión actual en DB: v1 (15/04/2025 · Juan Romero).</div>
+          </div>
+        </div>
+        <div class="check-opt" style="margin-bottom:14px;">
+          <input type="checkbox" checked id="save-hist">
+          <div><div class="check-label-main">Guardar v1 en historial de versiones</div><div class="check-label-sub">Recomendado — podrás consultar y restaurar la versión anterior</div></div>
+        </div>
+        <div class="diff-card">
+          <div class="diff-card-hdr">DIFERENCIAS DETECTADAS (v1 → v2)</div>
+          <table class="diff-t">
+            <thead><tr><th>TIPO</th><th>SEQ</th><th>OPERACIÓN</th><th>CAMPO</th><th>v1</th><th>v2</th></tr></thead>
+            <tbody>
+              <tr><td><span class="chip c-green" style="font-size:7px">NUEVA</span></td><td style="font-family:var(--fm);font-size:9px;color:var(--teal)">950</td><td class="diff-new">Impermeabilización losa PB</td><td>—</td><td>—</td><td class="diff-new">OP nueva</td></tr>
+              <tr><td><span class="chip c-yellow" style="font-size:7px">MODIF.</span></td><td style="font-family:var(--fm);font-size:9px;color:var(--teal)">600</td><td>Armado hierro losa PB</td><td style="font-family:var(--fm);font-size:9px">Duración_Hs</td><td class="diff-mod">20 hs</td><td class="diff-new">24 hs</td></tr>
+              <tr><td><span class="chip c-yellow" style="font-size:7px">MODIF.</span></td><td style="font-family:var(--fm);font-size:9px;color:var(--teal)">800</td><td>Mampostería cerramiento</td><td style="font-family:var(--fm);font-size:9px">Responsable</td><td class="diff-mod">CUA-D</td><td class="diff-new">CUA-B</td></tr>
+              <tr><td><span class="chip c-red" style="font-size:7px">ARCHIV.</span></td><td style="font-family:var(--fm);font-size:9px;color:var(--teal)">820</td><td class="diff-del">Revoque interior provisional</td><td>—</td><td class="diff-del">v1</td><td>Archivada</td></tr>
+            </tbody>
+          </table>
+          <div style="padding:8px 12px;background:var(--navy4);font-family:var(--fm);font-size:9px;color:var(--text-muted);">
+            1 OP nueva · 2 modificadas · 1 archivada · 32 fechas se recalcularán
+          </div>
+        </div>
+        <div style="display:flex;gap:8px;">
+          <button class="btn btn-ghost" onclick="goStep(3)">CANCELAR</button>
+          <button class="btn btn-secondary" onclick="goStep(7)">VER HISTORIAL</button>
+          <button class="btn btn-primary" onclick="doReimport()">CONFIRMAR REIMPORTACIÓN v2</button>
+        </div>
+        <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:16px;padding-top:14px;border-top:1px solid var(--border);">
+          <button class="btn btn-secondary" onclick="goStep(5)">← VOLVER</button>
+          <button class="btn btn-primary" onclick="goStep(7)">HISTORIAL →</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════ SCREEN 7: HISTORIAL ══════════════ -->
+    <div class="screen" id="s7">
+      <div class="vers-screen">
+        <div class="sec-hdr"><div><div class="sec-title">Historial de Versiones</div><div class="sec-sub">Consultá, compará o restaurá versiones anteriores del plan de operaciones.</div></div></div>
+        <div class="ver-grid">
+          <div class="ver-list">
+            <div class="ver-item current">
+              <div class="ver-badge">v2</div>
+              <div class="ver-info"><div class="ver-name">Versión 2 — ACTIVA</div><div class="ver-meta">22/04/2025 · Juan Romero · 36 ops</div></div>
+              <span class="chip c-teal">ACTUAL</span>
+            </div>
+            <div class="ver-item">
+              <div class="ver-badge" style="color:var(--text-dim)">v1</div>
+              <div class="ver-info"><div class="ver-name">Versión 1</div><div class="ver-meta">15/04/2025 · Juan Romero · 35 ops · Import inicial</div></div>
+              <div style="display:flex;gap:6px;">
+                <button class="btn btn-ghost" style="font-size:8px" onclick="showToast('v1 cargada en modo lectura')">VER</button>
+                <button class="btn btn-secondary" style="font-size:8px" onclick="if(confirm('¿Restaurar v1?')) showToast('v1 restaurada como plan activo')">RESTAURAR</button>
+              </div>
+            </div>
+          </div>
+          <div class="compare-card">
+            <div style="font-family:var(--fm);font-size:9px;color:var(--text-muted);letter-spacing:1px;margin-bottom:12px;">COMPARACIÓN v1 vs v2</div>
+            <div class="cmp-grid">
+              <div class="cmp-col">
+                <div class="cmp-lbl">VERSIÓN 1</div>
+                <div class="cmp-row"><span>Operaciones</span><span>35</span></div>
+                <div class="cmp-row"><span>Fin estimado</span><span>28/08/2026</span></div>
+                <div class="cmp-row"><span>OP-600 duración</span><span>20 hs</span></div>
+                <div class="cmp-row"><span>OP-800 resp.</span><span>CUA-D</span></div>
+              </div>
+              <div class="cmp-col" style="border-color:rgba(0,197,165,.3)">
+                <div class="cmp-lbl" style="color:var(--teal)">VERSIÓN 2 (ACTUAL)</div>
+                <div class="cmp-row"><span>Operaciones</span><span class="cmp-change" style="color:var(--teal)">36 +1</span></div>
+                <div class="cmp-row"><span>Fin estimado</span><span class="cmp-change" style="color:var(--yellow)">02/09 +5d</span></div>
+                <div class="cmp-row"><span>OP-600 duración</span><span class="cmp-change" style="color:var(--yellow)">24 hs +4</span></div>
+                <div class="cmp-row"><span>OP-800 resp.</span><span class="cmp-change" style="color:var(--yellow)">CUA-B</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="btn-row-sp" style="justify-content:flex-end;margin-top:14px;">
+          <button class="btn btn-secondary" onclick="goStep(6)">← VOLVER</button>
+          <button class="btn btn-primary" onclick="goStep(3)">✓ VOLVER AL PROYECTO</button>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /content -->
+</div>
+
+<!-- SIDE PANEL -->
+<div class="side-panel" id="sidePanel">
+  <div class="sp-hdr">
+    <div style="font-family:var(--fm);font-size:9px;color:var(--teal);letter-spacing:2px;margin-bottom:3px;" id="sp-seq">OP-600</div>
+    <div style="font-size:16px;font-weight:700;line-height:1.2;" id="sp-name">Armado hierro losa PB</div>
+    <div style="margin-top:8px;display:flex;gap:5px;flex-wrap:wrap;" id="sp-chips">
+      <span class="chip c-orange">EN CURSO</span><span class="chip c-blue">E2 ESTRUCTURA</span>
+    </div>
+    <span class="sp-close" onclick="closeSP()">✕</span>
+  </div>
+  <div class="sp-sec">
+    <div class="sp-sec-t">ATRIBUTOS</div>
+    <div class="sp-attr"><span class="sp-ak">Responsable</span><span class="sp-av">Cuadrilla C (CUA-C)</span></div>
+    <div class="sp-attr"><span class="sp-ak">Fecha inicio calc.</span><span class="sp-av">06/06/2025</span></div>
+    <div class="sp-attr"><span class="sp-ak">Fecha fin calc.</span><span class="sp-av">10/06/2025</span></div>
+    <div class="sp-attr"><span class="sp-ak">Duración</span><span class="sp-av">24 hs</span></div>
+    <div class="sp-attr"><span class="sp-ak">Peso proyecto</span><span class="sp-av">6.8%</span></div>
+    <div class="sp-attr"><span class="sp-ak">Unidad avance</span><span class="sp-av">PORCENTAJE</span></div>
+    <div class="sp-attr"><span class="sp-ak">Depende de</span><span class="sp-av"><span class="dep-tag">OP-500</span></span></div>
+    <div class="sp-attr"><span class="sp-ak">Es predecesora de</span><span class="sp-av"><span class="dep-tag">OP-700</span></span></div>
+  </div>
+  <div class="sp-sec">
+    <div class="sp-sec-t">CRITERIO DE CIERRE</div>
+    <div class="sp-crit">"100% del hierro colocado y atado según plano E-PB-02. Director firma conformidad."</div>
+  </div>
+  <div class="sp-sec">
+    <div class="sp-sec-t">HISTORIAL AVANCES</div>
+    <div class="sp-hist-row"><div class="sp-hist-dot" style="background:var(--orange)"></div><div><div class="sp-hist-val" style="color:var(--orange)">75%</div><div class="sp-hist-meta">Hoy 09:30 · Cuadrilla C<br>"Avanzando bien, mitad norte completa"</div></div></div>
+    <div class="sp-hist-row"><div class="sp-hist-dot" style="background:var(--orange)"></div><div><div class="sp-hist-val" style="color:var(--orange)">40%</div><div class="sp-hist-meta">Ayer 16:00 · Cuadrilla C</div></div></div>
+    <div class="sp-hist-row"><div class="sp-hist-dot" style="background:var(--text-muted)"></div><div><div class="sp-hist-val" style="color:var(--text-muted)">0%</div><div class="sp-hist-meta">06/06 08:00 · Sistema · OP iniciada</div></div></div>
+  </div>
+  <div class="sp-sec">
+    <div class="sp-sec-t">MATERIALES BOM (3)</div>
+    <div style="font-size:10px;">
+      <div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--border);"><span style="font-family:var(--fm);color:var(--blue2)">MAT-034</span><span>Hierro Ø12</span><span style="color:var(--green);font-weight:600">−12%</span></div>
+      <div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--border);"><span style="font-family:var(--fm);color:var(--blue2)">MAT-036</span><span>Hierro Ø16</span><span style="color:var(--text-muted)">—</span></div>
+      <div style="display:flex;justify-content:space-between;padding:5px 0;"><span style="font-family:var(--fm);color:var(--blue2)">MAT-035</span><span>Hierro Ø8</span><span style="color:var(--orange);font-weight:600">+4%</span></div>
+    </div>
+  </div>
+  <div class="sp-actions">
+    <button class="btn btn-primary" style="flex:1" onclick="showToast('Modo edición habilitado')">EDITAR OP</button>
+    <button class="btn btn-secondary" style="flex:1" onclick="showToast('Avance registrado')">AVANCE</button>
+    <button class="btn btn-ghost" style="flex:1" onclick="showToast('NC abierta')">+ NC</button>
+  </div>
+</div>
+
+<!-- MODAL: NUEVA OP -->
+<div class="modal-overlay" id="modal-op">
+  <div class="modal">
+    <div class="m-title">Nueva Operación</div>
+    <div class="m-sub">Torre Nordeste · Los campos con * son obligatorios</div>
+    <div class="fg">
+      <div class="field"><label>Etapa *</label><select><option>E2 - Estructura PB-P3</option><option>E3 - Estructura P4-P8</option></select></div>
+      <div class="field"><label>Secuencia *</label><input type="number" value="860" placeholder="Siguiente: 860"></div>
+      <div class="field span2"><label>Nombre *</label><input type="text" placeholder="Ej: Encofrado losa P2"></div>
+      <div class="field"><label>Depende De</label><input type="text" placeholder="Ej: 700 o 700;800"></div>
+      <div class="field"><label>Desfase (hs)</label><input type="number" value="0"></div>
+      <div class="field"><label>Duración (hs) *</label><input type="number" placeholder="Ej: 24"></div>
+      <div class="field"><label>Unidad Avance *</label><select><option>PORCENTAJE</option><option>CANTIDAD</option><option>BINARIO</option></select></div>
+      <div class="field"><label>Responsable</label><select><option>CUA-A</option><option>CUA-B</option><option>CUA-C</option><option>SUB-01 ElecSur</option></select></div>
+      <div class="field"><label>Cant. Materiales</label><input type="number" value="0" min="0" max="50"></div>
+      <div class="field"><label>Cant. Meta</label><input type="number" placeholder="Si CANTIDAD" disabled></div>
+      <div class="field span2"><label>Criterio de Cierre</label><textarea placeholder="¿Cuándo se considera terminada?"></textarea></div>
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-ghost" onclick="closeModal('modal-op')">CANCELAR</button>
+      <button class="btn btn-secondary" onclick="showToast('OP guardada — agregar otra')">GUARDAR Y AGREGAR OTRA</button>
+      <button class="btn btn-primary" onclick="closeModal('modal-op');showToast('OP-860 creada — cronograma recalculado')">GUARDAR</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast">✓ <span id="toast-msg">OK</span></div>
+
+<script>
+// ══════════════════════════════════════════════════════════════════
+// DATA
+// ══════════════════════════════════════════════════════════════════
+const OPS = [
+  {seq:'100',name:'Excavación y movimiento de suelos',eta:'E1',dep:[],resp:'CUA-A',ini:'01/04',fin:'08/04',dur:'40hs',unit:'BINARIO',pct:100,st:'COMPLETA',    col:'#2dd4a0'},
+  {seq:'200',name:'Armado bases y zapatas',           eta:'E1',dep:['100'],resp:'CUA-A',ini:'09/04',fin:'15/04',dur:'32hs',unit:'PORC.',pct:100,st:'COMPLETA',  col:'#2dd4a0'},
+  {seq:'300',name:'Colado hormigón bases',             eta:'E1',dep:['200'],resp:'CUA-A',ini:'16/04',fin:'22/04',dur:'16hs',unit:'BINARIO',pct:100,st:'COMPLETA',col:'#2dd4a0'},
+  {seq:'400',name:'Inst. sanitaria subsuelo',          eta:'E1',dep:['200','300'],resp:'SUB-02',ini:'16/04',fin:'23/04',dur:'20hs',unit:'PORC.',pct:100,st:'COMPLETA',col:'#2dd4a0'},
+  {seq:'500',name:'Encofrado losa PB',                 eta:'E2',dep:['300'],resp:'CUA-B',ini:'01/06',fin:'05/06',dur:'24hs',unit:'BINARIO',pct:100,st:'COMPLETA',col:'#2dd4a0'},
+  {seq:'600',name:'Armado hierro losa PB',             eta:'E2',dep:['500'],resp:'CUA-C',ini:'06/06',fin:'10/06',dur:'24hs',unit:'PORC.',pct:75,st:'EN CURSO',   col:'#ff8c42'},
+  {seq:'700',name:'Colado hormigón losa PB',           eta:'E2',dep:['600'],resp:'CUA-A+B',ini:'11/06',fin:'12/06',dur:'8hs',unit:'BINARIO',pct:0,st:'PENDIENTE',col:'#4a5a72'},
+  {seq:'800',name:'Mampostería cerramiento PB',        eta:'E2',dep:['700','500'],resp:'CUA-D',ini:'14/06',fin:'20/06',dur:'32hs',unit:'CANT.',pct:0,st:'PENDIENTE',col:'#4a5a72'},
+  {seq:'850',name:'Inst. eléctrica PB',                eta:'E2',dep:['700'],resp:'SUB-01',ini:'21/06',fin:'26/06',dur:'20hs',unit:'PORC.',pct:0,st:'BLOQUEADA',  col:'#ff4d6a'},
+];
+
+// Gantt: each op gets a column range in a 30-day June grid
+// day 1 = June 1. startDay, duration in days (simplified)
+const GANTT = [
+  {seq:'100',start:0, dur:1,  pct:100,col:'#2dd4a0',blocked:false},
+  {seq:'200',start:1, dur:1,  pct:100,col:'#2dd4a0',blocked:false},
+  {seq:'300',start:2, dur:1,  pct:100,col:'#2dd4a0',blocked:false},
+  {seq:'400',start:2, dur:1,  pct:100,col:'#2dd4a0',blocked:false},
+  {seq:'500',start:0, dur:5,  pct:100,col:'#2dd4a0',blocked:false},
+  {seq:'600',start:5, dur:5,  pct:75, col:'#ff8c42',blocked:false},
+  {seq:'700',start:10,dur:2,  pct:0,  col:'#4a5a72',blocked:false},
+  {seq:'800',start:13,dur:7,  pct:0,  col:'#4a5a72',blocked:false},
+  {seq:'850',start:20,dur:6,  pct:0,  col:'#ff4d6a',blocked:true},
+];
+
+const DEP_EDGES = [
+  ['500','600'],['600','700'],['700','800'],['500','800'],['700','850']
+];
+
+const TOTAL_DAYS = 30;
+const TODAY_DAY  = 7; // June 7 = today
+// Day types: 0=work,1=weekend,2=feria,3=jcorta
+const DAY_TYPES = {
+  0:'work',1:'work',2:'work',3:'work',4:'work',5:'weekend',6:'weekend',
+  7:'work',8:'work',9:'work',10:'work',11:'work',12:'weekend',13:'weekend',
+  14:'work',15:'work',16:'work',17:'work',18:'work',19:'weekend',20:'feria',
+  21:'work',22:'work',23:'work',24:'work',25:'work',26:'weekend',27:'weekend',
+  28:'jcorta',29:'work'
+};
+
+// ══════════════════════════════════════════════════════════════════
+// NAVIGATION
+// ══════════════════════════════════════════════════════════════════
+function goStep(n){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById(`s${n}`).classList.add('active');
+  document.querySelectorAll('.sbar-step').forEach(s=>s.classList.remove('active','done'));
+  document.getElementById(`sb${n}`)?.classList.add('active');
+  for(let i=0;i<n;i++) document.getElementById(`sb${i}`)?.classList.add('done');
+  document.getElementById('pf').style.width = ((n+1)/8*100)+'%';
+  document.querySelector('.content').querySelectorAll('.screen').forEach(s=>{
+    if(s.classList.contains('active')) s.scrollTop=0;
+  });
+  document.querySelectorAll('.sidebar .sb-icon').forEach(i=>i.classList.remove('active'));
+  if(n===0) document.querySelector('.sb-icon').classList.add('active');
+  if(n===3||n===6||n===7) { setTimeout(()=>{buildOps();buildGantt();},80); }
+}
+
+// ══════════════════════════════════════════════════════════════════
+// BUILD OPS TABLE
+// ══════════════════════════════════════════════════════════════════
+const ST_MAP = {
+  'COMPLETA': 'st-green','EN CURSO':'st-orange','PENDIENTE':'st-gray',
+  'BLOQUEADA':'st-red','ATRASADA':'st-red'
+};
+const UNIT_MAP = {
+  'BINARIO':'c-gray','PORC.':'c-orange','CANT.':'c-blue','PORC.':'c-orange'
+};
+
+function buildOps(filter='all'){
+  const tb = document.getElementById('ops-tbody');
+  if(!tb) return;
+  tb.innerHTML='';
+  let prev_eta = null;
+  OPS.forEach((op,i) => {
+    if(filter==='curso' && op.st!=='EN CURSO') return;
+    if(filter==='atrasada' && op.st!=='ATRASADA') return;
+    if(filter==='bloqueada' && op.st!=='BLOQUEADA') return;
+
+    // Etapa separator row
+    if(op.eta !== prev_eta){
+      const sep = document.createElement('tr');
+      sep.style.cssText='background:rgba(0,197,165,.06);';
+      sep.innerHTML = `<td colspan="11" style="padding:5px 10px;font-family:var(--fm);font-size:8px;color:var(--teal);letter-spacing:2px;border-bottom:1px solid var(--border);">${op.eta}</td>`;
+      tb.appendChild(sep);
+      prev_eta = op.eta;
+    }
+
+    const tr = document.createElement('tr');
+    tr.className = op.seq==='600' ? 'sel' : '';
+    tr.onclick = ()=>openSP(op.seq);
+
+    const depHtml = op.dep.map(d =>
+      `<span class="dep-tag ${op.dep.length>1?'multi':''}">${d}</span>`
+    ).join('');
+
+    const pctColor = op.pct===100?'#2dd4a0':op.pct>0?'#ff8c42':'#4a5a72';
+    const unitChip = `<span class="chip c-gray" style="font-size:7px">${op.unit}</span>`;
+
+    tr.innerHTML = `
+      <td class="td-seq">${op.seq}</td>
+      <td><div class="td-name">${op.name}</div></td>
+      <td><span class="chip c-blue" style="font-size:7px">${op.eta}</span></td>
+      <td class="td-dep">${depHtml||'<span style="color:var(--text-muted);font-size:9px">—</span>'}</td>
+      <td style="font-size:11px">${op.resp}</td>
+      <td style="font-family:var(--fm);font-size:9px;color:var(--text-dim)">${op.ini}</td>
+      <td style="font-family:var(--fm);font-size:9px;color:var(--text-dim)">${op.fin}</td>
+      <td style="font-family:var(--fm);font-size:9px">${op.dur}</td>
+      <td>${unitChip}</td>
+      <td><div class="prog-cell">
+        <div class="prog-mini"><div class="prog-mini-fill" style="width:${op.pct}%;background:${pctColor}"></div></div>
+        <span style="font-family:var(--fm);font-size:9px;color:${pctColor};width:30px;text-align:right">${op.pct}%</span>
+      </div></td>
+      <td><span class="st ${ST_MAP[op.st]||'st-gray'}">${op.st}</span></td>
+    `;
+    tb.appendChild(tr);
+  });
+}
+
+function filterOps(f){ buildOps(f); }
+
+// ══════════════════════════════════════════════════════════════════
+// BUILD GANTT WITH ARROWS
+// ══════════════════════════════════════════════════════════════════
+function buildGantt(){
+  const inner = document.getElementById('gantt-inner');
+  if(!inner) return;
+  inner.innerHTML='';
+
+  const ROW_H = 32;
+  const LBL_W = 200;
+
+  // Header
+  const hdrDiv = document.createElement('div');
+  hdrDiv.className='gantt-col-header';
+  const lblHdr = document.createElement('div');
+  lblHdr.className='gantt-lbl-col';
+  lblHdr.innerHTML='<span>OPERACIÓN</span>';
+  hdrDiv.appendChild(lblHdr);
+  const trackHdr = document.createElement('div');
+  trackHdr.className='gantt-track-header';
+  trackHdr.id='gantt-track-hdr';
+  // week markers
+  const wkLabels = ['Sem 1','','','','','','','Sem 2','','','','','','','Sem 3','','','','','','','Sem 4','','','','','','','Sem 5',''];
+  for(let d=0;d<TOTAL_DAYS;d++){
+    const dh = document.createElement('div');
+    dh.className='gantt-day-hdr'+(d%7<5?' ':' week');
+    dh.innerHTML = wkLabels[d]?`<span>${wkLabels[d]}</span>`:`<span style="font-size:7px;opacity:.4">${d+1}</span>`;
+    trackHdr.appendChild(dh);
+  }
+  hdrDiv.appendChild(trackHdr);
+  inner.appendChild(hdrDiv);
+
+  // Rows area wrapper (for SVG overlay)
+  const rowsWrap = document.createElement('div');
+  rowsWrap.className='gantt-rows-area';
+  rowsWrap.id='gantt-rows-area';
+  rowsWrap.style.position='relative';
+
+  // Map seq → gantt index for arrow calculation
+  const seqToIdx = {};
+  GANTT.forEach((g,i)=>seqToIdx[g.seq]=i);
+
+  GANTT.forEach((g,idx)=>{
+    const op = OPS.find(o=>o.seq===g.seq)||{};
+    const row = document.createElement('div');
+    row.className='g-row'+(g.seq==='600'?' sel':'');
+    row.id=`grow-${g.seq}`;
+    row.onclick=()=>openSP(g.seq);
+
+    // Label
+    const lbl = document.createElement('div');
+    lbl.className='g-row-label';
+    lbl.innerHTML=`<span class="grl-seq">${g.seq}</span><span class="grl-name">${op.name||g.seq}</span>`;
+    row.appendChild(lbl);
+
+    // Track
+    const track = document.createElement('div');
+    track.className='g-track';
+    track.id=`gtrack-${g.seq}`;
+
+    // Background day cells
+    for(let d=0;d<TOTAL_DAYS;d++){
+      const bg = document.createElement('div');
+      bg.className='g-day-bg';
+      const pctL = (d/TOTAL_DAYS*100).toFixed(3);
+      const pctW = (1/TOTAL_DAYS*100).toFixed(3);
+      bg.style.left=pctL+'%';
+      bg.style.width=pctW+'%';
+      const dt = DAY_TYPES[d]||'work';
+      if(dt==='weekend') bg.classList.add('weekend');
+      if(dt==='feria')   bg.classList.add('feria');
+      if(dt==='jcorta')  bg.classList.add('jcorta');
+      track.appendChild(bg);
+    }
+
+    // Today line
+    const todLine = document.createElement('div');
+    todLine.className='g-today-line';
+    todLine.style.left=((TODAY_DAY-0.5)/TOTAL_DAYS*100).toFixed(2)+'%';
+    track.appendChild(todLine);
+
+    // Bar
+    const bar = document.createElement('div');
+    bar.className='g-bar';
+    const barL = (g.start/TOTAL_DAYS*100).toFixed(2)+'%';
+    const barW = Math.max(0.5, g.dur/TOTAL_DAYS*100).toFixed(2)+'%';
+    bar.style.left=barL;
+    bar.style.width=barW;
+    bar.style.background=g.blocked?'rgba(255,77,106,.25)':g.col+'cc';
+    bar.style.border=g.blocked?'1px solid '+g.col:'none';
+    if(g.pct>0 && g.pct<100){
+      const fill = document.createElement('div');
+      fill.className='g-bar-fill';
+      fill.style.width=g.pct+'%';
+      fill.style.background=g.col;
+      bar.appendChild(fill);
+    }
+    const blbl = document.createElement('div');
+    blbl.className='g-bar-label';
+    blbl.textContent=g.pct>0?g.pct+'%':'';
+    bar.appendChild(blbl);
+    track.appendChild(bar);
+
+    row.appendChild(track);
+    rowsWrap.appendChild(row);
+  });
+
+  inner.appendChild(rowsWrap);
+
+  // Draw arrows with SVG after layout
+  requestAnimationFrame(()=>drawArrows(rowsWrap, seqToIdx));
+}
+
+function drawArrows(container, seqToIdx){
+  // Remove previous SVG
+  const old = container.querySelector('.gantt-svg-overlay');
+  if(old) old.remove();
+
+  const containerRect = container.getBoundingClientRect();
+  if(!containerRect.width) return;
+
+  const LBL_W = 200;
+  const ROW_H = 32;
+  const TRACK_W = containerRect.width - LBL_W;
+
+  const svg = document.createElementNS('http://www.w3.org/2000/svg','svg');
+  svg.className='gantt-svg-overlay';
+  svg.style.position='absolute';
+  svg.style.left='0';
+  svg.style.top='0';
+  svg.style.width='100%';
+  svg.style.height=(GANTT.length*ROW_H)+'px';
+  svg.style.pointerEvents='none';
+  svg.style.overflow='visible';
+
+  // defs: arrowhead marker
+  const defs = document.createElementNS('http://www.w3.org/2000/svg','defs');
+  const marker = document.createElementNS('http://www.w3.org/2000/svg','marker');
+  marker.setAttribute('id','arrowhead');
+  marker.setAttribute('markerWidth','8');
+  marker.setAttribute('markerHeight','6');
+  marker.setAttribute('refX','6');
+  marker.setAttribute('refY','3');
+  marker.setAttribute('orient','auto');
+  const poly = document.createElementNS('http://www.w3.org/2000/svg','polygon');
+  poly.setAttribute('points','0 0, 8 3, 0 6');
+  poly.setAttribute('fill','rgba(0,197,165,.7)');
+  marker.appendChild(poly);
+  defs.appendChild(marker);
+  svg.appendChild(defs);
+
+  DEP_EDGES.forEach(([fromSeq, toSeq])=>{
+    const fromIdx = seqToIdx[fromSeq];
+    const toIdx   = seqToIdx[toSeq];
+    if(fromIdx===undefined || toIdx===undefined) return;
+
+    const fromG = GANTT.find(g=>g.seq===fromSeq);
+    const toG   = GANTT.find(g=>g.seq===toSeq);
+    if(!fromG || !toG) return;
+
+    // End of "from" bar
+    const fromBarEndPct = (fromG.start + fromG.dur) / TOTAL_DAYS;
+    const fromX = LBL_W + fromBarEndPct * TRACK_W;
+    const fromY = fromIdx * ROW_H + ROW_H / 2;
+
+    // Start of "to" bar
+    const toBarStartPct = toG.start / TOTAL_DAYS;
+    const toX   = LBL_W + toBarStartPct * TRACK_W;
+    const toY   = toIdx * ROW_H + ROW_H / 2;
+
+    // Elbow path: right → down/up → right
+    const midX = fromX + (toX - fromX) / 2;
+
+    const path = document.createElementNS('http://www.w3.org/2000/svg','path');
+    let d;
+    if(Math.abs(fromY - toY) < 4){
+      d = `M ${fromX} ${fromY} L ${toX - 8} ${toY}`;
+    } else {
+      const elbX = Math.max(fromX + 10, midX);
+      d = `M ${fromX} ${fromY} L ${elbX} ${fromY} L ${elbX} ${toY} L ${toX - 8} ${toY}`;
+    }
+    path.setAttribute('d', d);
+    path.setAttribute('stroke','rgba(0,197,165,.55)');
+    path.setAttribute('stroke-width','1.5');
+    path.setAttribute('fill','none');
+    path.setAttribute('stroke-dasharray','4 2');
+    path.setAttribute('marker-end','url(#arrowhead)');
+    svg.appendChild(path);
+  });
+
+  container.appendChild(svg);
+}
+
+// ══════════════════════════════════════════════════════════════════
+// PANEL
+// ══════════════════════════════════════════════════════════════════
+const OP_PANEL = {
+  '500':{seq:'OP-500',name:'Encofrado losa PB',chips:'<span class="chip c-teal">COMPLETA</span><span class="chip c-blue">E2</span>'},
+  '600':{seq:'OP-600',name:'Armado hierro losa PB',chips:'<span class="chip c-orange">EN CURSO</span><span class="chip c-blue">E2</span>'},
+  '700':{seq:'OP-700',name:'Colado hormigón losa PB',chips:'<span class="chip c-gray">PENDIENTE</span><span class="chip c-blue">E2</span>'},
+  '800':{seq:'OP-800',name:'Mampostería cerramiento PB',chips:'<span class="chip c-gray">PENDIENTE</span><span class="chip c-blue">E2</span>'},
+  '850':{seq:'OP-850',name:'Inst. eléctrica PB',chips:'<span class="chip c-red">BLOQUEADA</span><span class="chip c-blue">E2</span>'},
+  '100':{seq:'OP-100',name:'Excavación y movimiento',chips:'<span class="chip c-teal">COMPLETA</span><span class="chip c-blue">E1</span>'},
+  '200':{seq:'OP-200',name:'Armado bases y zapatas',chips:'<span class="chip c-teal">COMPLETA</span><span class="chip c-blue">E1</span>'},
+  '300':{seq:'OP-300',name:'Colado hormigón bases',chips:'<span class="chip c-teal">COMPLETA</span><span class="chip c-blue">E1</span>'},
+  '400':{seq:'OP-400',name:'Inst. sanitaria subsuelo',chips:'<span class="chip c-teal">COMPLETA</span><span class="chip c-blue">E1</span>'},
+};
+function openSP(seq){
+  const d = OP_PANEL[seq]; if(!d) return;
+  document.getElementById('sp-seq').textContent=d.seq;
+  document.getElementById('sp-name').textContent=d.name;
+  document.getElementById('sp-chips').innerHTML=d.chips;
+  document.getElementById('sidePanel').classList.add('open');
+}
+function closeSP(){ document.getElementById('sidePanel').classList.remove('open'); }
+
+// ══════════════════════════════════════════════════════════════════
+// MISC
+// ══════════════════════════════════════════════════════════════════
+function togColl(hdr){
+  const body=hdr.nextElementSibling, arr=hdr.querySelector('.coll-arr');
+  body.classList.toggle('open'); arr.classList.toggle('open');
+}
+function simImport(){
+  const dz=document.getElementById('dz-a'), log=document.getElementById('log-a');
+  dz.innerHTML='<div class="dz-icon">⏳</div><div class="dz-t">Procesando...</div>';
+  setTimeout(()=>{dz.style.display='none';log.style.display='flex';showToast('Importación completada — 36 operaciones cargadas');},1000);
+}
+function showOpModal(){ document.getElementById('modal-op').classList.add('open'); }
+function closeModal(id){ document.getElementById(id).classList.remove('open'); }
+document.querySelectorAll('.modal-overlay').forEach(m=>{
+  m.addEventListener('click',e=>{ if(e.target===m) m.classList.remove('open'); });
+});
+function createProj(){ showToast('Proyecto creado exitosamente'); goStep(3); }
+function doReimport(){ showToast('v2 importada — cronograma recalculado · v1 guardada'); goStep(7); }
+let _calChanged=false;
+function calChanged(){ _calChanged=true; document.getElementById('cal-warn').style.display='block'; }
+function saveCal(){ _calChanged=false; document.getElementById('cal-warn').style.display='none'; showToast('Calendario guardado — 32 fechas recalculadas'); }
+function addExc(){
+  const tbody=document.getElementById('exc-body');
+  const tr=document.createElement('tr');
+  tr.innerHTML=`<td><input type="date" style="background:var(--navy4);border:1px solid var(--border2);border-radius:3px;padding:2px 6px;font-family:var(--fm);font-size:9px;color:var(--text);"></td><td><select style="background:var(--navy4);border:1px solid var(--border2);border-radius:3px;padding:2px 6px;font-family:var(--fm);font-size:9px;color:var(--text);"><option>FERIADO</option><option>JORNADA_REDUCIDA</option><option>JORNADA_EXTENDIDA</option></select></td><td style="text-align:center"><input type="number" value="0" style="width:38px;background:var(--navy4);border:1px solid var(--border2);border-radius:3px;padding:2px 4px;font-family:var(--fm);font-size:9px;color:var(--text);text-align:center;"></td><td><input type="text" placeholder="Motivo..." style="width:100%;background:var(--navy4);border:1px solid var(--border2);border-radius:3px;padding:2px 6px;font-family:var(--f);font-size:10px;color:var(--text);"></td><td style="text-align:right;padding-right:8px"><button class="btn btn-ghost" style="font-size:8px;padding:2px 6px" onclick="this.closest('tr').remove()">✕</button></td>`;
+  tbody.appendChild(tr);
+  calChanged();
+}
+function showToast(msg){
+  const t=document.getElementById('toast');
+  document.getElementById('toast-msg').textContent=msg;
+  t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),3000);
+}
+
+// INIT
+buildOps();
+buildGantt();
+</script>
+</body>
+</html>
