@@ -156,10 +156,11 @@ const obtenerMaterialId = async (transaction, item) => {
 const getRegistrosCompra = async (req, res) => {
     try {
         const pool = await conectarDB();
-
+console.log('RC.');
         const result = await pool.request().query(`
             SELECT
-                rc.estado_registroDeCompra_id,
+                rc.registro_compra_id,
+                rc.estado_registroDecompra_id AS estado_registroDeCompra_id,
                 rc.numero,
                 rc.fecha,
                 rc.fecha_entrega,
@@ -168,15 +169,15 @@ const getRegistrosCompra = async (req, res) => {
 
                 p.proveedor_id,
                 p.razon_social,
+                p.cuit,
 
-                e.estado_registroDeCompra_id,
                 e.nombre AS estado
-            FROM RegistroDeCompra rc
-            INNER JOIN Proveedor p
+            FROM registroDecompra rc
+            LEFT JOIN Proveedor p
                 ON p.proveedor_id = rc.proveedor_id
-            INNER JOIN estado_registroDecompra e
-                ON e.estado_registroDeCompra_id = rc.estado_registroDeCompra_id
-            ORDER BY rc.estado_registroDeCompra_id DESC
+            LEFT JOIN estado_registroDecompra e
+                ON e.estado_registroDecompra_id = rc.estado_registroDecompra_id
+            ORDER BY rc.estado_registroDecompra_id DESC
         `);
 
         res.json(result.recordset);
@@ -208,13 +209,14 @@ const getRegistroCompraById = async (req, res) => {
             rc.*,
             p.razon_social,
             p.cuit,
+            rc.estado_registroDecompra_id AS estado_registroDeCompra_id,
             e.nombre AS estado,
             e.nombre AS estado_nombre
-        FROM RegistroDeCompra rc
-        INNER JOIN Proveedor p
+        FROM registroDecompra rc
+        LEFT JOIN Proveedor p
             ON p.proveedor_id = rc.proveedor_id
-        INNER JOIN estado_registroDecompra e
-            ON e.estado_registroDeCompra_id = rc.estado_registroDeCompra_id
+        LEFT JOIN estado_registroDecompra e
+            ON e.estado_registroDecompra_id = rc.estado_registroDecompra_id
         WHERE rc.registro_compra_id = @registro_compra_id
     `);
 
@@ -304,7 +306,7 @@ const crearRegistroCompra = async (req, res) => {
         const estadoCreada = await pool.request()
             .input('nombre', sql.VarChar, 'CREADA')
             .query(`
-                SELECT estado_registroDeCompra_id
+                SELECT estado_registroDecompra_id AS estado_registroDeCompra_id
                 FROM estado_registroDecompra
                 WHERE nombre = @nombre
             `);
@@ -332,13 +334,13 @@ const crearRegistroCompra = async (req, res) => {
                 estadoCreada.recordset[0].estado_registroDeCompra_id
             )
             .query(`
-        INSERT INTO RegistroDeCompra (
+        INSERT INTO registroDecompra (
             numero,
             fecha,
             fecha_entrega,
             proveedor_id,
             observaciones,
-            estado_registroDeCompra_id,
+            estado_registroDecompra_id,
             cantidad_pedida,
             proyecto_id
         )
@@ -457,11 +459,11 @@ const actualizarRegistroCompra = async (req, res) => {
             .query(`
                 SELECT
                     rc.registro_compra_id,
-                    rc.estado_registroDeCompra_id,
+                    rc.estado_registroDecompra_id AS estado_registroDeCompra_id,
                     e.nombre AS estado
-                FROM RegistroDeCompra rc
-                INNER JOIN estado_registroDecompra e
-                    ON e.estado_registroDeCompra_id = rc.estado_registroDeCompra_id
+                FROM registroDecompra rc
+                LEFT JOIN estado_registroDecompra e
+                    ON e.estado_registroDecompra_id = rc.estado_registroDecompra_id
                 WHERE rc.registro_compra_id = @registro_compra_id
             `);
 
@@ -510,7 +512,7 @@ const actualizarRegistroCompra = async (req, res) => {
             .input('proveedor_id', sql.BigInt, proveedorId)
             .input('observaciones', sql.VarChar, observaciones || null)
             .query(`
-                UPDATE RegistroDeCompra
+                UPDATE registroDecompra
                 SET
                     numero = @numero,
                     fecha = @fecha,
@@ -589,11 +591,11 @@ console.log(id)
             .query(`
                 SELECT
                     rc.registro_compra_id,
-                    rc.estado_registroDeCompra_id,
+                    rc.estado_registroDecompra_id AS estado_registroDeCompra_id,
                     e.nombre AS estado
-                FROM RegistroDeCompra rc
-                INNER JOIN estado_registroDecompra e
-                    ON e.estado_registroDeCompra_id = rc.estado_registroDeCompra_id
+                FROM registroDecompra rc
+                LEFT JOIN estado_registroDecompra e
+                    ON e.estado_registroDecompra_id = rc.estado_registroDecompra_id
                 WHERE rc.registro_compra_id = @registro_compra_id
             `);
 
@@ -618,7 +620,7 @@ console.log(id)
         const estadoCancelada = await pool.request()
             .input('nombre', sql.VarChar, 'CANCELADA')
             .query(`
-                SELECT estado_registroDeCompra_id
+                SELECT estado_registroDecompra_id AS estado_registroDeCompra_id
                 FROM estado_registroDecompra
                 WHERE nombre = @nombre
             `);
@@ -627,8 +629,8 @@ console.log(id)
             .input('registro_compra_id', sql.BigInt, id)
             .input('estado_cancelada_id', sql.Int, estadoCancelada.recordset[0].estado_registroDeCompra_id)
             .query(`
-                UPDATE RegistroDeCompra
-                SET estado_registroDeCompra_id = @estado_cancelada_id
+                UPDATE registroDecompra
+                SET estado_registroDecompra_id = @estado_cancelada_id
                 WHERE registro_compra_id = @registro_compra_id
             `);
 
