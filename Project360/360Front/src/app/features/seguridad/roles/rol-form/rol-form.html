@@ -1,0 +1,112 @@
+<div class="form-page">
+  <div class="page-header">
+    <div>
+      <span class="breadcrumb">DB360 / Seguridad / Roles</span>
+      <h1>{{ esEdicion ? 'Editar rol' : 'Nuevo rol' }}</h1>
+      <p>
+        {{ esEdicion ? 'Modificá los datos principales del rol.' : 'Creá un nuevo rol para utilizar dentro de DB360.' }}
+      </p>
+    </div>
+  </div>
+
+  <form [formGroup]="form" (ngSubmit)="guardar()">
+    <section class="block">
+      <div class="block-header">
+        <h2 class="block-title">Datos principales</h2>
+        <span class="chip chip-no-dot chip-blue">{{ esEdicion ? 'EDICIÓN' : 'ALTA' }}</span>
+      </div>
+
+      <div class="block-body">
+        <div class="form-grid">
+          <div class="form-group">
+            <label>Nombre *</label>
+            <input type="text" formControlName="nombre" placeholder="Ej: Administrador">
+
+            <small *ngIf="campoInvalido('nombre')">
+              El nombre es obligatorio.
+            </small>
+          </div>
+
+          <div class="form-group full-width">
+            <label>Descripción *</label>
+            <textarea formControlName="descripcion" placeholder="Descripción del rol"></textarea>
+
+            <small *ngIf="campoInvalido('descripcion')">
+              La descripción es obligatoria.
+            </small>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="block">
+      <div class="block-header">
+        <h2 class="block-title">Permisos del rol</h2>
+        <span class="chip chip-no-dot chip-teal">{{ entidades.length }} ENTIDADES</span>
+      </div>
+
+      @if (cargando) {
+        <div class="loading-box">Cargando permisos...</div>
+      }
+
+      @if (!cargando) {
+        <div class="table-wrap">
+          <table class="permissions-table">
+            <thead>
+              <tr>
+                <th>Entidad</th>
+
+                @for (accion of acciones; track accion.accion_id) {
+                  <th class="text-center">
+                    {{ accion.nombre }}
+                  </th>
+                }
+              </tr>
+            </thead>
+
+            <tbody>
+              @for (entidad of entidades; track entidad.entidad_id) {
+                <tr>
+                  <td class="entity-name tech-value">
+                    {{ entidad.nombre }}
+                  </td>
+
+                  @for (accion of acciones; track accion.accion_id) {
+                    <td class="text-center">
+                      <input
+                        type="checkbox"
+                        [checked]="estaPermitido(entidad.entidad_id, accion.accion_id)"
+                        (change)="cambiarPermiso(entidad.entidad_id, accion.accion_id, $event)">
+                    </td>
+                  }
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    </section>
+
+    @if (mensajeExito) {
+      <div class="modal-message success">
+        {{ mensajeExito }}
+      </div>
+    }
+
+    @if (mensajeError) {
+      <div class="modal-message error">
+        {{ mensajeError }}
+      </div>
+    }
+
+    <div class="form-actions">
+      <button type="button" class="btn btn-ghost" (click)="cancelar()">
+        Cancelar
+      </button>
+
+      <button type="submit" class="btn btn-primary" [disabled]="guardando">
+        {{ guardando ? 'Guardando...' : 'Guardar' }}
+      </button>
+    </div>
+  </form>
+</div>

@@ -1,0 +1,110 @@
+<div class="form-page module-page">
+  <div class="page-header">
+    <div>
+      <span class="breadcrumb">OBRA360 / Materiales / Documento</span>
+      <h1>Cargar documento de materiales</h1>
+      <p>Adjunta una orden de compra en PDF o imagen para detectar materiales automaticamente.</p>
+    </div>
+  </div>
+
+  <section class="block">
+    <div class="block-header">
+      <h2 class="block-title">Carga de archivo</h2>
+      <span class="chip c-purple">IA</span>
+    </div>
+
+    <div class="block-body">
+      <div
+        class="drop-zone"
+        [class.dragging]="isDragging"
+        (dragover)="onDragOver($event)"
+        (dragleave)="onDragLeave($event)"
+        (drop)="onDrop($event)"
+      >
+        <div class="drop-icon">
+          <mat-icon>upload_file</mat-icon>
+        </div>
+
+        <h3>Arrastra el documento aca</h3>
+        <p>Formatos permitidos: PDF, JPG, JPEG, PNG o WEBP. Maximo 10 MB.</p>
+
+        <label class="btn btn-secondary file-button">
+          <mat-icon>description</mat-icon>
+          Seleccionar archivo
+          <input type="file" accept=".pdf,.jpg,.jpeg,.png,.webp" hidden (change)="onFileSelected($event)" />
+        </label>
+      </div>
+
+      <div *ngIf="selectedFile" class="file-preview">
+        <div>
+          <strong>Archivo seleccionado</strong>
+          <p>{{ selectedFile.name }} - {{ formatFileSize(selectedFile.size) }}</p>
+        </div>
+
+        <button type="button" class="btn btn-danger btn-sm" (click)="quitarArchivo()">
+          <mat-icon>delete</mat-icon>
+          Quitar
+        </button>
+      </div>
+
+      <div *ngIf="loading" class="state-message">
+        Procesando documento, por favor espera...
+      </div>
+
+      <div *ngIf="errorMessage" class="error-message">
+        {{ errorMessage }}
+      </div>
+
+      <div *ngIf="successMessage" class="success-message">
+        {{ successMessage }}
+      </div>
+
+      <div class="form-actions">
+        <button type="button" class="btn btn-ghost" (click)="cancelar()">
+          <mat-icon>close</mat-icon>
+          Cancelar
+        </button>
+
+        <button type="button" class="btn btn-primary" [disabled]="!selectedFile || loading" (click)="subirArchivo()">
+          <mat-icon>upload_file</mat-icon>
+          {{ loading ? 'Procesando' : 'Enviar documento' }}
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <section *ngIf="materialesDetectados.length > 0" class="block results-card">
+    <div class="block-header">
+      <h2 class="block-title">Materiales detectados</h2>
+      <span class="chip c-yellow">REVISAR</span>
+    </div>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Codigo</th>
+            <th>Descripcion</th>
+            <th>Rubro</th>
+            <th>Unidad</th>
+            <th>Cantidad</th>
+            <th>Precio unitario</th>
+            <th>Subtotal</th>
+          </tr>
+        </thead>
+
+        <tbody>
+          <tr *ngFor="let material of materialesDetectados">
+            <td>{{ material.codigo || '-' }}</td>
+            <td>{{ material.descripcion }}</td>
+            <td>{{ material.rubro || '-' }}</td>
+            <td>{{ material.unidad_medida || '-' }}</td>
+            <td>{{ material.cantidad || '-' }}</td>
+            <td>{{ material.precio_unitario || '-' }}</td>
+            <td>{{ material.subtotal || '-' }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+</div>

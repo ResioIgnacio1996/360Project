@@ -1,0 +1,98 @@
+<div class="module-page">
+  <div class="page-header">
+    <div>
+      <span class="breadcrumb">DB360 / Materiales / Remitos</span>
+      <h1>Detalle de Remito</h1>
+      <p>Informacion del remito seleccionado y su impacto pendiente o liberado.</p>
+    </div>
+
+    <div class="header-actions">
+      <button class="btn btn-ghost" type="button" (click)="volver()">
+        <mat-icon>arrow_back</mat-icon>
+        Volver
+      </button>
+
+      <button
+        class="btn btn-primary"
+        type="button"
+        [disabled]="!remito || remito.liberado || liberando"
+        (click)="liberar()"
+      >
+        <mat-icon>inventory</mat-icon>
+        {{ liberando ? 'Liberando...' : 'Liberar remito' }}
+      </button>
+    </div>
+  </div>
+
+  <section class="block" *ngIf="cargando">
+    <div class="state-message">Cargando remito...</div>
+  </section>
+
+  <ng-container *ngIf="!cargando && remito">
+    <section class="block">
+      <div class="block-header">
+        <h2 class="block-title">Datos generales</h2>
+        <span class="chip chip-no-dot" [class.chip-green]="remito.liberado" [class.chip-yellow]="!remito.liberado">
+          {{ remito.liberado ? 'LIBERADO' : 'PENDIENTE' }}
+        </span>
+      </div>
+
+      <div class="summary-grid">
+        <div class="summary-field">
+          <span>Numero</span>
+          <strong>{{ remito.numero }}</strong>
+        </div>
+
+        <div class="summary-field">
+          <span>Fecha</span>
+          <strong>{{ formatearFecha(remito.fecha) }}</strong>
+        </div>
+
+        <div class="summary-field">
+          <span>Registro Compra</span>
+          <strong>{{ remito.registroCompraNumero || remito.idRegistroCompra }}</strong>
+        </div>
+
+        <div class="summary-field">
+          <span>Estado</span>
+          <strong>{{ remito.liberado ? 'LIBERADO' : 'PENDIENTE' }}</strong>
+        </div>
+      </div>
+    </section>
+
+    <section class="block">
+      <div class="block-header">
+        <h2 class="block-title">Detalle del remito</h2>
+        <span class="chip chip-no-dot chip-teal">{{ detalleRemito.length }} ITEMS</span>
+      </div>
+
+      <div class="table-wrap" *ngIf="detalleRemito.length > 0">
+        <table mat-table [dataSource]="detalleRemito" class="remito-detalle-table mat-elevation-z0">
+          <ng-container matColumnDef="material">
+            <th mat-header-cell *matHeaderCellDef>Material</th>
+            <td mat-cell *matCellDef="let item">
+              <strong>{{ item.material }}</strong>
+            </td>
+          </ng-container>
+
+          <ng-container matColumnDef="cantidad">
+            <th mat-header-cell *matHeaderCellDef>Cantidad</th>
+            <td mat-cell *matCellDef="let item" class="tech-value">{{ item.cantidad }}</td>
+          </ng-container>
+
+          <ng-container matColumnDef="unidad">
+            <th mat-header-cell *matHeaderCellDef>Unidad</th>
+            <td mat-cell *matCellDef="let item">{{ item.unidad }}</td>
+          </ng-container>
+
+          <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+          <tr mat-row *matRowDef="let row; columns: displayedColumns;" class="data-row"></tr>
+        </table>
+      </div>
+
+      <div class="state-message" *ngIf="detalleRemito.length === 0">
+        Este remito no tiene materiales cargados.
+      </div>
+    </section>
+  </ng-container>
+</div>

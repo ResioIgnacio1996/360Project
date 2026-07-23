@@ -1,0 +1,45 @@
+<div class="layout">
+
+  <header class="topbar">
+
+    <div class="topbar-left">
+
+      <button class="menu-button" (click)="toggleSidebar()">
+        ☰
+      </button>
+
+      <div class="brand">
+        <strong>DB360</strong>
+        <span>Gestión integral</span>
+      </div>
+
+    </div>
+
+    <div class="topbar-right">
+<div class="user-badge">
+  <div class="user-avatar">
+    {{ inicialUsuario }}
+  </div>
+
+  <div class="user-text">
+    <strong>{{ usuario?.nombre || 'Usuario' }}</strong>
+    <span>{{ usuario?.usuario || 'Sin usuario' }}</span>
+  </div>
+</div>
+
+    </div>
+
+  </header>
+
+<app-sidebar
+  [visible]="sidebarVisible"
+  [usuario]="usuario"
+  (closeSidebar)="sidebarVisible = false">
+</app-sidebar>
+  <main class="content">
+
+    <router-outlet></router-outlet>
+
+  </main>
+
+</div>

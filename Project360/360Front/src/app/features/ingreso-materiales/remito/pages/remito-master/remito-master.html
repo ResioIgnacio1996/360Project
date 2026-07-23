@@ -1,0 +1,171 @@
+<div class="module-page">
+  <div class="page-header">
+    <div>
+      <span class="breadcrumb">
+        DB360 / Materiales / Remitos
+        <ng-container *ngIf="idRegistroCompra">
+          / OC {{ registroCompra?.numero || idRegistroCompra }}
+        </ng-container>
+      </span>
+      <h1>{{ idRegistroCompra ? 'Remitos de la OC seleccionada' : 'Remitos' }}</h1>
+      <p>
+        {{
+          idRegistroCompra
+            ? 'Recepcion, control y liberacion de remitos imputados exclusivamente a esta orden de compra.'
+            : 'Recepcion, control y liberacion de remitos asociados a compras.'
+        }}
+      </p>
+      <div class="oc-context" *ngIf="idRegistroCompra">
+        <span>OC {{ registroCompra?.numero || idRegistroCompra }}</span>
+        <span>{{ registroCompra?.proveedor?.razonSocial || 'Proveedor sin cargar' }}</span>
+        <span>{{ registroCompra?.estado?.nombre || registroCompra?.estado?.codigo || 'Estado sin cargar' }}</span>
+      </div>
+    </div>
+
+    <div class="header-actions">
+    
+
+      <button class="btn btn-primary primary-action" type="button" (click)="nuevoRemito()">
+        <mat-icon>add</mat-icon>
+        Nuevo remito
+      </button>
+    </div>
+  </div>
+
+  <mat-accordion class="filters-accordion" [formGroup]="filtrosForm">
+    <mat-expansion-panel class="filters-panel" [(expanded)]="filtrosAbiertos">
+      <mat-expansion-panel-header class="filters-panel-header">
+        <mat-panel-title>
+          <span class="block-title">Filtros</span>
+        </mat-panel-title>
+
+     
+      </mat-expansion-panel-header>
+
+      <div class="filters-bar">
+        <mat-form-field appearance="outline" class="filter-search">
+          <mat-label>Buscar</mat-label>
+          <input matInput formControlName="busqueda" placeholder="Numero, proveedor, OC, estado" />
+          <mat-icon matSuffix>search</mat-icon>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline">
+          <mat-label>Estado remito</mat-label>
+          <mat-select formControlName="estado">
+            <mat-option *ngFor="let estado of estadosFiltro" [value]="estado">
+              {{ estado === 'TODOS' ? 'Todos' : estado }}
+            </mat-option>
+          </mat-select>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="filter-date">
+          <mat-label>Desde</mat-label>
+          <input matInput [matDatepicker]="fechaDesdePicker" formControlName="fechaDesde" />
+          <mat-datepicker-toggle matIconSuffix [for]="fechaDesdePicker"></mat-datepicker-toggle>
+          <mat-datepicker
+            #fechaDesdePicker
+            xPosition="end"
+            yPosition="below"
+            panelClass="registro-date-picker-panel">
+          </mat-datepicker>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="filter-date">
+          <mat-label>Hasta</mat-label>
+          <input matInput [matDatepicker]="fechaHastaPicker" formControlName="fechaHasta" />
+          <mat-datepicker-toggle matIconSuffix [for]="fechaHastaPicker"></mat-datepicker-toggle>
+          <mat-datepicker
+            #fechaHastaPicker
+            xPosition="end"
+            yPosition="below"
+            panelClass="registro-date-picker-panel">
+          </mat-datepicker>
+        </mat-form-field>
+
+        <button class="btn btn-ghost btn-sm" type="button" (click)="limpiarFiltros()">
+          <mat-icon>filter_alt_off</mat-icon>
+          Limpiar
+        </button>
+      </div>
+    </mat-expansion-panel>
+  </mat-accordion>
+
+  <section class="block">
+    <div class="block-header">
+      <h2 class="block-title">Listado maestro</h2>
+      <span class="chip chip-no-dot chip-teal">{{ dataSource.data.length }} REMITOS</span>
+    </div>
+
+    <div class="state-message" *ngIf="cargando">Cargando remitos...</div>
+
+    <div class="table-wrap" *ngIf="!cargando">
+      <table mat-table [dataSource]="dataSource" class="remito-table mat-elevation-z0">
+        <ng-container matColumnDef="numero">
+          <th mat-header-cell *matHeaderCellDef>Numero</th>
+          <td mat-cell *matCellDef="let remito">
+            <strong>{{ remito.numero }}</strong>
+          </td>
+        </ng-container>
+
+        <ng-container matColumnDef="fecha">
+          <th mat-header-cell *matHeaderCellDef>Fecha</th>
+          <td mat-cell *matCellDef="let remito">{{ formatearFecha(remito.fecha) }}</td>
+        </ng-container>
+
+        <ng-container matColumnDef="registroCompra">
+          <th mat-header-cell *matHeaderCellDef>Registro Compra</th>
+          <td mat-cell *matCellDef="let remito">
+            {{ remito.registroCompraNumero || remito.idRegistroCompra }}
+          </td>
+        </ng-container>
+
+        <ng-container matColumnDef="proveedor">
+          <th mat-header-cell *matHeaderCellDef>Proveedor</th>
+          <td mat-cell *matCellDef="let remito">{{ remito.proveedor || '-' }}</td>
+        </ng-container>
+
+        <ng-container matColumnDef="estado">
+          <th mat-header-cell *matHeaderCellDef>Estado</th>
+          <td mat-cell *matCellDef="let remito">
+            <span class="estado-badge" [class.liberado]="remito.liberado">
+              {{ estadoRemito(remito) }}
+            </span>
+          </td>
+        </ng-container>
+
+        <ng-container matColumnDef="acciones">
+          <th mat-header-cell *matHeaderCellDef class="acciones-header">Acciones</th>
+          <td mat-cell *matCellDef="let remito" class="acciones-cell">
+            <button mat-icon-button color="primary" matTooltip="Ver detalle" (click)="verDetalle(remito)">
+              <mat-icon>visibility</mat-icon>
+            </button>
+
+            <button
+              mat-icon-button
+              color="primary"
+              matTooltip="Liberar"
+              [disabled]="!puedeLiberar(remito)"
+              (click)="liberar(remito)"
+            >
+              <mat-icon>inventory</mat-icon>
+            </button>
+          </td>
+        </ng-container>
+
+        <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+        <tr mat-row *matRowDef="let row; columns: displayedColumns;" class="data-row"></tr>
+      </table>
+
+      <div class="state-message" *ngIf="dataSource.data.length === 0">
+        No hay remitos cargados.
+      </div>
+    </div>
+
+    <mat-paginator
+      *ngIf="!cargando && dataSource.data.length > 0"
+      [pageSize]="10"
+      [pageSizeOptions]="[10, 25, 50]"
+      showFirstLastButtons>
+    </mat-paginator>
+  </section>
+</div>

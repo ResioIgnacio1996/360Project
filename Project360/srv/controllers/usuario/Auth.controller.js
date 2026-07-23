@@ -24,10 +24,13 @@ const login = async (req, res) => {
           u.email,
           u.usuario,
           u.password,
-          u.activo
+          u.activo,
+          u.rol_id,
+          r.nombre AS rol_nombre
        
     
         FROM Usuario u
+        INNER JOIN Rol r ON u.rol_id = r.rol_id
         WHERE u.usuario = @usuario
       `);
 
@@ -61,8 +64,9 @@ const login = async (req, res) => {
       {
         usuario_id: user.usuario_id,
         empresa_id: user.empresa_id,
-
-        usuario: user.usuario
+        usuario: user.usuario,
+        rol_id: user.rol_id,
+        rol_nombre: user.rol_nombre
       },
       process.env.JWT_SECRET,
       {
@@ -75,9 +79,10 @@ const login = async (req, res) => {
       token,
       usuario: {
         usuario_id: user.usuario_id,
+        empresa_id: user.empresa_id,
         nombre: user.nombre,
         usuario: user.usuario,
-    
+        rol_id: user.rol_id,
         rol_nombre: user.rol_nombre
       }
     });

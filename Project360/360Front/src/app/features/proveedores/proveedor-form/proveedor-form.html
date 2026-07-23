@@ -1,0 +1,109 @@
+<div class="form-page">
+
+    <div class="page-header">
+        <div>
+            <h1>{{ esEdicion ? 'Editar Proveedor' : 'Nuevo Proveedor' }}</h1>
+            <p>{{ esEdicion ? 'Modificación de datos del proveedor' : 'Alta de nuevo proveedor' }}</p>
+        </div>
+    </div>
+
+    <div *ngIf="error" class="error-message">
+        {{ error }}
+    </div>
+
+    <div *ngIf="mensaje" class="success-message">
+        {{ mensaje }}
+    </div>
+
+    <div *ngIf="cargandoRubros" class="state-message">
+        Cargando rubros...
+    </div>
+
+    <div *ngIf="cargandoProveedor" class="state-message">
+        Cargando proveedor...
+    </div>
+
+    <div class="card" *ngIf="!cargandoProveedor">
+        <form [formGroup]="proveedorForm" (ngSubmit)="guardar()">
+
+            <div class="form-grid">
+
+                <div class="form-group">
+                    <label>Razón Social</label>
+                    <input type="text" formControlName="razon_social" placeholder="Ingrese la razón social" />
+
+                    <small
+                        *ngIf="campoInvalido('razon_social') && proveedorForm.get('razon_social')?.errors?.['required']">
+                        La razón social es obligatoria.
+                    </small>
+                </div>
+
+                <div class="form-group">
+                    <label>CUIT</label>
+                    <input type="text" formControlName="cuit" placeholder="30-12345678-9" maxlength="13"
+                        (input)="formatearCuit($event)" />
+                </div>
+
+                <div class="form-group">
+                    <label>Teléfono</label>
+                    <input type="text" formControlName="telefono" placeholder="Ingrese el teléfono" />
+                </div>
+
+                <div class="form-group">
+                    <label>Email</label>
+                    <input type="email" formControlName="email" placeholder="proveedor@mail.com" />
+
+                    <small *ngIf="campoInvalido('email') && proveedorForm.get('email')?.errors?.['email']">
+                        Ingrese un email válido.
+                    </small>
+                </div>
+
+                <div class="form-group">
+                    <label>Dirección</label>
+                    <input type="text" formControlName="direccion" placeholder="Ingrese la dirección" />
+                </div>
+
+                <div class="form-group">
+                    <label>Ubicación</label>
+                    <input type="text" formControlName="ubicacion" placeholder="Villa María, Córdoba" />
+                </div>
+
+                <div class="form-group">
+                    <label>Rubro</label>
+                    <select formControlName="rubro_id">
+                        <option value="">Seleccione un rubro</option>
+                        <option *ngFor="let rubro of rubros" [value]="rubro.rubro_id">
+                            {{ rubro.nombre }}
+                        </option>
+                    </select>
+
+                    <small *ngIf="campoInvalido('rubro_id') && proveedorForm.get('rubro_id')?.errors?.['required']">
+                        El rubro es obligatorio.
+                    </small>
+                </div>
+
+                <div class="form-group checkbox-group">
+                    <label>Estado</label>
+
+                    <label class="checkbox-label">
+                        <input type="checkbox" formControlName="activo" />
+                        Activo
+                    </label>
+                </div>
+
+            </div>
+
+            <div class="actions">
+                <button type="button" class="secondary-button" (click)="cancelar()">
+                    Cancelar
+                </button>
+
+                <button type="submit" class="primary-button" [disabled]="guardando || cargandoRubros">
+                    {{ guardando ? 'Guardando proveedor...' : 'Guardar' }}
+                </button>
+            </div>
+
+        </form>
+    </div>
+
+</div>

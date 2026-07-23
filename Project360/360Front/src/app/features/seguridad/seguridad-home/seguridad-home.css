@@ -1,0 +1,50 @@
+.seguridad-page {
+  max-width: none;
+  width: 100%;
+}
+
+.security-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 12px;
+  padding: 16px;
+}
+
+.security-tile {
+  min-height: 118px;
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text);
+  text-align: left;
+  cursor: pointer;
+  display: grid;
+  gap: 8px;
+  align-content: start;
+  transition: background .18s ease, border-color .18s ease, transform .18s ease;
+}
+
+.security-tile:hover {
+  background: var(--surface-hover);
+  border-color: var(--border-2);
+  transform: translateY(-1px);
+}
+
+.security-tile .material-icons {
+  color: var(--primary);
+  font-size: 22px;
+}
+
+.security-tile strong {
+  font-family: var(--font-tech);
+  font-size: 11px;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+}
+
+.security-tile small {
+  color: var(--text-secondary);
+  font-size: 13px;
+  line-height: 1.25;
+}

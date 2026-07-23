@@ -18,7 +18,7 @@ app.use('/api/proyectos',require('./routes/Proyecto.routes'));
 
 app.use('/api/proveedores', require('./routes/Proveedor.routes')); 
 
-app.use('/api/materiales', require('./routes/Materiales.routes'));
+app.use('/api/materiales', require('./routes/materiales.routes'));
 app.use( '/api/registro-compra',require('./routes/RegistroCompra.routes'));
 app.use('/api/remitos', require('./routes/Remito.routes'));
 app.use('/api/stock-general', require('./routes/StockGeneral.routes'));

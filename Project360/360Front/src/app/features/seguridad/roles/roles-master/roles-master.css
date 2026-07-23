@@ -1,0 +1,65 @@
+.roles-page {
+  max-width: none;
+  width: 100%;
+}
+
+.tech-value {
+  font-family: var(--font-tech);
+}
+
+.text-center {
+  text-align: center;
+}
+
+.roles-table {
+  table-layout: fixed;
+  min-width: 760px;
+}
+
+.roles-table th:nth-child(1),
+.roles-table td:nth-child(1) {
+  width: 22%;
+}
+
+.roles-table th:nth-child(2),
+.roles-table td:nth-child(2) {
+  width: 43%;
+}
+
+.roles-table th:nth-child(3),
+.roles-table td:nth-child(3) {
+  width: 13%;
+}
+
+.roles-table th:nth-child(4),
+.roles-table td:nth-child(4) {
+  width: 22%;
+}
+
+.acciones-header {
+  text-align: center;
+}
+
+.acciones-cell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+}
+
+.acciones-cell .mat-mdc-icon-button {
+  width: 30px;
+  height: 30px;
+  padding: 3px;
+}
+
+.acciones-cell mat-icon {
+  font-size: 18px;
+}
+
+@media (max-width: 900px) {
+  .filters-bar .mat-mdc-form-field,
+  .filters-bar .filter-search {
+    width: 100%;
+  }
+}

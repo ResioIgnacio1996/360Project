@@ -30,7 +30,7 @@ const crearUsuarioConRol = async (req, res) => {
       .query(`
         SELECT rol_id
         FROM Rol
-        WHERE rol_id = ${req.body.rol_id}
+        WHERE rol_id = @rol_id
       `);
 
     if (rolExiste.recordset.length === 0) {
@@ -379,7 +379,7 @@ const getUsuarios = async (req, res) => {
         u.rol_id,
         r.nombre AS rol
       FROM Usuario u
-      INNER JOIN Rol r
+      LEFT JOIN Rol r
         ON u.rol_id = r.rol_id
       ORDER BY u.usuario_id
     `);

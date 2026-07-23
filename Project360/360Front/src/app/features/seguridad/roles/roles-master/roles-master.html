@@ -1,0 +1,76 @@
+<div class="roles-page">
+  <div class="page-header">
+    <div>
+      <span class="breadcrumb">DB360 / Seguridad / Roles</span>
+      <h1>Roles</h1>
+      <p>Administrá los perfiles habilitados y su estado operativo dentro de DB360.</p>
+    </div>
+
+    <button class="btn btn-primary" type="button" (click)="nuevoRol()">
+      <mat-icon>add</mat-icon>
+      Nuevo rol
+    </button>
+  </div>
+
+  <section class="block">
+    <div class="block-header">
+      <h2 class="block-title">Filtros</h2>
+      <span class="chip chip-no-dot chip-blue">ROLES</span>
+    </div>
+
+    <div class="filters-bar">
+      <mat-form-field appearance="outline" class="filter-search">
+        <mat-label>Buscar rol</mat-label>
+        <input matInput type="text" placeholder="Nombre o descripción" (input)="buscar($event)" />
+        <mat-icon matSuffix>search</mat-icon>
+      </mat-form-field>
+    </div>
+  </section>
+
+  <section class="block">
+    <div class="block-header">
+      <h2 class="block-title">Listado maestro</h2>
+      <span class="chip chip-no-dot chip-teal">{{ rolesFiltrados.length }} ROLES</span>
+    </div>
+
+    <div *ngIf="cargando" class="loading-box">Cargando roles...</div>
+    <div *ngIf="error" class="error-message">{{ error }}</div>
+
+    <div class="table-wrap" *ngIf="!cargando && rolesFiltrados.length > 0">
+      <table class="roles-table">
+        <thead>
+          <tr>
+            <th>Nombre</th>
+            <th>Descripción</th>
+            <th class="text-center">Activo</th>
+            <th class="acciones-header">Acciones</th>
+          </tr>
+        </thead>
+
+        <tbody>
+          <tr *ngFor="let rol of rolesFiltrados">
+            <td class="tech-value"><strong>{{ rol.nombre }}</strong></td>
+            <td>{{ rol.descripcion || '-' }}</td>
+            <td class="text-center">
+              <mat-slide-toggle [checked]="rol.activo" (change)="cambiarEstado(rol, $event.checked)">
+              </mat-slide-toggle>
+            </td>
+            <td class="acciones-cell">
+              <span class="chip chip-no-dot" [class.chip-green]="rol.activo" [class.chip-red]="!rol.activo">
+                {{ rol.activo ? 'Activo' : 'Inactivo' }}
+              </span>
+
+              <button mat-icon-button type="button" title="Editar" (click)="editarRol(rol.rol_id)">
+                <mat-icon>edit</mat-icon>
+              </button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div *ngIf="!cargando && rolesFiltrados.length === 0" class="empty-state">
+      No se encontraron roles para los filtros seleccionados.
+    </div>
+  </section>
+</div>

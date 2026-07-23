@@ -1,0 +1,68 @@
+.login-page {
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background:
+    radial-gradient(circle at 22% 18%, color-mix(in srgb, var(--primary) 14%, transparent), transparent 28%),
+    var(--app-bg);
+  padding: 20px;
+}
+
+.login-card {
+  width: min(400px, 100%);
+  padding: 28px;
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: var(--shadow);
+}
+
+h1 {
+  color: var(--primary);
+  font-family: var(--font-tech);
+  margin: 0 0 4px;
+}
+
+h3 {
+  color: var(--text-secondary);
+  margin: 0 0 20px;
+  font-size: 15px;
+}
+
+.form-group {
+  margin-bottom: 14px;
+}
+
+label {
+  display: block;
+  margin-bottom: 6px;
+}
+
+input {
+  width: 100%;
+  padding: 10px 12px;
+}
+
+button {
+  width: 100%;
+  border: none;
+  background: var(--primary);
+  color: var(--on-primary);
+  padding: 11px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-family: var(--font-tech);
+  font-weight: 500;
+}
+
+button:hover {
+  background: var(--primary-hover);
+}
+
+.error {
+  color: var(--danger);
+  margin-top: 10px;
+  font-family: var(--font-tech);
+  font-size: 12px;
+}

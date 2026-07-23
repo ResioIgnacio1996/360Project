@@ -1,0 +1,67 @@
+@if (visible) {
+  <div class="overlay" (click)="cerrar()"></div>
+}
+
+<aside class="sidebar" [class.open]="visible">
+  <div class="sidebar-header">
+    <div>
+      <h2>DB360</h2>
+      <p>Panel de navegación</p>
+    </div>
+
+    <button class="close-btn" type="button" (click)="volverAtras()" title="Volver a la pantalla anterior" aria-label="Volver a la pantalla anterior">
+      <span class="material-icons">chevron_left</span>
+    </button>
+  </div>
+
+  <div class="user-card">
+    <div class="avatar">
+      {{ inicialUsuario }}
+    </div>
+
+    <div>
+      <strong>{{ usuario?.nombre || 'Usuario' }}</strong>
+      <span>{{ usuario?.usuario || 'Sin usuario' }}</span>
+    </div>
+  </div>
+
+  <nav>
+    <a routerLink="/dashboard" routerLinkActive="active" (click)="navegar()">
+      <span class="material-icons">dashboard</span>
+      <span>Dashboard</span>
+    </a>
+    <a routerLink="/ingreso-materiales" routerLinkActive="active" (click)="navegar()">
+      <span class="material-icons">inventory_2</span>
+      <span>Ingreso de Materiales</span>
+    </a>
+    <a routerLink="/seguridad" routerLinkActive="active" (click)="navegar()">
+      <span class="material-icons">admin_panel_settings</span>
+      <span>Seguridad</span>
+    </a>
+    <a routerLink="/proyectos" routerLinkActive="active" (click)="navegar()">
+      <span class="material-icons">account_tree</span>
+      <span>Proyectos</span>
+    </a>
+    <a routerLink="/proveedores" routerLinkActive="active" (click)="navegar()">
+      <span class="material-icons">warehouse</span>
+      <span>Proveedores</span>
+    </a>
+    <a routerLink="/clientes" routerLinkActive="active" (click)="navegar()">
+      <span class="material-icons">business</span>
+      <span>Clientes</span>
+    </a>
+    <a routerLink="/orden-compra" routerLinkActive="active" (click)="navegar()">
+      <span class="material-icons">upload_file</span>
+      <span>Orden Compra</span>
+    </a>
+    <a routerLink="/configuracion" routerLinkActive="active" (click)="navegar()">
+      <span class="material-icons">settings_applications</span>
+      <span>Configuración</span>
+    </a>
+  </nav>
+
+  <button class="logout-btn" type="button" (click)="logout()">
+    <span class="material-icons">logout</span>
+    <span>Cerrar sesión</span>
+  </button>
+</aside>

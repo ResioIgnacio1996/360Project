@@ -1,0 +1,14 @@
+.registro-compra-page { width: 100%; }
+.project-filters{align-items:center}
+.project-filters .filter-search{flex:2 1 320px}
+.project-filters .btn{display:inline-flex;align-items:center;gap:6px;margin-bottom:20px}
+.header-actions{display:flex;align-items:center;gap:8px}
+.header-actions>.mat-mdc-icon-button{color:var(--text-secondary)!important;border:1px solid var(--border-2);border-radius:5px!important}
+table{width:100%;border-collapse:collapse}
+th,td{padding:12px;text-align:left;border-bottom:1px solid var(--border)}
+th:last-child{text-align:center}
+.acciones{text-align:center;white-space:nowrap}
+.acciones .mat-mdc-icon-button{width:30px;height:30px;padding:3px}
+.acciones mat-icon{font-size:18px}
+.error{color:var(--red)}
+@media(max-width:900px){.table-wrap{overflow:auto}.project-filters .mat-mdc-form-field{width:100%}.project-filters .btn{width:100%;justify-content:center;margin-bottom:0}}

@@ -1,0 +1,52 @@
+.upload-page,
+.form-page {
+  max-width: none;
+  width: 100%;
+}
+
+.upload-dropzone,
+.drop-zone {
+  display: grid;
+  place-items: center;
+  gap: 10px;
+  min-height: 190px;
+  padding: 24px;
+  border: 1px dashed var(--border-2);
+  border-radius: 8px;
+  background: var(--bg);
+  color: var(--text-secondary);
+  text-align: center;
+  transition: border-color .18s ease, background .18s ease;
+}
+
+.upload-dropzone:hover,
+.drop-zone:hover,
+.drag-over {
+  border-color: var(--primary);
+  background: color-mix(in srgb, var(--primary) 10%, var(--bg));
+}
+
+.file-info,
+.selected-file,
+.file-preview {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 12px;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface-card-2);
+}
+
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.results-card {
+  margin-top: 18px;
+}

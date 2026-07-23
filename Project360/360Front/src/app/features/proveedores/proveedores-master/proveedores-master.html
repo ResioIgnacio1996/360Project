@@ -1,0 +1,98 @@
+<div class="proveedores-page">
+  <div class="page-header">
+    <div>
+      <span class="breadcrumb">DB360 / Compras / Proveedores</span>
+      <h1>Proveedores</h1>
+      <p>Administración de proveedores.</p>
+    </div>
+
+    <button class="primary-button" type="button" (click)="nuevoProveedor()">
+      <span class="material-icons">add</span>
+      Nuevo Proveedor
+    </button>
+  </div>
+
+  <div *ngIf="error" class="error-message">
+    {{ error }}
+  </div>
+
+  <div *ngIf="mensaje" class="success-message">
+    {{ mensaje }}
+  </div>
+
+  <div *ngIf="eliminando" class="state-message">
+    Eliminando proveedor...
+  </div>
+
+  <div class="card">
+    <div class="toolbar">
+      <div class="search-box">
+        <label>Buscar</label>
+        <input
+          type="text"
+          placeholder="Buscar proveedor..."
+          [(ngModel)]="filtro"
+          (input)="filtrarProveedores()"
+        />
+      </div>
+    </div>
+
+    <div *ngIf="cargando" class="state-message">
+      Cargando proveedores...
+    </div>
+
+    <div *ngIf="!cargando && proveedoresFiltrados.length === 0" class="state-message">
+      No se encontraron proveedores.
+    </div>
+
+    <div class="table-container" *ngIf="!cargando && proveedoresFiltrados.length > 0">
+      <table>
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Razón Social</th>
+            <th>CUIT</th>
+            <th>Teléfono</th>
+            <th>Email</th>
+            <th>Rubro</th>
+            <th>Ubicación</th>
+            <th>Activo</th>
+            <th class="actions-column">Acciones</th>
+          </tr>
+        </thead>
+
+        <tbody>
+          <tr *ngFor="let proveedor of proveedoresFiltrados">
+            <td>{{ proveedor.proveedor_id }}</td>
+            <td>{{ proveedor.razon_social }}</td>
+            <td>{{ proveedor.cuit || '-' }}</td>
+            <td>{{ proveedor.telefono || '-' }}</td>
+            <td>{{ proveedor.email || '-' }}</td>
+            <td>{{ proveedor.rubro || '-' }}</td>
+            <td>{{ proveedor.ubicacion || '-' }}</td>
+            <td>
+              <span
+                class="status-badge"
+                [class.active]="proveedor.activo"
+                [class.inactive]="!proveedor.activo"
+              >
+                {{ proveedor.activo ? 'Activo' : 'Inactivo' }}
+              </span>
+            </td>
+            <td>
+              <div class="actions">
+                <button class="icon-button" type="button" title="Editar" (click)="editarProveedor(proveedor.proveedor_id)">
+                  <span class="material-icons">edit</span>
+                </button>
+
+                <button class="icon-button secondary" type="button" title="Eliminar" (click)="eliminarProveedor(proveedor.proveedor_id)">
+                  <span class="material-icons">delete</span>
+                </button>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>

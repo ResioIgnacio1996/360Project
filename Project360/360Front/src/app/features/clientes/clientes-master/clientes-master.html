@@ -1,0 +1,9 @@
+<div class="registro-compra-page clientes-page">
+  <div class="page-header"><div><span class="breadcrumb">OBRA360 / Comercial / Clientes</span><h1>Clientes</h1><p>Administración de clientes y acceso a sus proyectos.</p></div><button class="btn btn-primary" type="button" (click)="nuevoCliente()"><mat-icon>add</mat-icon>Nuevo cliente</button></div>
+  <div *ngIf="error" class="error-message">{{ error }}</div><div *ngIf="mensaje" class="success-message">{{ mensaje }}</div>
+  <section class="block"><div class="block-header"><h2 class="block-title">Filtros</h2></div><div class="filters-bar"><label class="search-box">Buscar<input type="text" placeholder="Nombre, apellido o CUIL" [(ngModel)]="filtro" (input)="filtrarClientes()" /></label></div></section>
+  <section class="block"><div class="block-header"><h2 class="block-title">Listado maestro</h2><span class="chip c-blue">{{ clientesFiltrados.length }} CLIENTES</span></div>
+    <div *ngIf="cargando" class="state-message">Cargando clientes...</div><div *ngIf="!cargando && !clientesFiltrados.length" class="state-message">No se encontraron clientes.</div>
+    <div class="table-container" *ngIf="!cargando && clientesFiltrados.length"><table><thead><tr><th>Nombre</th><th>Apellido</th><th>CUIL</th><th class="acciones-header">Acciones</th></tr></thead><tbody><tr *ngFor="let cliente of clientesFiltrados"><td>{{ cliente.nombre }}</td><td>{{ cliente.apellido }}</td><td>{{ cliente.cuil || '-' }}</td><td class="acciones-cell"><button mat-icon-button matTooltip="Ver proyectos del cliente" (click)="verProyectos(cliente)"><mat-icon>business_center</mat-icon></button><button mat-icon-button matTooltip="Editar cliente" (click)="editarCliente(cliente.id_cliente)"><mat-icon>edit</mat-icon></button><button mat-icon-button matTooltip="Eliminar cliente" (click)="eliminarCliente(cliente.id_cliente)"><mat-icon>delete</mat-icon></button></td></tr></tbody></table></div>
+  </section>
+</div>

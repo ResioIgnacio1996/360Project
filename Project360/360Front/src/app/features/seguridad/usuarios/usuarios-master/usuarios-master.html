@@ -1,0 +1,123 @@
+<div class="usuarios-page">
+  <div class="page-header">
+    <div>
+      <span class="breadcrumb">DB360 / Seguridad / Usuarios</span>
+      <h1>Usuarios</h1>
+      <p>Administrá los usuarios habilitados para operar en DB360.</p>
+    </div>
+
+    <button class="btn btn-primary" type="button" routerLink="/seguridad/usuarios/nuevo">
+      <mat-icon>add</mat-icon>
+      Nuevo usuario
+    </button>
+  </div>
+
+  <section class="block" [formGroup]="filtrosForm">
+    <div class="block-header">
+      <h2 class="block-title">Filtros</h2>
+      <span class="chip chip-no-dot chip-blue">USUARIOS</span>
+    </div>
+
+    <div class="filters-bar">
+      <mat-form-field appearance="outline" class="filter-search">
+        <mat-label>Usuario</mat-label>
+        <input matInput formControlName="usuario" placeholder="Buscar usuario" />
+        <mat-icon matSuffix>search</mat-icon>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline" class="filter-search">
+        <mat-label>Nombre</mat-label>
+        <input matInput formControlName="nombre" placeholder="Buscar nombre" />
+        <mat-icon matSuffix>person_search</mat-icon>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline">
+        <mat-label>Activo</mat-label>
+        <mat-select formControlName="activo">
+          <mat-option value="TODOS">Todos</mat-option>
+          <mat-option value="ACTIVOS">Activos</mat-option>
+          <mat-option value="INACTIVOS">Inactivos</mat-option>
+        </mat-select>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline">
+        <mat-label>Rol</mat-label>
+        <mat-select formControlName="rol">
+          <mat-option value="TODOS">Todos</mat-option>
+          @for (rol of rolesDisponibles; track rol) {
+            <mat-option [value]="rol">{{ rol }}</mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+
+      <button class="btn btn-ghost btn-sm" type="button" (click)="limpiarFiltros()">
+        <mat-icon>filter_alt_off</mat-icon>
+        Limpiar
+      </button>
+    </div>
+  </section>
+
+  <section class="block">
+    <div class="block-header">
+      <h2 class="block-title">Listado maestro</h2>
+      <span class="chip chip-no-dot chip-teal">{{ usuariosFiltrados.length }} USUARIOS</span>
+    </div>
+
+    @if (cargando) {
+      <div class="loading-box">Cargando usuarios...</div>
+    }
+
+    @if (error) {
+      <div class="error-message">{{ error }}</div>
+    }
+
+    @if (!cargando && usuariosFiltrados.length > 0) {
+      <div class="table-wrap">
+        <table class="usuarios-table">
+          <thead>
+            <tr>
+              <th>Usuario</th>
+              <th>Nombre</th>
+              <th>Email</th>
+              <th>Rol</th>
+              <th class="text-center">Activo</th>
+              <th class="acciones-header">Acciones</th>
+            </tr>
+          </thead>
+
+          <tbody>
+            @for (u of usuariosFiltrados; track u.usuario_id) {
+              <tr>
+                <td class="tech-value"><strong>{{ u.usuario }}</strong></td>
+                <td>{{ u.nombre }}</td>
+                <td>{{ u.email }}</td>
+                <td><span class="role-badge">{{ u.rol || 'Sin rol' }}</span></td>
+                <td class="text-center">
+                  <mat-slide-toggle [checked]="u.activo" (change)="cambiarEstado(u, $event.checked)">
+                  </mat-slide-toggle>
+                </td>
+                <td class="acciones-cell">
+                  <span class="chip chip-no-dot" [class.chip-green]="u.activo" [class.chip-red]="!u.activo">
+                    {{ u.activo ? 'Activo' : 'Inactivo' }}
+                  </span>
+
+                  <button mat-icon-button type="button" title="Editar" [routerLink]="['/seguridad/usuarios/editar', u.usuario_id]">
+                    <mat-icon>edit</mat-icon>
+                  </button>
+
+                  <button mat-icon-button type="button" title="Permisos" [routerLink]="['/seguridad/usuarios', u.usuario_id, 'permisos']">
+                    <mat-icon>shield</mat-icon>
+                  </button>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+
+    @if (!cargando && usuariosFiltrados.length === 0) {
+      <div class="empty-state">No se encontraron usuarios para los filtros seleccionados.</div>
+    }
+  </section>
+</div>

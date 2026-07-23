@@ -68,11 +68,22 @@ Formato:
 Reglas:
 - No inventes datos.
 - Si un dato no esta, usar null.
+- Identifica tipo_documento como "OC" si es orden de compra, "FAC" si es factura, "REMITO" si es remito, o null si no se puede determinar.
 - Normaliza fechas como YYYY-MM-DD cuando sea posible.
 - Cantidades y precios deben ser numeros.
 - Si hay varios materiales, listarlos todos.
 - Si el documento no parece orden de compra, remito o presupuesto, indicalo en advertencias.
 `;
+
+const normalizarTipoRegistroCompra = (tipo) => {
+    const value = (tipo || '').trim().toUpperCase();
+
+    if (['FAC', 'FACTURA', 'FC', 'FRA'].includes(value)) {
+        return 'FAC';
+    }
+
+    return 'OC';
+};
 
 const crearError = (message, statusCode = 500, raw = undefined) => {
     const error = new Error(message);
@@ -153,6 +164,7 @@ const normalizarRegistroCompraDocumento = (data, archivo) => ({
     },
     registroCompra: {
         numero: data?.orden_compra?.numero ?? '',
+        tipo: normalizarTipoRegistroCompra(data?.tipo_documento),
         fecha: data?.orden_compra?.fecha_emision ?? '',
         fechaEntrega: data?.orden_compra?.fecha_entrega ?? null,
         observaciones: data?.orden_compra?.observaciones ?? null,

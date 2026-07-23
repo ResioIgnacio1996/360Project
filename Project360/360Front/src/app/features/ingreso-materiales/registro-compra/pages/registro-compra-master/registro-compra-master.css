@@ -1,0 +1,445 @@
+.registro-compra-page {
+  max-width: none;
+  width: 100%;
+}
+
+.registro-compra-page .primary-action {
+  border-radius: 8px;
+  box-shadow: 0 8px 18px color-mix(in srgb, var(--primary) 20%, transparent);
+}
+
+.tech-value {
+  font-family: var(--font-tech);
+}
+
+.registro-table {
+  table-layout: fixed;
+  min-width: 1180px;
+  background: transparent !important;
+  --mat-table-background-color: transparent;
+  --mat-table-header-headline-color: var(--text-muted);
+  --mat-table-row-item-label-text-color: var(--text);
+  --mat-table-row-item-outline-color: var(--border);
+}
+
+.registro-table .mat-mdc-header-row {
+  background: var(--surface-card) !important;
+}
+
+.registro-table .mat-mdc-row {
+  background: transparent;
+  transition: background .15s ease, filter .15s ease;
+}
+
+.registro-table .mat-mdc-header-cell {
+  background: var(--surface-card) !important;
+}
+
+.registro-table .mat-mdc-cell {
+  background: transparent !important;
+  border-bottom-color: var(--border) !important;
+  transition: background .15s ease, color .15s ease;
+}
+
+.registro-table .mat-mdc-header-cell {
+  color: var(--text-muted) !important;
+  font-family: var(--font-tech);
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+}
+
+.registro-table .mat-mdc-cell {
+  color: var(--text) !important;
+  font-size: 12px;
+}
+
+.registro-table .mat-mdc-cell strong {
+  color: var(--primary);
+}
+
+.registro-table .mat-mdc-row:hover,
+.registro-table .mat-mdc-row:hover .mat-mdc-cell {
+  background: color-mix(in srgb, var(--surface-hover) 72%, transparent) !important;
+}
+
+.registro-table .mat-mdc-row:hover .mat-mdc-cell {
+  color: var(--text) !important;
+}
+
+.registro-table .mat-mdc-row:hover .mat-mdc-cell strong {
+  color: var(--primary) !important;
+}
+
+.registro-table th:nth-child(1),
+.registro-table td:nth-child(1) {
+  width: 9%;
+}
+
+.registro-table th:nth-child(2),
+.registro-table td:nth-child(2) {
+  width: 13%;
+}
+
+.registro-table th:nth-child(3),
+.registro-table td:nth-child(3) {
+  width: 20%;
+}
+
+.registro-table th:nth-child(4),
+.registro-table td:nth-child(4),
+.registro-table th:nth-child(5),
+.registro-table td:nth-child(5) {
+  width: 10%;
+}
+
+.registro-table th:nth-child(6),
+.registro-table td:nth-child(6) {
+  width: 14%;
+}
+
+.registro-table th:nth-child(7),
+.registro-table td:nth-child(7) {
+  width: 12%;
+}
+
+.registro-table th:nth-child(8),
+.registro-table td:nth-child(8),
+.registro-table th:nth-child(9),
+.registro-table td:nth-child(9) {
+  width: 8%;
+}
+
+.registro-table th:nth-child(10),
+.registro-table td:nth-child(10) {
+  width: 14%;
+}
+
+.acciones-header {
+  text-align: center;
+}
+
+.acciones-cell {
+  text-align: center;
+  white-space: nowrap;
+}
+
+.acciones-inline {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+}
+
+.acciones-inline .mat-mdc-icon-button {
+  width: 30px;
+  height: 30px;
+  padding: 3px;
+}
+
+.acciones-inline mat-icon {
+  font-size: 18px;
+}
+
+mat-paginator {
+  border-top: 1px solid var(--border);
+}
+
+
+
+/* =========================================================
+   FILTROS Y DATEPICKER
+   Evita que los campos se compriman y que el calendario herede
+   estilos globales de tablas, botones o contenedores.
+   ========================================================= */
+
+.registro-compra-page .filters-accordion {
+  display: block;
+  margin-bottom: 18px;
+  position: relative;
+  overflow: visible;
+  z-index: 2;
+}
+
+.registro-compra-page .filters-panel {
+  background: var(--surface-card) !important;
+  color: var(--text) !important;
+  --mat-expansion-container-background-color: var(--surface-card);
+  --mat-expansion-container-text-color: var(--text);
+  --mat-expansion-header-text-color: var(--text);
+  --mat-expansion-header-description-color: var(--text-secondary);
+  border: 1px solid var(--border);
+  border-radius: 8px !important;
+  box-shadow: none !important;
+  overflow: visible !important;
+}
+
+.registro-compra-page .filters-panel-header {
+  min-height: 48px;
+  height: 48px;
+  padding: 0 16px;
+}
+
+.registro-compra-page .filters-panel.mat-expanded .filters-panel-header {
+  border-bottom: 1px solid var(--border);
+}
+
+.registro-compra-page .filters-panel-header .mat-expansion-panel-header-title {
+  align-items: center;
+  color: var(--text) !important;
+}
+
+.registro-compra-page .filters-panel-header .mat-expansion-panel-header-description {
+  align-items: center;
+  justify-content: flex-end;
+  margin-right: 8px;
+}
+
+.registro-compra-page .filters-panel ::ng-deep .mat-expansion-panel-body {
+  padding: 0;
+  overflow: visible;
+}
+
+.registro-compra-page .filters-panel ::ng-deep .mat-expansion-indicator::after {
+  color: var(--text-secondary);
+}
+
+.registro-compra-page .filters-bar {
+  display: grid;
+  grid-template-columns:
+    minmax(220px, 1.4fr)
+    minmax(115px, 0.6fr)
+    minmax(135px, 0.75fr)
+    minmax(190px, 1fr)
+    minmax(170px, 0.9fr)
+    150px
+    150px
+    auto;
+  align-items: center;
+  gap: 8px;
+  overflow: visible;
+}
+
+.registro-compra-page .filters-bar .mat-mdc-form-field {
+  width: 100%;
+  min-width: 0;
+}
+
+.registro-compra-page .filters-bar .filter-search {
+  min-width: 220px;
+}
+
+.registro-compra-page .filters-bar .filter-date {
+  width: 150px;
+  min-width: 150px;
+  max-width: 150px;
+}
+
+.registro-compra-page .filters-bar .btn {
+  white-space: nowrap;
+  justify-self: end;
+}
+
+/* El datepicker se renderiza fuera del componente, dentro del CDK overlay.
+   El componente usa ViewEncapsulation.None y todas estas reglas quedan
+   aisladas por la clase registro-date-picker-panel. */
+.cdk-overlay-pane:has(.registro-date-picker-panel) {
+  width: 296px !important;
+  min-width: 296px !important;
+  max-width: calc(100vw - 24px) !important;
+}
+
+.registro-date-picker-panel.mat-datepicker-content,
+.mat-datepicker-content.registro-date-picker-panel,
+.registro-date-picker-panel .mat-datepicker-content {
+  width: 296px !important;
+  min-width: 296px !important;
+  max-width: calc(100vw - 24px) !important;
+  overflow: hidden !important;
+  border: 1px solid var(--border) !important;
+  border-radius: 12px !important;
+  background: var(--surface-card) !important;
+  box-shadow: 0 18px 45px rgba(0, 0, 0, 0.35) !important;
+}
+
+.registro-date-picker-panel .mat-calendar {
+  display: block !important;
+  width: 296px !important;
+  min-width: 0 !important;
+  max-width: 100% !important;
+  height: auto !important;
+}
+
+.registro-date-picker-panel .mat-calendar-content {
+  padding: 0 8px 8px !important;
+}
+
+.registro-date-picker-panel .mat-calendar-table {
+  display: table !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  table-layout: fixed !important;
+  border-collapse: collapse !important;
+  background: transparent !important;
+}
+
+.registro-date-picker-panel .mat-calendar-table-header,
+.registro-date-picker-panel .mat-calendar-body {
+  display: table-row-group !important;
+}
+
+.registro-date-picker-panel .mat-calendar-table-header tr,
+.registro-date-picker-panel .mat-calendar-body tr {
+  display: table-row !important;
+  height: auto !important;
+  background: transparent !important;
+}
+
+.registro-date-picker-panel .mat-calendar-table-header th,
+.registro-date-picker-panel .mat-calendar-body-cell {
+  display: table-cell !important;
+  width: 14.285714% !important;
+  min-width: 0 !important;
+  max-width: none !important;
+  padding: 0 !important;
+  text-align: center !important;
+  border: 0 !important;
+}
+
+.registro-date-picker-panel .mat-calendar-body-cell {
+  position: relative !important;
+  height: 40px !important;
+}
+
+.registro-date-picker-panel .mat-calendar-body-cell-content {
+  position: absolute !important;
+  top: 50% !important;
+  left: 50% !important;
+  width: 34px !important;
+  height: 34px !important;
+  line-height: 34px !important;
+  transform: translate(-50%, -50%) !important;
+  border-radius: 50% !important;
+  box-sizing: border-box !important;
+}
+
+.registro-date-picker-panel .mat-calendar-header {
+  padding: 8px 8px 0 !important;
+}
+
+.registro-date-picker-panel .mat-calendar-controls {
+  display: flex !important;
+  align-items: center !important;
+  margin: 0 0 8px !important;
+}
+
+.registro-date-picker-panel .mat-calendar-spacer {
+  flex: 1 1 auto !important;
+}
+
+.registro-date-picker-panel .mat-calendar-previous-button,
+.registro-date-picker-panel .mat-calendar-next-button {
+  width: 40px !important;
+  height: 40px !important;
+  min-width: 40px !important;
+  padding: 0 !important;
+}
+
+@media (max-width: 1450px) {
+  .registro-compra-page .filters-bar {
+    grid-template-columns: repeat(3, minmax(180px, 1fr));
+  }
+
+  .registro-compra-page .filters-bar .filter-date {
+    width: 100%;
+    min-width: 0;
+    max-width: none;
+  }
+
+  .registro-compra-page .filters-bar .btn {
+    justify-self: start;
+  }
+}
+
+@media (max-width: 900px) {
+  .registro-compra-page .filters-bar {
+    grid-template-columns: 1fr;
+  }
+
+  .registro-compra-page .filters-bar .filter-search,
+  .registro-compra-page .filters-bar .filter-date,
+  .registro-compra-page .filters-bar .mat-mdc-form-field {
+    width: 100%;
+    min-width: 0;
+    max-width: none;
+  }
+}
+
+
+/* Reset defensivo contra estilos globales genéricos de table, tr, th y td. */
+.registro-date-picker-panel,
+.registro-date-picker-panel * {
+  box-sizing: border-box;
+}
+
+.registro-date-picker-panel .mat-calendar-table,
+.registro-date-picker-panel .mat-calendar-table thead,
+.registro-date-picker-panel .mat-calendar-table tbody,
+.registro-date-picker-panel .mat-calendar-table tr {
+  width: 100% !important;
+  min-width: 0 !important;
+  max-width: 100% !important;
+}
+
+.registro-date-picker-panel .mat-calendar-table thead {
+  display: table-header-group !important;
+}
+
+.registro-date-picker-panel .mat-calendar-table tbody {
+  display: table-row-group !important;
+}
+
+.registro-date-picker-panel .mat-calendar-table tr {
+  display: table-row !important;
+}
+
+.registro-date-picker-panel .mat-calendar-table th,
+.registro-date-picker-panel .mat-calendar-table td {
+  display: table-cell !important;
+  float: none !important;
+  flex: none !important;
+  width: 14.285714% !important;
+  min-width: 0 !important;
+  max-width: 14.285714% !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  white-space: normal !important;
+}
+
+.registro-date-picker-panel .mat-calendar-body-label {
+  visibility: hidden !important;
+  height: 0 !important;
+  line-height: 0 !important;
+  padding: 0 !important;
+}
+
+@media (max-width: 1100px) {
+  .registro-compra-page .filters-bar {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .registro-compra-page .filters-bar .filter-search,
+  .registro-compra-page .filters-bar .filter-date {
+    width: 100%;
+    min-width: 0;
+    max-width: none;
+  }
+}
+
+@media (max-width: 650px) {
+  .registro-compra-page .filters-bar {
+    grid-template-columns: 1fr;
+  }
+}

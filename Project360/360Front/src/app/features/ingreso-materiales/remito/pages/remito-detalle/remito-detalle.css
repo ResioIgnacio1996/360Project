@@ -1,0 +1,120 @@
+.module-page {
+  max-width: none;
+  width: 100%;
+}
+
+.header-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.summary-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(150px, 1fr));
+  gap: 12px;
+}
+
+.summary-field {
+  min-height: 56px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface-card-2);
+  padding: 8px 12px;
+}
+
+.summary-field span {
+  color: var(--text-muted);
+  font-family: var(--font-tech);
+  font-size: 9px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  margin-bottom: 6px;
+}
+
+.summary-field strong {
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.table-wrap {
+  overflow-x: auto;
+}
+
+.remito-detalle-table {
+  table-layout: fixed;
+  min-width: 760px;
+  background: transparent !important;
+  --mat-table-background-color: transparent;
+  --mat-table-header-headline-color: var(--text-muted);
+  --mat-table-row-item-label-text-color: var(--text);
+  --mat-table-row-item-outline-color: var(--border);
+}
+
+.remito-detalle-table .mat-mdc-header-row {
+  background: var(--surface-card) !important;
+}
+
+.remito-detalle-table .mat-mdc-header-cell {
+  background: var(--surface-card) !important;
+  color: var(--text-muted) !important;
+  font-family: var(--font-tech);
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.remito-detalle-table .mat-mdc-row {
+  background: transparent;
+  transition: background .15s ease, filter .15s ease;
+}
+
+.remito-detalle-table .mat-mdc-cell {
+  background: transparent !important;
+  border-bottom-color: var(--border) !important;
+  color: var(--text) !important;
+  font-size: 12px;
+  transition: background .15s ease, color .15s ease;
+}
+
+.remito-detalle-table .mat-mdc-cell strong {
+  color: var(--primary);
+  font-family: var(--font-tech);
+}
+
+.remito-detalle-table .mat-mdc-row:hover,
+.remito-detalle-table .mat-mdc-row:hover .mat-mdc-cell {
+  background: color-mix(in srgb, var(--surface-hover) 72%, transparent) !important;
+}
+
+.remito-detalle-table th:nth-child(1),
+.remito-detalle-table td:nth-child(1) {
+  width: 58%;
+}
+
+.remito-detalle-table th:nth-child(2),
+.remito-detalle-table td:nth-child(2) {
+  width: 22%;
+}
+
+.remito-detalle-table th:nth-child(3),
+.remito-detalle-table td:nth-child(3) {
+  width: 20%;
+}
+
+.tech-value {
+  font-family: var(--font-tech);
+}
+
+@media (max-width: 760px) {
+  .summary-grid {
+    grid-template-columns: 1fr;
+  }
+}

@@ -1,0 +1,250 @@
+<div class="module-page registro-detalle-page">
+  <div class="page-header">
+    <div>
+      <span class="breadcrumb">OBRA360 / Ingreso de Materiales / Registro {{ idRegistro || '-' }}</span>
+      <h1>Detalle de registro de compra</h1>
+      <p>Vista operativa de documento, remitos asociados y liberaciones de stock.</p>
+    </div>
+
+    <div class="header-actions">
+     
+
+    
+    </div>
+  </div>
+
+  <section class="block">
+    <div class="block-header">
+      <h2 class="block-title">Flujo del registro</h2>
+      
+    </div>
+
+    <mat-tab-group animationDuration="150ms" class="industrial-tabs">
+      <mat-tab>
+        <ng-template mat-tab-label>
+          <mat-icon>description</mat-icon>
+          Documento
+        </ng-template>
+
+        <div class="tab-body">
+          <div class="state-message" *ngIf="cargando">Cargando registro de compra...</div>
+
+          <mat-accordion class="document-accordion" multi *ngIf="!cargando && registro">
+            <mat-expansion-panel class="document-panel" [expanded]="true">
+              <mat-expansion-panel-header class="document-panel-header">
+                <mat-panel-title>
+                  <span class="block-title">Datos generales</span>
+                </mat-panel-title>
+              </mat-expansion-panel-header>
+
+              <div class="readonly-grid three">
+                <div class="readonly-field">
+                  <span>Numero</span>
+                  <strong>{{ registro.numero }}</strong>
+                </div>
+
+                <div class="readonly-field">
+                  <span>Tipo</span>
+                  <strong>{{ registro.tipo || 'OC' }}</strong>
+                </div>
+
+                <div class="readonly-field">
+                  <span>Fecha</span>
+                  <strong>{{ formatearFecha(registro.fecha) }}</strong>
+                </div>
+
+                <div class="readonly-field">
+                  <span>Fecha entrega</span>
+                  <strong>{{ formatearFecha(registro.fechaEntrega) }}</strong>
+                </div>
+
+                <div class="readonly-field">
+                  <span>Proyecto</span>
+                  <strong>{{ registro.proyecto?.nombre || 'Sin proyecto' }}</strong>
+                </div>
+
+                <div class="readonly-field">
+                  <span>Proveedor</span>
+                  <strong>{{ registro.proveedor.razonSocial || '-' }}</strong>
+                </div>
+
+                <div class="readonly-field">
+                  <span>CUIT</span>
+                  <strong>{{ registro.proveedor.cuit || '-' }}</strong>
+                </div>
+
+                <div class="readonly-field span-2">
+                  <span>Observaciones</span>
+                  <strong>{{ registro.observaciones || '-' }}</strong>
+                </div>
+              </div>
+            </mat-expansion-panel>
+
+            <mat-expansion-panel class="document-panel" [expanded]="true">
+              <mat-expansion-panel-header class="document-panel-header">
+                <mat-panel-title>
+                  <span class="block-title">Detalle</span>
+                </mat-panel-title>
+
+                <mat-panel-description>
+                  <span class="chip chip-no-dot chip-blue">{{ registro.detalle.length }} ITEMS</span>
+                </mat-panel-description>
+              </mat-expansion-panel-header>
+
+              <div class="table-wrap" *ngIf="registro.detalle.length">
+                <table mat-table [dataSource]="registro.detalle" class="detalle-table mat-elevation-z0">
+                  <ng-container matColumnDef="material">
+                    <th mat-header-cell *matHeaderCellDef>Material</th>
+                    <td mat-cell *matCellDef="let item">
+                      <strong>{{ item.nombreMaterial }}</strong>
+                    </td>
+                  </ng-container>
+
+                  <ng-container matColumnDef="descripcion">
+                    <th mat-header-cell *matHeaderCellDef>Descripcion</th>
+                    <td mat-cell *matCellDef="let item">{{ item.descripcionOriginal || '-' }}</td>
+                  </ng-container>
+
+                  <ng-container matColumnDef="cantidad">
+                    <th mat-header-cell *matHeaderCellDef>Cantidad</th>
+                    <td mat-cell *matCellDef="let item" class="tech-value">
+                      {{ item.cantidadSolicitada || item.cantidad }}
+                    </td>
+                  </ng-container>
+
+                  <ng-container matColumnDef="unidad">
+                    <th mat-header-cell *matHeaderCellDef>Unidad</th>
+                    <td mat-cell *matCellDef="let item">{{ item.unidad }}</td>
+                  </ng-container>
+
+                  <tr mat-header-row *matHeaderRowDef="detalleColumns"></tr>
+                  <tr mat-row *matRowDef="let row; columns: detalleColumns;" class="data-row"></tr>
+                </table>
+              </div>
+
+              <div class="state-message" *ngIf="!registro.detalle.length">
+                Este registro no tiene lineas cargadas.
+              </div>
+            </mat-expansion-panel>
+          </mat-accordion>
+
+          <div class="state-message" *ngIf="!cargando && !registro">
+            No se pudo cargar el detalle del registro de compra.
+          </div>
+        </div>
+      </mat-tab>
+
+      <mat-tab>
+        <ng-template mat-tab-label>
+          <mat-icon>assignment</mat-icon>
+          Remitos
+        </ng-template>
+
+        <div class="tab-body">
+          <div class="tab-actions">
+            <button class="btn btn-primary btn-sm primary-action" type="button" (click)="nuevoRemito()">
+              <mat-icon>add</mat-icon>
+              Nuevo remito
+            </button>
+          </div>
+
+          <div class="state-message" *ngIf="cargandoRemitos">Cargando remitos...</div>
+
+          <div class="table-wrap" *ngIf="!cargandoRemitos && remitos.length">
+            <table mat-table [dataSource]="remitos" class="remitos-detalle-table mat-elevation-z0">
+              <ng-container matColumnDef="numero">
+                <th mat-header-cell *matHeaderCellDef>Numero</th>
+                <td mat-cell *matCellDef="let remito">
+                  <strong>{{ remito.numero }}</strong>
+                </td>
+              </ng-container>
+
+              <ng-container matColumnDef="fecha">
+                <th mat-header-cell *matHeaderCellDef>Fecha</th>
+                <td mat-cell *matCellDef="let remito">{{ formatearFecha(remito.fecha) }}</td>
+              </ng-container>
+
+              <ng-container matColumnDef="estado">
+                <th mat-header-cell *matHeaderCellDef>Estado</th>
+                <td mat-cell *matCellDef="let remito">
+                  <span class="estado-badge" [class.completo]="remito.liberado" [class.pendiente]="!remito.liberado">
+                    {{ estadoRemito(remito) }}
+                  </span>
+                </td>
+              </ng-container>
+
+              <ng-container matColumnDef="acciones">
+                <th mat-header-cell *matHeaderCellDef class="acciones-header">Acciones</th>
+                <td mat-cell *matCellDef="let remito" class="acciones-cell">
+                  <div class="acciones-inline">
+                    <button mat-icon-button matTooltip="Ver remito" (click)="verRemito(remito)">
+                      <mat-icon>visibility</mat-icon>
+                    </button>
+                  </div>
+                </td>
+              </ng-container>
+
+              <tr mat-header-row *matHeaderRowDef="remitosColumns"></tr>
+              <tr mat-row *matRowDef="let row; columns: remitosColumns;" class="data-row"></tr>
+            </table>
+          </div>
+
+          <div class="state-message" *ngIf="!cargandoRemitos && !remitos.length">
+            Esta orden de compra todavia no tiene remitos cargados.
+          </div>
+        </div>
+      </mat-tab>
+
+      <mat-tab>
+        <ng-template mat-tab-label>
+          <mat-icon>warehouse</mat-icon>
+          Stock y liberaciones
+        </ng-template>
+
+        <div class="tab-body">
+          <div class="state-message" *ngIf="cargandoStock">Calculando stock liberado...</div>
+
+          <div class="table-wrap" *ngIf="!cargandoStock && stockLiberado.length">
+            <table class="stock-table">
+              <colgroup>
+                <col class="stock-col-material" />
+                <col class="stock-col-numero" />
+                <col class="stock-col-numero" />
+                <col class="stock-col-numero" />
+                <col class="stock-col-estado" />
+              </colgroup>
+
+              <thead>
+                <tr>
+                  <th>Material</th>
+                  <th>Esperado</th>
+                  <th>Liberado</th>
+                  <th>Pendiente</th>
+                  <th>Estado</th>
+                </tr>
+              </thead>
+
+              <tbody>
+                <tr *ngFor="let item of stockLiberado">
+                  <td><strong>{{ item.material }}</strong></td>
+                  <td class="tech-value">{{ item.esperado }} {{ item.unidad }}</td>
+                  <td class="tech-value">{{ item.liberado }} {{ item.unidad }}</td>
+                  <td class="tech-value">{{ item.pendiente }} {{ item.unidad }}</td>
+                  <td>
+                    <span class="estado-badge" [ngClass]="item.estado.toLowerCase()">
+                      {{ item.estado }}
+                    </span>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="state-message" *ngIf="!cargandoStock && !stockLiberado.length">
+            No hay materiales para calcular stock esperado y liberado.
+          </div>
+        </div>
+      </mat-tab>
+    </mat-tab-group>
+  </section>
+</div>

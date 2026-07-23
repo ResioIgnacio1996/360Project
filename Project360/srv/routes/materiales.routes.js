@@ -2,12 +2,63 @@
 
 const express = require('express');
 const multer = require('multer');
+const { conectarDB } = require('../DB/dbConection');
+const { verificarToken } = require('../middlewares/auth.middleware');
 
 const {
     extraerOrdenCompraDocumento
 } = require('../controllers/materiales/procesoDocuemntos.controller');
 
 const router = express.Router();
+
+const getMateriales = async (req, res) => {
+    try {
+        const pool = await conectarDB();
+
+        const result = await pool.request().query(`
+            SELECT
+                m.id_material,
+                m.nombre,
+                m.descripcion,
+                u.uom_id,
+                u.nombre AS UoM
+            FROM Materiales m
+            INNER JOIN UOM u
+                ON u.uom_id = m.uom_id
+            ORDER BY m.nombre
+        `);
+
+        res.json(result.recordset);
+    } catch (error) {
+        console.error('Error al obtener materiales:', error);
+        res.status(500).json({
+            message: 'Error al obtener materiales',
+            error: error.message
+        });
+    }
+};
+
+const getUom = async (req, res) => {
+    try {
+        const pool = await conectarDB();
+
+        const result = await pool.request().query(`
+            SELECT
+                uom_id,
+                nombre
+            FROM UOM
+            ORDER BY nombre
+        `);
+
+        res.json(result.recordset);
+    } catch (error) {
+        console.error('Error al obtener UOM:', error);
+        res.status(500).json({
+            message: 'Error al obtener UOM',
+            error: error.message
+        });
+    }
+};
 
 
 // ======================================================
@@ -105,9 +156,13 @@ const upload = multer({
 
 router.post(
     '/documento',
+    verificarToken,
     upload.single('ordenCompra'),
     extraerOrdenCompraDocumento
 );
+
+router.get('/uom', verificarToken, getUom);
+router.get('/', verificarToken, getMateriales);
 
 
 // ======================================================

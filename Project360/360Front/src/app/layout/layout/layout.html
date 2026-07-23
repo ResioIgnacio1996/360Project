@@ -1,0 +1,72 @@
+<div class="layout">
+  <header class="topbar">
+    <div class="topbar-left">
+      <button class="icon-control" type="button" (click)="toggleSidebar()" title="Abrir navegacion">
+        <span class="material-icons">menu</span>
+      </button>
+
+      <div class="brand">
+        <strong>OBRA360</strong>
+       
+      </div>
+
+      <nav class="top-tabs" aria-label="Secciones principales">
+        <a routerLink="/dashboard" routerLinkActive="active">
+          <span class="material-icons">dashboard</span>
+          Dashboard
+        </a>
+        <a routerLink="/ingreso-materiales" routerLinkActive="active">
+          <span class="material-icons">inventory_2</span>
+          Materiales
+        </a>
+        <a routerLink="/seguridad" routerLinkActive="active">
+          <span class="material-icons">admin_panel_settings</span>
+          Seguridad
+        </a>
+      </nav>
+    </div>
+
+    <div class="topbar-right">
+      <button class="icon-control" type="button" title="Notificaciones">
+        <span class="material-icons">notifications</span>
+      </button>
+
+      <button class="icon-control" type="button" title="Ayuda">
+        <span class="material-icons">help_outline</span>
+      </button>
+
+      <button class="icon-control" type="button" title="Configuracion" routerLink="/configuracion">
+        <span class="material-icons">settings</span>
+      </button>
+
+      <button class="icon-control" type="button" (click)="toggleTema()" [title]="tema === 'dark' ? 'Modo claro' : 'Modo oscuro'">
+        <span class="material-icons">{{ tema === 'dark' ? 'light_mode' : 'dark_mode' }}</span>
+      </button>
+
+      <div class="user-badge">
+        <div class="user-avatar">
+          {{ inicialUsuario }}
+        </div>
+
+        <div class="user-text">
+          <strong>{{ usuario?.nombre || 'Usuario' }}</strong>
+          <span>{{ usuario?.usuario || 'Sin usuario' }}</span>
+        </div>
+      </div>
+
+      <button class="icon-control danger" type="button" title="Cerrar sesion" (click)="logout()">
+        <span class="material-icons">logout</span>
+      </button>
+    </div>
+  </header>
+
+  <app-sidebar
+    [visible]="sidebarVisible"
+    [usuario]="usuario"
+    (closeSidebar)="sidebarVisible = false">
+  </app-sidebar>
+
+  <main class="content">
+    <router-outlet></router-outlet>
+  </main>
+</div>

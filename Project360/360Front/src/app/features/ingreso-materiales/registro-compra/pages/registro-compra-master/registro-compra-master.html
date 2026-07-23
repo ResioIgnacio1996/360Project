@@ -1,0 +1,219 @@
+<div class="registro-compra-page">
+  <div class="page-header">
+    <div>
+      <span class="breadcrumb">OBRA360 / Ingreso de Materiales / Registros</span>
+      <h1>Registros de compra</h1>
+      <p>Lista operativa de OC y facturas con proveedor, fechas, proyecto, estado de recepcion y remitos asociados.</p>
+    </div>
+
+    <button class="btn btn-primary primary-action" type="button" (click)="nuevoRegistro()">
+      <mat-icon>add</mat-icon>
+      Nuevo registro
+    </button>
+  </div>
+
+  <mat-accordion class="filters-accordion" [formGroup]="filtrosForm">
+    <mat-expansion-panel class="filters-panel" [(expanded)]="filtrosAbiertos">
+      <mat-expansion-panel-header class="filters-panel-header">
+        <mat-panel-title>
+          <span class="block-title">Filtros</span>
+        </mat-panel-title>
+
+        
+      </mat-expansion-panel-header>
+
+      <div class="filters-bar">
+        <mat-form-field appearance="outline" class="filter-search">
+          <mat-label>Buscar</mat-label>
+          <input matInput formControlName="busqueda" placeholder="Numero, proveedor, proyecto" />
+          <mat-icon matSuffix>search</mat-icon>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline">
+          <mat-label>Tipo</mat-label>
+          <mat-select formControlName="tipo">
+            <mat-option *ngFor="let tipo of tiposDocumento" [value]="tipo">
+              {{ tipo === 'TODOS' ? 'Todos' : tipo }}
+            </mat-option>
+          </mat-select>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline">
+          <mat-label>Estado</mat-label>
+          <mat-select formControlName="estado">
+            <mat-option *ngFor="let estado of estados" [value]="estado">
+              {{ estado === 'TODOS' ? 'Todos' : estado }}
+            </mat-option>
+          </mat-select>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline">
+          <mat-label>Proveedor</mat-label>
+          <input type="text" matInput formControlName="proveedor" [matAutocomplete]="autoProveedor" />
+          <mat-autocomplete #autoProveedor="matAutocomplete" [displayWith]="displayProveedor">
+            <mat-option *ngFor="let proveedor of proveedoresFiltrados$ | async" [value]="proveedor">
+              <strong>{{ proveedor.razonSocial }}</strong>
+              <small>{{ proveedor.cuit }}</small>
+            </mat-option>
+          </mat-autocomplete>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline">
+          <mat-label>Proyecto</mat-label>
+          <mat-select formControlName="idProyecto">
+            <mat-option value="TODOS">Todos</mat-option>
+            <mat-option *ngFor="let proyecto of proyectos" [value]="proyecto.idProyecto">
+              {{ proyecto.nombre }}
+            </mat-option>
+          </mat-select>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="filter-date">
+          <mat-label>Desde</mat-label>
+          <input matInput [matDatepicker]="fechaDesdePicker" formControlName="fechaDesde" />
+          <mat-datepicker-toggle matIconSuffix [for]="fechaDesdePicker"></mat-datepicker-toggle>
+          <mat-datepicker
+            #fechaDesdePicker
+            xPosition="end"
+            yPosition="below"
+            panelClass="registro-date-picker-panel">
+          </mat-datepicker>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="filter-date">
+          <mat-label>Hasta</mat-label>
+          <input matInput [matDatepicker]="fechaHastaPicker" formControlName="fechaHasta" />
+          <mat-datepicker-toggle matIconSuffix [for]="fechaHastaPicker"></mat-datepicker-toggle>
+          <mat-datepicker
+            #fechaHastaPicker
+            xPosition="end"
+            yPosition="below"
+            panelClass="registro-date-picker-panel">
+          </mat-datepicker>
+        </mat-form-field>
+
+        <button class="btn btn-ghost btn-sm" type="button" (click)="limpiarFiltros()">
+          <mat-icon>filter_alt_off</mat-icon>
+          Limpiar
+        </button>
+      </div>
+    </mat-expansion-panel>
+  </mat-accordion>
+
+  <section class="block">
+    <div class="block-header">
+      <h2 class="block-title">Listado maestro</h2>
+      <span class="chip chip-no-dot chip-teal">{{ dataSource.data.length }} REGISTROS</span>
+    </div>
+
+    <div class="loading-box" *ngIf="cargando">
+      Cargando registros de compra...
+    </div>
+
+    <div class="table-wrap" *ngIf="!cargando">
+      <table mat-table [dataSource]="dataSource" class="registro-table mat-elevation-z0">
+        <ng-container matColumnDef="tipo">
+          <th mat-header-cell *matHeaderCellDef>Tipo</th>
+          <td mat-cell *matCellDef="let registro">
+            <span class="chip chip-no-dot c-teal">{{ getTipoDocumento(registro) }}</span>
+          </td>
+        </ng-container>
+
+        <ng-container matColumnDef="numero">
+          <th mat-header-cell *matHeaderCellDef>Documento</th>
+          <td mat-cell *matCellDef="let registro" class="tech-value">
+            <strong>{{ registro.numero }}</strong>
+          </td>
+        </ng-container>
+
+        <ng-container matColumnDef="proveedor">
+          <th mat-header-cell *matHeaderCellDef>Proveedor</th>
+          <td mat-cell *matCellDef="let registro">
+            {{ registro.proveedor?.razonSocial || '-' }}
+          </td>
+        </ng-container>
+
+        <ng-container matColumnDef="fecha">
+          <th mat-header-cell *matHeaderCellDef>Emision</th>
+          <td mat-cell *matCellDef="let registro" class="tech-value">
+            {{ formatearFecha(registro.fecha) }}
+          </td>
+        </ng-container>
+
+        <ng-container matColumnDef="fechaEntrega">
+          <th mat-header-cell *matHeaderCellDef>Entrega est.</th>
+          <td mat-cell *matCellDef="let registro" class="tech-value">
+            {{ formatearFecha(registro.fechaEntrega) }}
+          </td>
+        </ng-container>
+
+        <ng-container matColumnDef="proyecto">
+          <th mat-header-cell *matHeaderCellDef>Proyecto</th>
+          <td mat-cell *matCellDef="let registro">
+            {{ registro.proyecto?.nombre || '-' }}
+          </td>
+        </ng-container>
+
+        <ng-container matColumnDef="estado">
+          <th mat-header-cell *matHeaderCellDef>Estado</th>
+          <td mat-cell *matCellDef="let registro">
+            <span class="estado-badge" [ngClass]="getEstadoClass(registro)">
+              {{ getEstadoNombre(registro) }}
+            </span>
+          </td>
+        </ng-container>
+
+        <ng-container matColumnDef="avance">
+          <th mat-header-cell *matHeaderCellDef>% recibido</th>
+          <td mat-cell *matCellDef="let registro" class="tech-value">
+            {{ getPorcentajeRecibido(registro) }}%
+          </td>
+        </ng-container>
+
+        <ng-container matColumnDef="remitos">
+          <th mat-header-cell *matHeaderCellDef>Remitos</th>
+          <td mat-cell *matCellDef="let registro" class="tech-value">
+            {{ getCantidadRemitos(registro) }}
+          </td>
+        </ng-container>
+
+        <ng-container matColumnDef="acciones">
+          <th mat-header-cell *matHeaderCellDef class="acciones-header">Acciones</th>
+          <td mat-cell *matCellDef="let registro" class="acciones-cell">
+            <div class="acciones-inline">
+              <button mat-icon-button matTooltip="Ver detalle" (click)="verDetalle(registro)">
+                <mat-icon>visibility</mat-icon>
+              </button>
+
+              <button mat-icon-button matTooltip="Editar" [disabled]="!puedeEditar(registro)" (click)="editar(registro)">
+                <mat-icon>edit</mat-icon>
+              </button>
+
+              <button mat-icon-button matTooltip="Ver remitos de esta OC" [disabled]="getEstadoCodigo(registro) === 'CANCELADA'" (click)="verRemitos(registro)">
+                <mat-icon>local_shipping</mat-icon>
+              </button>
+
+              <button mat-icon-button matTooltip="Cancelar" [disabled]="!puedeCancelar(registro)" (click)="cancelar(registro)">
+                <mat-icon>cancel</mat-icon>
+              </button>
+            </div>
+          </td>
+        </ng-container>
+
+        <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+        <tr mat-row *matRowDef="let row; columns: displayedColumns;" class="data-row"></tr>
+      </table>
+
+      <div class="empty-state" *ngIf="dataSource.data.length === 0">
+        No hay registros de compra para los filtros seleccionados.
+      </div>
+    </div>
+
+    <mat-paginator
+      *ngIf="!cargando && dataSource.data.length > 0"
+      [pageSize]="10"
+      [pageSizeOptions]="[10, 25, 50]"
+      showFirstLastButtons>
+    </mat-paginator>
+  </section>
+</div>

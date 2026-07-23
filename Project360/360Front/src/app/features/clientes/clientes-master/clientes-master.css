@@ -1,0 +1,32 @@
+.clientes-page {
+  width: 100%;
+}
+
+.search-box {
+  display: flex;
+  flex: 1 1 360px;
+  flex-direction: column;
+  gap: 6px;
+  max-width: 640px;
+}
+
+.acciones-header {
+  text-align: center;
+}
+
+.acciones-cell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+}
+
+.acciones-cell .mat-mdc-icon-button {
+  width: 30px;
+  height: 30px;
+  padding: 3px;
+}
+
+.acciones-cell mat-icon {
+  font-size: 18px;
+}

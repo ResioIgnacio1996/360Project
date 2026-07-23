@@ -1,0 +1,172 @@
+<div class="module-page">
+  <div class="page-header">
+    <div>
+      <span class="breadcrumb">DB360 / Materiales / Remitos</span>
+      <h1>Nuevo Remito</h1>
+      <p>Registra la recepcion informada. El stock se impacta recien al liberar.</p>
+    </div>
+  </div>
+
+  <form [formGroup]="form" (ngSubmit)="guardar()">
+    <section class="block import-card">
+      <div class="block-header">
+        <h2 class="block-title">Carga por documento</h2>
+   
+      </div>
+
+      <div class="block-body">
+        <div class="drop-zone">
+          <div class="drop-content">
+            <div class="drop-icon">
+              <mat-icon>upload_file</mat-icon>
+            </div>
+
+            <div>
+              <h3>Importar PDF o imagen</h3>
+              <p>Arrastra un remito o seleccionalo desde tu equipo. Maximo 10 MB.</p>
+
+              <div class="file-selected" *ngIf="archivoSeleccionado">
+                <mat-icon>attach_file</mat-icon>
+                <strong>{{ archivoSeleccionado.name }}</strong>
+              </div>
+            </div>
+          </div>
+
+          <div class="drop-actions">
+            <label class="btn btn-secondary file-button">
+              <mat-icon>description</mat-icon>
+              Seleccionar
+              <input type="file" accept=".pdf,.jpg,.jpeg,.png,.webp" (change)="onFileSelected($event)" />
+            </label>
+
+            <button class="btn btn-primary" type="button" [disabled]="!archivoSeleccionado || importando" (click)="importarDocumento()">
+              <mat-icon>sync</mat-icon>
+              {{ importando ? 'Procesando' : 'Procesar' }}
+            </button>
+          </div>
+        </div>
+
+        <div class="warnings" *ngIf="advertencias.length">
+          <h3>Advertencias</h3>
+          <ul>
+            <li *ngFor="let advertencia of advertencias">{{ advertencia }}</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <mat-card class="card">
+      <div class="form-grid">
+        <mat-form-field appearance="outline">
+          <mat-label>Numero de Remito</mat-label>
+          <input matInput formControlName="numero" />
+        </mat-form-field>
+
+        <mat-form-field appearance="outline">
+          <mat-label>Fecha</mat-label>
+          <input matInput type="date" formControlName="fecha" />
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" *ngIf="!idRegistroCompraFijo">
+          <mat-label>Registro de Compra</mat-label>
+          <mat-select formControlName="idRegistroCompra">
+            <mat-option
+              *ngFor="let registro of registrosCompra"
+              [value]="registro.idRegistroCompra"
+            >
+              {{ registro.numero }} - {{ registro.proveedor.razonSocial }} - {{ registro.estado?.nombre }}
+            </mat-option>
+          </mat-select>
+        </mat-form-field>
+
+        <div class="oc-info" *ngIf="idRegistroCompraFijo">
+          <span>Registro de Compra</span>
+          <strong>
+            {{ registroCompraSeleccionado?.numero || idRegistroCompraFijo }}
+            <ng-container *ngIf="registroCompraSeleccionado?.proveedor?.razonSocial">
+              - {{ registroCompraSeleccionado?.proveedor?.razonSocial }}
+            </ng-container>
+          </strong>
+          <small>{{ registroCompraSeleccionado?.estado?.nombre || registroCompraSeleccionado?.estado?.codigo }}</small>
+        </div>
+      </div>
+    </mat-card>
+
+    <mat-card class="card">
+      <div class="section-header">
+        <h2>Detalle del Remito</h2>
+      </div>
+
+      <div class="add-material-row" [formGroup]="materialManualForm" *ngIf="form.getRawValue().idRegistroCompra">
+        <mat-form-field appearance="outline">
+          <mat-label>Material del Registro de Compra</mat-label>
+          <mat-select formControlName="idMaterial" (selectionChange)="onMaterialManualChange($event.value)">
+            <mat-option
+              *ngFor="let material of materialesDisponibles"
+              [value]="material.idMaterial"
+            >
+              {{ material.nombreMaterial }} - Pendiente OC: {{ material.cantidadSolicitada || material.cantidad }} {{ material.unidad }}
+            </mat-option>
+          </mat-select>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline">
+          <mat-label>Cantidad remito</mat-label>
+          <input matInput type="number" min="0.01" formControlName="cantidad" />
+        </mat-form-field>
+
+        <mat-form-field appearance="outline">
+          <mat-label>Unidad</mat-label>
+          <input matInput formControlName="unidad" />
+        </mat-form-field>
+
+        <button class="btn btn-secondary" type="button" (click)="agregarMaterialManual()">
+          <mat-icon>add</mat-icon>
+          Agregar
+        </button>
+      </div>
+
+      <div class="detail-list" formArrayName="detalle">
+        <div
+          class="detail-row"
+          *ngFor="let item of detalle.controls; let i = index"
+          [formGroupName]="i"
+        >
+          <div class="material-info">
+            <strong>{{ item.get('material')?.value }}</strong>
+            <span>OC: {{ item.get('cantidadSolicitada')?.value }} {{ item.get('unidad')?.value }}</span>
+          </div>
+
+          <mat-form-field appearance="outline">
+            <mat-label>Cantidad del remito</mat-label>
+            <input matInput type="number" min="0" formControlName="cantidad" />
+          </mat-form-field>
+
+          <mat-form-field appearance="outline">
+            <mat-label>Unidad</mat-label>
+            <input matInput formControlName="unidad" />
+          </mat-form-field>
+
+          <button class="btn btn-ghost icon-action" type="button" (click)="quitarMaterial(i)" matTooltip="Quitar material">
+            <mat-icon>delete</mat-icon>
+          </button>
+        </div>
+      </div>
+
+      <div class="state-message" *ngIf="form.get('idRegistroCompra')?.value && detalle.length === 0">
+        Todavia no hay materiales cargados en este remito.
+      </div>
+
+      <div class="state-message" *ngIf="!form.get('idRegistroCompra')?.value">
+        Selecciona un Registro de Compra para validar los materiales del remito.
+      </div>
+    </mat-card>
+
+    <div class="form-actions">
+      <button mat-stroked-button type="button" (click)="cancelar()">Cancelar</button>
+      <button mat-raised-button color="primary" type="submit" [disabled]="guardando">
+        {{ guardando ? 'Guardando...' : 'Guardar remito' }}
+      </button>
+    </div>
+  </form>
+</div>

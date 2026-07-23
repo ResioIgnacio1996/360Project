@@ -1,0 +1,279 @@
+<div class="registro-compra-form-page">
+  <div class="page-header">
+    <div>
+      <span class="breadcrumb">OBRA360 / Ingreso de Materiales / Registros</span>
+      <h1>{{ modoEdicion ? 'Editar registro de compra' : 'Nuevo registro de compra' }}</h1>
+      <p>Carga manual o importacion de documento con revision obligatoria antes de guardar.</p>
+    </div>
+
+    
+  </div>
+
+  <form [formGroup]="form" (ngSubmit)="guardar()">
+    <section class="block import-card">
+      <div class="block-header">
+        <h2 class="block-title">Carga por documento</h2>
+    
+      </div>
+
+      <div class="block-body">
+        <div
+          class="drop-zone"
+          [class.dragging]="isDragging"
+          (dragover)="onDragOver($event)"
+          (dragleave)="onDragLeave($event)"
+          (drop)="onDrop($event)"
+        >
+          <div class="drop-content">
+            <div class="drop-icon">
+              <mat-icon>upload_file</mat-icon>
+            </div>
+
+            <div>
+              <h3>Importar PDF o imagen</h3>
+              <p>Arrastra un documento o seleccionalo desde tu equipo. Maximo 10 MB.</p>
+
+              <div class="file-selected" *ngIf="archivoSeleccionado">
+                <mat-icon>attach_file</mat-icon>
+                <strong>{{ archivoSeleccionado.name }}</strong>
+              </div>
+            </div>
+          </div>
+
+          <div class="drop-actions">
+            <label class="btn btn-secondary file-button">
+              <mat-icon>description</mat-icon>
+              Seleccionar
+              <input type="file" accept=".pdf,.jpg,.jpeg,.png,.webp" (change)="onFileSelected($event)" />
+            </label>
+
+            <button class="btn btn-primary" type="button" (click)="importarDocumento()" [disabled]="!archivoSeleccionado || importando">
+              <mat-icon>sync</mat-icon>
+              {{ importando ? 'Procesando' : 'Procesar' }}
+            </button>
+
+            <mat-spinner *ngIf="importando" diameter="24"></mat-spinner>
+          </div>
+        </div>
+
+        <div class="warnings" *ngIf="advertencias.length">
+          <h3>Advertencias</h3>
+          <ul>
+            <li *ngFor="let advertencia of advertencias">{{ advertencia }}</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <section class="block">
+      <div class="block-header">
+        <h2 class="block-title">Datos generales</h2>
+      </div>
+
+      <div class="block-body">
+        <div class="form-grid three">
+          <mat-form-field appearance="outline">
+            <mat-label>Numero</mat-label>
+            <input matInput formControlName="numero" />
+            <mat-error *ngIf="form.get('numero')?.hasError('required')">Obligatorio</mat-error>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline">
+            <mat-label>Tipo documento</mat-label>
+            <mat-select formControlName="tipo">
+              <mat-option value="OC">Orden de compra</mat-option>
+              <mat-option value="FAC">Factura</mat-option>
+            </mat-select>
+            <mat-error *ngIf="form.get('tipo')?.hasError('required')">Obligatorio</mat-error>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline">
+            <mat-label>Fecha</mat-label>
+            <input matInput type="date" formControlName="fecha" />
+            <mat-error *ngIf="form.get('fecha')?.hasError('required')">Obligatoria</mat-error>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline">
+            <mat-label>Fecha entrega</mat-label>
+            <input matInput type="date" formControlName="fechaEntrega" />
+            <mat-error *ngIf="form.get('fechaEntrega')?.hasError('fechaInvalida')">
+              No puede ser menor a la fecha del registro
+            </mat-error>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline">
+            <mat-label>Proyecto</mat-label>
+            <mat-select formControlName="idProyecto">
+              <mat-option [value]="null">Sin proyecto</mat-option>
+              <mat-option *ngFor="let proyecto of proyectos" [value]="proyecto.idProyecto">
+                {{ proyecto.nombre }}
+              </mat-option>
+            </mat-select>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline" class="span-2">
+            <mat-label>Observaciones</mat-label>
+            <textarea matInput rows="2" formControlName="observaciones"></textarea>
+          </mat-form-field>
+        </div>
+      </div>
+    </section>
+
+    <section class="block" formGroupName="proveedor">
+      <div class="block-header">
+        <h2 class="block-title">Proveedor</h2>
+      </div>
+
+      <div class="block-body">
+        <div class="form-grid">
+          <mat-form-field appearance="outline">
+            <mat-label>Buscar por razon social</mat-label>
+            <input
+              type="text"
+              matInput
+              formControlName="razonSocial"
+              [matAutocomplete]="autoProveedorNombre"
+              (input)="limpiarProveedorSiEditaManual()"
+            />
+
+            <mat-autocomplete
+              #autoProveedorNombre="matAutocomplete"
+              [displayWith]="displayProveedorNombre"
+              (optionSelected)="seleccionarProveedor($event.option.value)"
+            >
+              <ng-container *ngIf="proveedoresFiltradosNombre$ | async as proveedoresFiltradosNombre">
+                <mat-option *ngFor="let proveedor of proveedoresFiltradosNombre" [value]="proveedor">
+                  <strong>{{ proveedor.razonSocial }}</strong>
+                  <small>{{ proveedor.cuit }}</small>
+                </mat-option>
+                <mat-option *ngIf="!proveedoresFiltradosNombre.length" disabled>
+                  No existe. Se creara al guardar si completas el CUIT.
+                </mat-option>
+              </ng-container>
+            </mat-autocomplete>
+
+            <mat-error *ngIf="form.get('proveedor.razonSocial')?.hasError('required')">Obligatorio</mat-error>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline">
+            <mat-label>Buscar por CUIT</mat-label>
+            <input
+              matInput
+              formControlName="cuit"
+              [matAutocomplete]="autoProveedorCuit"
+              (input)="limpiarProveedorSiEditaManual()"
+            />
+
+            <mat-autocomplete
+              #autoProveedorCuit="matAutocomplete"
+              [displayWith]="displayProveedorCuit"
+              (optionSelected)="seleccionarProveedor($event.option.value)"
+            >
+              <ng-container *ngIf="proveedoresFiltradosCuit$ | async as proveedoresFiltradosCuit">
+                <mat-option *ngFor="let proveedor of proveedoresFiltradosCuit" [value]="proveedor">
+                  <strong>{{ proveedor.cuit }}</strong>
+                  <small>{{ proveedor.razonSocial }}</small>
+                </mat-option>
+                <mat-option *ngIf="!proveedoresFiltradosCuit.length" disabled>
+                  No existe. Se creara al guardar con la razon social ingresada.
+                </mat-option>
+              </ng-container>
+            </mat-autocomplete>
+          </mat-form-field>
+        </div>
+
+        <div class="provider-status existing" *ngIf="proveedorSeleccionado()">
+          <mat-icon>check_circle</mat-icon>
+          Proveedor existente seleccionado.
+        </div>
+
+        <div class="provider-status pending" *ngIf="proveedorNuevoPendiente()">
+          <mat-icon>add_business</mat-icon>
+          Este proveedor no esta en el listado y se creara automaticamente al guardar.
+        </div>
+      </div>
+    </section>
+
+    <section class="block">
+      <div class="block-header detail-header">
+        <h2 class="block-title">Detalle</h2>
+        <button class="btn btn-secondary btn-sm" type="button" (click)="agregarMaterial(true)">
+          <mat-icon>add</mat-icon>
+          Agregar linea
+        </button>
+      </div>
+
+      <div class="block-body">
+        <div formArrayName="detalle" class="detail-list">
+          <div class="detail-row" *ngFor="let item of detalle.controls; let i = index" [formGroupName]="i">
+            <div class="material-cell">
+              <mat-form-field appearance="outline">
+                <mat-label>Material</mat-label>
+                <input matInput formControlName="nombreMaterial" [matAutocomplete]="autoMaterial" (input)="limpiarMaterialSiEditaManual(i)" />
+
+                <mat-autocomplete #autoMaterial="matAutocomplete" (optionSelected)="seleccionarMaterial(i, $event.option.value)">
+                  <ng-container *ngIf="materialesFiltrados$[i] | async as materialesFiltrados">
+                    <mat-option *ngFor="let material of materialesFiltrados" [value]="material">
+                      <strong>{{ material.nombreMaterial }}</strong>
+                      <small>{{ material.unidad || '' }}</small>
+                    </mat-option>
+                    <mat-option *ngIf="!materialesFiltrados.length" disabled>
+                      No existe. Se creara al guardar si completas cantidad y UOM.
+                    </mat-option>
+                  </ng-container>
+                </mat-autocomplete>
+
+                <mat-error *ngIf="item.get('nombreMaterial')?.hasError('required')">Obligatorio</mat-error>
+              </mat-form-field>
+
+              <div class="material-status pending" *ngIf="materialNuevoPendiente(i)">
+                <mat-icon>add_circle</mat-icon>
+                Material nuevo: se creara al guardar.
+              </div>
+            </div>
+
+            <mat-form-field appearance="outline">
+              <mat-label>Descripcion</mat-label>
+              <input matInput formControlName="descripcionOriginal" />
+            </mat-form-field>
+
+            <mat-form-field appearance="outline">
+              <mat-label>Cantidad</mat-label>
+              <input matInput type="number" min="1" formControlName="cantidad" (keydown.enter)="agregarFilaConEnter($event, i)" />
+              <mat-error *ngIf="item.get('cantidad')?.hasError('required')">Obligatoria</mat-error>
+              <mat-error *ngIf="item.get('cantidad')?.hasError('min')">Mayor a 0</mat-error>
+            </mat-form-field>
+
+            <mat-form-field appearance="outline">
+              <mat-label>UOM</mat-label>
+              <mat-select formControlName="unidad">
+                <mat-option *ngFor="let uom of uoms" [value]="uom.nombre">
+                  {{ uom.nombre }}
+                </mat-option>
+              </mat-select>
+              <mat-error *ngIf="item.get('unidad')?.hasError('required')">Obligatoria</mat-error>
+            </mat-form-field>
+
+            <button mat-icon-button type="button" class="remove-button" (click)="quitarMaterial(i)" title="Eliminar linea">
+              <mat-icon>delete</mat-icon>
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <div class="form-actions">
+      <button class="btn btn-ghost" type="button" (click)="cancelar()">
+        <mat-icon>close</mat-icon>
+        Cancelar
+      </button>
+
+     
+
+      <button class="btn btn-primary" type="submit" [disabled]="guardando">
+        <mat-icon>check_circle</mat-icon>
+        {{ guardando ? 'Guardando' : 'Guardar' }}
+      </button>
+    </div>
+  </form>
+</div>

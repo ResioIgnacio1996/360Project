@@ -1,0 +1,231 @@
+.module-page {
+  max-width: none;
+  width: 100%;
+}
+
+.module-page .primary-action {
+  border-radius: 8px;
+  box-shadow: 0 8px 18px color-mix(in srgb, var(--primary) 20%, transparent);
+}
+
+.table-wrapper,
+.table-wrap {
+  overflow-x: auto;
+}
+
+.remito-table {
+  table-layout: fixed;
+  min-width: 920px;
+  background: transparent !important;
+  --mat-table-background-color: transparent;
+  --mat-table-header-headline-color: var(--text-muted);
+  --mat-table-row-item-label-text-color: var(--text);
+  --mat-table-row-item-outline-color: var(--border);
+}
+
+.remito-table .mat-mdc-header-cell {
+  background: var(--surface-card) !important;
+  color: var(--text-muted) !important;
+  font-family: var(--font-tech);
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+}
+
+.remito-table th:nth-child(1),
+.remito-table td:nth-child(1) {
+  width: 18%;
+}
+
+.remito-table th:nth-child(2),
+.remito-table td:nth-child(2) {
+  width: 14%;
+}
+
+.remito-table th:nth-child(3),
+.remito-table td:nth-child(3) {
+  width: 20%;
+}
+
+.remito-table th:nth-child(4),
+.remito-table td:nth-child(4) {
+  width: 24%;
+}
+
+.remito-table th:nth-child(5),
+.remito-table td:nth-child(5) {
+  width: 12%;
+}
+
+.remito-table th:nth-child(6),
+.remito-table td:nth-child(6) {
+  width: 12%;
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.oc-context {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.oc-context span {
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  color: var(--text);
+  background: var(--surface);
+  padding: 5px 10px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.module-page .filters-accordion {
+  display: block;
+  margin-bottom: 18px;
+  position: relative;
+  overflow: visible;
+  z-index: 2;
+}
+
+.module-page .filters-panel {
+  background: var(--surface-card) !important;
+  color: var(--text) !important;
+  --mat-expansion-container-background-color: var(--surface-card);
+  --mat-expansion-container-text-color: var(--text);
+  --mat-expansion-header-text-color: var(--text);
+  --mat-expansion-header-description-color: var(--text-secondary);
+  border: 1px solid var(--border);
+  border-radius: 8px !important;
+  box-shadow: none !important;
+  overflow: visible !important;
+}
+
+.module-page .filters-panel-header {
+  min-height: 48px;
+  height: 48px;
+  padding: 0 16px;
+}
+
+.module-page .filters-panel.mat-expanded .filters-panel-header {
+  border-bottom: 1px solid var(--border);
+}
+
+.module-page .filters-panel-header .mat-expansion-panel-header-title {
+  align-items: center;
+  color: var(--text) !important;
+}
+
+.module-page .filters-panel-header .mat-expansion-panel-header-description {
+  align-items: center;
+  justify-content: flex-end;
+  margin-right: 8px;
+}
+
+.module-page .filters-panel ::ng-deep .mat-expansion-panel-body {
+  padding: 0;
+  overflow: visible;
+}
+
+.module-page .filters-panel ::ng-deep .mat-expansion-indicator::after {
+  color: var(--text-secondary);
+}
+
+.module-page .filters-bar {
+  display: grid;
+  grid-template-columns:
+    minmax(240px, 1.5fr)
+    minmax(160px, .8fr)
+    150px
+    150px
+    auto;
+  align-items: center;
+  gap: 8px;
+  overflow: visible;
+}
+
+.module-page .filters-bar .mat-mdc-form-field {
+  width: 100%;
+  min-width: 0;
+}
+
+.module-page .filters-bar .filter-search {
+  min-width: 240px;
+}
+
+.module-page .filters-bar .filter-date {
+  width: 150px;
+  min-width: 150px;
+  max-width: 150px;
+}
+
+.module-page .filters-bar .btn {
+  white-space: nowrap;
+  justify-self: end;
+}
+
+.acciones-header {
+  text-align: center;
+}
+
+.acciones-cell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+}
+
+.acciones-cell .mat-mdc-icon-button {
+  width: 30px;
+  height: 30px;
+  padding: 3px;
+}
+
+.acciones-cell mat-icon {
+  font-size: 18px;
+}
+
+.estado-badge {
+  color: var(--yellow);
+  background: color-mix(in srgb, var(--yellow) 15%, transparent);
+  border-color: color-mix(in srgb, var(--yellow) 38%, transparent);
+}
+
+.estado-badge.liberado {
+  color: var(--green);
+  background: color-mix(in srgb, var(--green) 14%, transparent);
+  border-color: color-mix(in srgb, var(--green) 35%, transparent);
+}
+
+mat-paginator {
+  border-top: 1px solid var(--border);
+}
+
+@media (max-width: 1100px) {
+  .module-page .filters-bar {
+    grid-template-columns: repeat(2, minmax(180px, 1fr));
+  }
+
+  .module-page .filters-bar .filter-search,
+  .module-page .filters-bar .filter-date {
+    width: 100%;
+    min-width: 0;
+    max-width: none;
+  }
+
+  .module-page .filters-bar .btn {
+    justify-self: start;
+  }
+}
+
+@media (max-width: 680px) {
+  .module-page .filters-bar {
+    grid-template-columns: 1fr;
+  }
+}

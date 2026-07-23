@@ -89,6 +89,80 @@ const obtenerProveedorId = async (transaction, body) => {
 // FUNCIÓN PRIVADA - OBTENER O CREAR MATERIAL
 // ======================================================
 
+const normalizarFechaSql = (value, campo, obligatorio = false) => {
+    const crearErrorFecha = (message) => {
+        const error = new Error(message);
+        error.statusCode = 400;
+        return error;
+    };
+
+    if (!value) {
+        if (obligatorio) {
+            throw crearErrorFecha(`El campo ${campo} es obligatorio`);
+        }
+
+        return null;
+    }
+
+    const texto = String(value).substring(0, 10);
+    const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(texto);
+
+    if (!match) {
+        throw crearErrorFecha(`El campo ${campo} debe tener formato YYYY-MM-DD`);
+    }
+
+    const year = Number(match[1]);
+    const month = Number(match[2]);
+    const day = Number(match[3]);
+    const fecha = new Date(Date.UTC(year, month - 1, day));
+
+    if (
+        year < 1753 ||
+        year > 9999 ||
+        fecha.getUTCFullYear() !== year ||
+        fecha.getUTCMonth() !== month - 1 ||
+        fecha.getUTCDate() !== day
+    ) {
+        throw crearErrorFecha(`El campo ${campo} contiene una fecha invalida`);
+    }
+
+    return texto;
+};
+
+const normalizarTipoRegistroCompra = (tipo) => {
+    const value = (tipo || '').trim().toUpperCase();
+
+    if (['FAC', 'FACTURA', 'FC', 'FRA'].includes(value)) {
+        return 'FAC';
+    }
+
+    return 'OC';
+};
+
+const normalizarUom = (uom) => (uom || '').trim().toUpperCase();
+
+const obtenerUomId = async (transaction, uom) => {
+    const nombreUom = normalizarUom(uom);
+
+    if (!nombreUom) {
+        throw new Error('La unidad de medida del material es obligatoria');
+    }
+
+    const uomResult = await new sql.Request(transaction)
+        .input('nombre', sql.NVarChar(50), nombreUom)
+        .query(`
+            SELECT uom_id
+            FROM UOM
+            WHERE UPPER(LTRIM(RTRIM(nombre))) = @nombre
+        `);
+
+    if (uomResult.recordset.length === 0) {
+        throw new Error(`Unidad de medida no encontrada en UOM: ${uom}`);
+    }
+
+    return uomResult.recordset[0].uom_id;
+};
+
 const obtenerMaterialId = async (transaction, item) => {
 
     if (item.id_material) {
@@ -125,22 +199,24 @@ const obtenerMaterialId = async (transaction, item) => {
         return materialExistente.recordset[0].id_material;
     }
 
+    const uomId = await obtenerUomId(transaction, item.UoM);
+
     const materialNuevo = await new sql.Request(transaction)
         .input('nombre', sql.VarChar, nombreMaterial)
         .input('descripcion', sql.VarChar, item.descripcion || nombreMaterial)
-        .input('UoM', sql.VarChar, item.UoM || null)
+        .input('uom_id', sql.BigInt, uomId)
         .query(`
             INSERT INTO Materiales (
                 nombre,
                 descripcion,
-                UoM
+                uom_id
                 
             )
             OUTPUT INSERTED.id_material
             VALUES (
                 @nombre,
                 @descripcion,
-                @UoM
+                @uom_id
                 
             )
         `);
@@ -162,6 +238,7 @@ console.log('RC.');
                 rc.registro_compra_id,
                 rc.estado_registroDecompra_id AS estado_registroDeCompra_id,
                 rc.numero,
+                rc.tipo,
                 rc.fecha,
                 rc.fecha_entrega,
                 rc.observaciones,
@@ -269,8 +346,10 @@ const crearRegistroCompra = async (req, res) => {
     try {
         const {
             numero,
+            tipo,
             fecha,
             fecha_entrega,
+            proyecto_id,
             observaciones,
             detalle
         } = req.body;
@@ -286,6 +365,10 @@ const crearRegistroCompra = async (req, res) => {
                 message: 'El registro de compra debe tener al menos un material en el detalle'
             });
         }
+
+        const fechaSql = normalizarFechaSql(fecha, 'fecha', true);
+        const fechaEntregaSql = normalizarFechaSql(fecha_entrega, 'fecha_entrega');
+        const tipoSql = normalizarTipoRegistroCompra(tipo);
 
         for (const item of detalle) {
             if (!item.cantidad || Number(item.cantidad) <= 0) {
@@ -324,10 +407,12 @@ const crearRegistroCompra = async (req, res) => {
 
         const insertCabecera = await new sql.Request(transaction)
             .input('numero', sql.VarChar, numero)
-            .input('fecha', sql.Date, fecha)
-            .input('fecha_entrega', sql.Date, fecha_entrega || null)
+            .input('tipo', sql.VarChar(10), tipoSql)
+            .input('fecha', sql.VarChar(10), fechaSql)
+            .input('fecha_entrega', sql.VarChar(10), fechaEntregaSql)
             .input('proveedor_id', sql.BigInt, proveedorId)
             .input('observaciones', sql.VarChar, observaciones || null)
+            .input('proyecto_id', sql.BigInt, proyecto_id || null)
             .input(
                 'estado_registroDeCompra_id',
                 sql.Int,
@@ -336,6 +421,7 @@ const crearRegistroCompra = async (req, res) => {
             .query(`
         INSERT INTO registroDecompra (
             numero,
+            tipo,
             fecha,
             fecha_entrega,
             proveedor_id,
@@ -347,13 +433,14 @@ const crearRegistroCompra = async (req, res) => {
         OUTPUT INSERTED.registro_compra_id
         VALUES (
             @numero,
-            @fecha,
-            @fecha_entrega,
+            @tipo,
+            CONVERT(date, @fecha, 23),
+            CASE WHEN @fecha_entrega IS NULL THEN NULL ELSE CONVERT(date, @fecha_entrega, 23) END,
             @proveedor_id,
             @observaciones,
             @estado_registroDeCompra_id,
             0,
-            1
+            @proyecto_id
         )
     `);
 
@@ -400,7 +487,7 @@ const crearRegistroCompra = async (req, res) => {
 
         console.error('Error al crear registro de compra:', error);
 
-        res.status(500).json({
+        res.status(error.statusCode || 500).json({
             message: 'Error al crear registro de compra',
             error: error.message
         });
@@ -420,8 +507,10 @@ const actualizarRegistroCompra = async (req, res) => {
 
         const {
             numero,
+            tipo,
             fecha,
             fecha_entrega,
+            proyecto_id,
             observaciones,
             detalle
         } = req.body;
@@ -437,6 +526,10 @@ const actualizarRegistroCompra = async (req, res) => {
                 message: 'El registro de compra debe tener al menos un material en el detalle'
             });
         }
+
+        const fechaSql = normalizarFechaSql(fecha, 'fecha', true);
+        const fechaEntregaSql = normalizarFechaSql(fecha_entrega, 'fecha_entrega');
+        const tipoSql = normalizarTipoRegistroCompra(tipo);
 
         for (const item of detalle) {
             if (!item.cantidad || Number(item.cantidad) <= 0) {
@@ -507,18 +600,22 @@ const actualizarRegistroCompra = async (req, res) => {
         await new sql.Request(transaction)
             .input('registro_compra_id', sql.BigInt, id)
             .input('numero', sql.VarChar, numero)
-            .input('fecha', sql.Date, fecha)
-            .input('fecha_entrega', sql.Date, fecha_entrega || null)
+            .input('tipo', sql.VarChar(10), tipoSql)
+            .input('fecha', sql.VarChar(10), fechaSql)
+            .input('fecha_entrega', sql.VarChar(10), fechaEntregaSql)
             .input('proveedor_id', sql.BigInt, proveedorId)
             .input('observaciones', sql.VarChar, observaciones || null)
+            .input('proyecto_id', sql.BigInt, proyecto_id || null)
             .query(`
                 UPDATE registroDecompra
                 SET
                     numero = @numero,
-                    fecha = @fecha,
-                    fecha_entrega = @fecha_entrega,
+                    tipo = @tipo,
+                    fecha = CONVERT(date, @fecha, 23),
+                    fecha_entrega = CASE WHEN @fecha_entrega IS NULL THEN NULL ELSE CONVERT(date, @fecha_entrega, 23) END,
                     proveedor_id = @proveedor_id,
-                    observaciones = @observaciones
+                    observaciones = @observaciones,
+                    proyecto_id = @proyecto_id
                 WHERE registro_compra_id = @registro_compra_id
             `);
 
@@ -568,7 +665,7 @@ const actualizarRegistroCompra = async (req, res) => {
 
         console.error('Error al actualizar registro de compra:', error);
 
-        res.status(500).json({
+        res.status(error.statusCode || 500).json({
             message: 'Error al actualizar registro de compra',
             error: error.message
         });

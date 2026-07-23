@@ -1,0 +1,22 @@
+.proveedores-page {
+  max-width: none;
+  width: 100%;
+}
+
+.card {
+  padding: 18px;
+}
+
+.search-box {
+  width: min(640px, 100%);
+  flex: 1 1 360px;
+}
+
+.actions {
+  display: flex;
+  gap: 6px;
+}
+
+.actions-column {
+  width: 110px;
+}

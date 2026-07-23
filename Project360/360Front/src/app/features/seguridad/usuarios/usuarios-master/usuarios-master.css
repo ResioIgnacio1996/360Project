@@ -1,0 +1,90 @@
+.usuarios-page {
+  max-width: none;
+  width: 100%;
+}
+
+.tech-value {
+  font-family: var(--font-tech);
+}
+
+.text-center {
+  text-align: center;
+}
+
+.usuarios-table {
+  table-layout: fixed;
+  min-width: 920px;
+}
+
+.usuarios-table th:nth-child(1),
+.usuarios-table td:nth-child(1) {
+  width: 16%;
+}
+
+.usuarios-table th:nth-child(2),
+.usuarios-table td:nth-child(2) {
+  width: 20%;
+}
+
+.usuarios-table th:nth-child(3),
+.usuarios-table td:nth-child(3) {
+  width: 25%;
+}
+
+.usuarios-table th:nth-child(4),
+.usuarios-table td:nth-child(4) {
+  width: 14%;
+}
+
+.usuarios-table th:nth-child(5),
+.usuarios-table td:nth-child(5) {
+  width: 10%;
+}
+
+.usuarios-table th:nth-child(6),
+.usuarios-table td:nth-child(6) {
+  width: 15%;
+}
+
+.acciones-header {
+  text-align: center;
+}
+
+.acciones-cell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+}
+
+.acciones-cell .mat-mdc-icon-button {
+  width: 30px;
+  height: 30px;
+  padding: 3px;
+}
+
+.acciones-cell mat-icon {
+  font-size: 18px;
+}
+
+.role-badge {
+  display: inline-flex;
+  max-width: 100%;
+  padding: 4px 9px;
+  border-radius: 999px;
+  color: var(--primary);
+  background: color-mix(in srgb, var(--primary) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--primary) 28%, transparent);
+  font-family: var(--font-tech);
+  font-size: 11px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@media (max-width: 900px) {
+  .filters-bar .mat-mdc-form-field,
+  .filters-bar .filter-search {
+    width: 100%;
+  }
+}
