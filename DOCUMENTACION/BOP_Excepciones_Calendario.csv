@@ -1,0 +1,13 @@
+fecha,tipo,hs_disponibles,motivo,recuperable
+25/04/2025,FERIADO,0,Día del Veterano y los Caídos en Malvinas,No
+01/05/2025,FERIADO,0,Día del Trabajador,No
+25/05/2025,FERIADO,0,Día de la Revolución de Mayo,No
+20/06/2025,FERIADO,0,Paso a la Inmortalidad del General Belgrano,No
+09/07/2025,FERIADO,0,Día de la Independencia,No
+17/08/2025,FERIADO,0,Paso a la Inmortalidad del General San Martín,No
+12/10/2025,FERIADO,0,Día del Respeto a la Diversidad Cultural,No
+20/11/2025,FERIADO,0,Día de la Soberanía Nacional,No
+08/12/2025,FERIADO,0,Inmaculada Concepción de María,No
+25/12/2025,FERIADO,0,Navidad,No
+15/05/2025,JORNADA_REDUCIDA,4,Lluvia intensa — obra paralizada tarde,No
+03/06/2025,JORNADA_REDUCIDA,4,Visita inspección municipal — mañana libre,No

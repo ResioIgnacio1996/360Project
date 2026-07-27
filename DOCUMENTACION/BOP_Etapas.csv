@@ -1,0 +1,6 @@
+codigo,nombre,orden,peso_pct
+E1,Excavación y Fundaciones,1,15.00
+E2,Estructura Planta Baja,2,25.00
+E3,Estructura Piso 1,3,20.00
+E4,Mampostería e Instalaciones,4,20.00
+E5,Terminaciones,5,20.00

@@ -1,0 +1,1529 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OBRA360 — Avance de Operaciones</title>
+<link href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@300;400;600;700;900&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --navy:#0a0f1e;--navy2:#0f1628;--navy3:#151d35;--navy4:#1c2845;--navy5:#223058;
+  --teal:#00c5a5;--teal2:#00a88a;--teal3:#00856e;--td:rgba(0,197,165,.13);--tdd:rgba(0,197,165,.06);
+  --blue:#1e6fff;--blue2:#3385ff;--orange:#ff8c42;--red:#ff4d6a;--green:#2dd4a0;
+  --yellow:#ffc542;--purple:#9c6fff;
+  --b:rgba(255,255,255,.07);--b2:rgba(255,255,255,.13);--b3:rgba(255,255,255,.21);
+  --t:#e8edf5;--t2:#94a3bc;--t3:#5a6a82;--t4:#3a4a5e;
+  --f:'Source Sans 3',sans-serif;--fm:'DM Mono',monospace;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+html,body{height:100%;background:var(--navy);color:var(--t);font-family:var(--f);overflow:hidden;}
+
+/* ── TOPNAV ── */
+.topnav{height:44px;background:var(--navy2);border-bottom:1px solid var(--b);display:flex;align-items:center;padding:0 20px;gap:0;flex-shrink:0;z-index:100;}
+.logo{font-family:var(--fm);font-size:13px;font-weight:500;color:var(--teal);letter-spacing:2px;margin-right:32px;}
+.tn-tab{padding:0 18px;height:44px;display:flex;align-items:center;font-size:13px;color:var(--t2);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;transition:all .15s;}
+.tn-tab:hover{color:var(--t);background:rgba(255,255,255,.03);}
+.tn-tab.on{color:var(--teal);border-bottom-color:var(--teal);font-weight:600;}
+.tn-right{margin-left:auto;display:flex;align-items:center;gap:14px;}
+.tn-ico{font-size:15px;color:var(--t3);cursor:pointer;}
+.avatar{width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,var(--teal3),var(--blue));display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:#fff;cursor:pointer;}
+
+/* ── LAYOUT ── */
+.app{display:flex;height:calc(100vh - 44px);}
+.sidebar{width:52px;background:var(--navy2);border-right:1px solid var(--b);display:flex;flex-direction:column;align-items:center;padding:10px 0;gap:2px;flex-shrink:0;}
+.sb{width:36px;height:36px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:16px;cursor:pointer;transition:all .15s;color:var(--t3);position:relative;}
+.sb:hover{background:var(--navy4);color:var(--t2);}
+.sb.on{background:var(--td);color:var(--teal);}
+.sb-sep{width:28px;height:1px;background:var(--b);margin:4px 0;}
+.sb-dot{position:absolute;top:3px;right:3px;width:8px;height:8px;background:var(--red);border-radius:50%;border:1px solid var(--navy2);}
+.content{flex:1;overflow:hidden;position:relative;}
+.screen{position:absolute;inset:0;display:none;flex-direction:column;}
+.screen.on{display:flex;}
+::-webkit-scrollbar{width:4px;height:4px;}
+::-webkit-scrollbar-thumb{background:var(--navy4);border-radius:3px;}
+
+/* ── BUTTONS ── */
+.btn{font-family:var(--fm);font-size:9px;letter-spacing:1px;font-weight:500;padding:8px 16px;border-radius:5px;border:none;cursor:pointer;transition:all .15s;display:inline-flex;align-items:center;gap:6px;white-space:nowrap;}
+.btn-p{background:var(--teal);color:var(--navy);font-weight:700;}
+.btn-p:hover{background:var(--teal2);}
+.btn-s{background:transparent;border:1px solid var(--b2);color:var(--t2);}
+.btn-s:hover{border-color:var(--b3);color:var(--t);}
+.btn-g{background:transparent;border:1px solid var(--b);color:var(--t3);}
+.btn-g:hover{border-color:var(--b2);color:var(--t2);}
+.btn-r{background:transparent;border:1px solid rgba(255,77,106,.35);color:var(--red);}
+.btn-r:hover{background:rgba(255,77,106,.08);}
+.btn-sm{padding:5px 10px;font-size:8px;}
+.btn-xs{padding:3px 8px;font-size:8px;}
+
+/* ── CHIPS ── */
+.chip{display:inline-flex;align-items:center;gap:3px;font-family:var(--fm);font-size:8px;font-weight:700;padding:2px 8px;border-radius:3px;letter-spacing:.5px;white-space:nowrap;}
+.chip::before{content:'';width:5px;height:5px;border-radius:50%;background:currentColor;display:inline-block;flex-shrink:0;}
+.chip.nd::before{display:none;}
+.c0{background:rgba(0,197,165,.12);color:var(--teal);}
+.c1{background:rgba(255,140,66,.12);color:var(--orange);}
+.c2{background:rgba(255,77,106,.12);color:var(--red);}
+.c3{background:rgba(30,111,255,.12);color:var(--blue2);}
+.c4{background:rgba(255,255,255,.07);color:var(--t2);}
+.c5{background:rgba(255,197,66,.12);color:var(--yellow);}
+
+/* ── MODAL ── */
+.moverlay{position:fixed;inset:0;background:rgba(0,0,0,.72);z-index:500;display:none;align-items:center;justify-content:center;}
+.moverlay.on{display:flex;}
+.modal{background:var(--navy3);border:1px solid var(--b2);border-radius:10px;padding:24px;width:520px;max-width:94vw;max-height:88vh;overflow-y:auto;box-shadow:0 24px 60px rgba(0,0,0,.55);}
+.modal.wide{width:660px;}
+.m-title{font-size:17px;font-weight:700;margin-bottom:4px;}
+.m-sub{font-size:12px;color:var(--t2);margin-bottom:16px;}
+.fg{display:grid;grid-template-columns:1fr 1fr;gap:11px;margin-bottom:11px;}
+.fg.full{grid-template-columns:1fr;}
+.field{display:flex;flex-direction:column;gap:4px;}
+.field.s2{grid-column:span 2;}
+.field label{font-family:var(--fm);font-size:8px;color:var(--t3);letter-spacing:2px;}
+.field input,.field select,.field textarea{background:var(--navy4);border:1px solid var(--b2);border-radius:5px;padding:8px 10px;font-family:var(--f);font-size:12px;color:var(--t);outline:none;transition:border-color .15s;}
+.field input:focus,.field select:focus,.field textarea:focus{border-color:var(--teal);}
+.field select option{background:var(--navy3);}
+.field textarea{resize:none;min-height:52px;}
+.btn-row{display:flex;gap:8px;justify-content:flex-end;margin-top:16px;}
+
+/* ── TOAST ── */
+.toast{position:fixed;bottom:20px;right:20px;background:var(--navy3);border:1px solid var(--teal);color:var(--t);padding:11px 16px;border-radius:6px;font-family:var(--fm);font-size:10px;letter-spacing:.5px;display:flex;align-items:center;gap:8px;box-shadow:0 8px 24px rgba(0,0,0,.4);z-index:1000;transform:translateY(60px);opacity:0;transition:all .3s cubic-bezier(.4,0,.2,1);}
+.toast.on{transform:translateY(0);opacity:1;}
+/* ── CONFIRM POPUP ── */
+.confirm-popup{position:fixed;inset:0;background:rgba(0,0,0,.76);z-index:600;display:none;align-items:center;justify-content:center;}
+.confirm-popup.on{display:flex;animation:cpIn .18s ease;}
+@keyframes cpIn{from{opacity:0;transform:scale(.95)}to{opacity:1;transform:scale(1)}}
+.cp-box{background:var(--navy3);border:1px solid var(--b2);border-radius:10px;padding:22px 24px;width:400px;max-width:94vw;box-shadow:0 20px 50px rgba(0,0,0,.6);}
+.cp-ico{font-size:30px;text-align:center;margin-bottom:8px;}
+.cp-title{font-size:16px;font-weight:700;text-align:center;margin-bottom:4px;}
+.cp-sub{font-size:12px;color:var(--t2);text-align:center;margin-bottom:8px;}
+.cp-op-name{font-family:var(--fm);font-size:11px;font-weight:600;color:var(--teal);text-align:center;background:var(--td);border:1px solid rgba(0,197,165,.25);border-radius:5px;padding:8px 12px;margin-bottom:16px;}
+.cp-btns{display:flex;gap:9px;}
+/* ── INICIAR inline badge next to op name ── */
+.iniciar-badge{display:inline-flex;align-items:center;gap:4px;background:rgba(0,197,165,.1);border:1px solid rgba(0,197,165,.3);border-radius:4px;padding:2px 8px;font-family:var(--fm);font-size:8px;font-weight:700;color:var(--teal);cursor:pointer;margin-left:7px;transition:all .15s;vertical-align:middle;white-space:nowrap;}
+.iniciar-badge:hover{background:rgba(0,197,165,.22);border-color:var(--teal);}
+/* ── INICIAR button on avop screen ── */
+.iniciar-op-btn{width:100%;padding:13px;border-radius:6px;background:var(--teal);border:none;font-family:var(--fm);font-size:11px;font-weight:700;color:var(--navy);cursor:pointer;letter-spacing:2px;transition:all .18s;display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:12px;}
+.iniciar-op-btn:hover{background:var(--teal2);}
+/* ── HISTORIAL AVANCES ── */
+.hist-section{margin-top:10px;}
+.hist-lbl{font-family:var(--fm);font-size:8px;color:var(--t3);letter-spacing:2px;padding:6px 0 5px;border-top:1px solid var(--b);display:flex;align-items:center;gap:7px;margin-top:6px;}
+.hist-lbl::after{content:'';flex:1;height:1px;background:var(--b);}
+.hist-row{display:flex;align-items:center;gap:8px;padding:6px 8px;background:var(--navy4);border-radius:5px;margin-bottom:4px;border-left:3px solid var(--teal);}
+.hist-pct{font-family:var(--fm);font-size:13px;font-weight:700;color:var(--teal);min-width:42px;}
+.hist-info{flex:1;min-width:0;}
+.hist-date{font-family:var(--fm);font-size:9px;color:var(--t2);}
+.hist-user{font-family:var(--fm);font-size:8px;color:var(--t3);}
+.hist-delta{font-family:var(--fm);font-size:9px;font-weight:600;color:var(--green);flex-shrink:0;}
+/* ── HISTORIAL CONSUMOS ── */
+.cons-hist{margin-top:10px;border-top:1px solid var(--b);padding-top:10px;}
+.cons-hist-lbl{font-family:var(--fm);font-size:8px;color:var(--t3);letter-spacing:2px;margin-bottom:7px;display:flex;align-items:center;gap:7px;}
+.cons-hist-lbl::after{content:'';flex:1;height:1px;background:var(--b);}
+.cons-entry{background:var(--navy4);border:1px solid var(--b);border-radius:5px;padding:8px 10px;margin-bottom:5px;}
+.cons-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:5px;}
+.cons-date{font-family:var(--fm);font-size:8px;color:var(--t3);}
+.cons-user{font-family:var(--fm);font-size:8px;color:var(--teal);}
+.cons-line{display:flex;justify-content:space-between;font-size:11px;padding:2px 0;border-bottom:1px solid rgba(255,255,255,.04);}
+.cons-line:last-child{border-bottom:none;}
+.cons-mat{color:var(--t2);}
+.cons-qty{font-family:var(--fm);font-size:10px;font-weight:600;color:var(--green);}
+.cons-empty{font-family:var(--fm);font-size:9px;color:var(--t4);text-align:center;padding:8px 0;}
+
+/* ═══════════════════════════════════════════════════════════════
+   SCREEN 0 — HOME IH
+═══════════════════════════════════════════════════════════════ */
+.home-wrap{flex:1;padding:30px 34px;overflow-y:auto;}
+.home-label{font-size:13px;color:var(--t2);margin-bottom:26px;}
+.ih-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(164px,1fr));gap:18px;}
+.ihc{display:flex;flex-direction:column;align-items:center;cursor:pointer;text-align:center;transition:transform .18s;}
+.ihc:hover{transform:translateY(-2px);}
+.ih-box{width:144px;height:144px;border-radius:14px;display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden;margin-bottom:9px;transition:filter .18s;}
+.ihc:hover .ih-box{filter:brightness(1.1);}
+.ih-emoji{font-size:58px;}
+.ih-meta{font-size:11px;color:var(--t3);margin-bottom:2px;}
+.ih-name{font-size:14px;font-weight:600;color:var(--t);line-height:1.25;}
+.ih-pct{position:absolute;top:8px;left:8px;font-family:var(--fm);font-size:10px;font-weight:600;color:#fff;background:rgba(0,0,0,.4);padding:2px 8px;border-radius:8px;}
+.ih-st{position:absolute;bottom:8px;right:8px;font-family:var(--fm);font-size:8px;font-weight:700;padding:2px 8px;border-radius:10px;letter-spacing:.5px;}
+.s-ok{background:rgba(0,197,165,.2);color:var(--teal);}
+.s-warn{background:rgba(255,197,66,.15);color:var(--yellow);}
+.s-late{background:rgba(255,77,106,.15);color:var(--red);}
+.s-plan{background:rgba(255,255,255,.1);color:var(--t2);}
+.ih-ops{position:absolute;top:8px;right:8px;display:flex;flex-direction:column;gap:3px;align-items:flex-end;}
+.ih-op-tag{font-family:var(--fm);font-size:7px;font-weight:700;padding:1px 6px;border-radius:3px;}
+
+/* ═══════════════════════════════════════════════════════════════
+   SCREEN 1 — HUB PROYECTO
+═══════════════════════════════════════════════════════════════ */
+.hub-hdr{background:var(--navy2);border-bottom:1px solid var(--b);padding:14px 22px;flex-shrink:0;}
+.bc{font-family:var(--fm);font-size:9px;color:var(--t3);letter-spacing:2px;cursor:pointer;margin-bottom:5px;}
+.bc:hover{color:var(--teal);}
+.hub-row{display:flex;align-items:center;gap:11px;}
+.hub-title{font-size:21px;font-weight:700;letter-spacing:-.3px;}
+.hub-meta{font-family:var(--fm);font-size:9px;color:var(--t3);margin-top:2px;}
+.hub-kpis{display:flex;gap:9px;margin-top:10px;flex-wrap:wrap;}
+.kpi-p{display:flex;align-items:center;gap:6px;background:var(--navy3);border:1px solid var(--b);border-radius:5px;padding:4px 11px;}
+.kpi-lbl{font-family:var(--fm);font-size:8px;color:var(--t3);letter-spacing:1px;}
+.kpi-val{font-family:var(--fm);font-size:13px;font-weight:700;}
+.hub-body{flex:1;overflow-y:auto;padding:24px 28px;}
+.hub-sub{font-family:var(--fm);font-size:9px;color:var(--t3);letter-spacing:3px;margin-bottom:18px;}
+.hub-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(196px,1fr));gap:16px;}
+.mod-card{background:var(--navy3);border:1px solid var(--b);border-radius:11px;padding:20px;cursor:pointer;transition:all .18s;display:flex;flex-direction:column;gap:9px;position:relative;overflow:hidden;}
+.mod-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:var(--mc,var(--teal));}
+.mod-card:hover{border-color:var(--b2);transform:translateY(-2px);box-shadow:0 8px 24px rgba(0,0,0,.3);}
+.mod-ico{font-size:30px;}
+.mod-name{font-size:14px;font-weight:700;}
+.mod-desc{font-size:11px;color:var(--t2);line-height:1.5;}
+.mod-badge{font-family:var(--fm);font-size:8px;font-weight:700;padding:2px 8px;border-radius:3px;width:fit-content;}
+.mb0{background:var(--td);color:var(--teal);}
+.mb1{background:rgba(255,140,66,.12);color:var(--orange);}
+.mb2{background:rgba(255,77,106,.12);color:var(--red);}
+.mb4{background:rgba(255,255,255,.07);color:var(--t2);}
+
+/* ═══════════════════════════════════════════════════════════════
+   SCREEN 2 — TABLA AVANCES (Excel-like)
+═══════════════════════════════════════════════════════════════ */
+.av-hdr{background:var(--navy2);border-bottom:1px solid var(--b);padding:12px 20px;flex-shrink:0;}
+.av-title{font-size:20px;font-weight:700;letter-spacing:-.3px;}
+.av-sub{font-size:12px;color:var(--t2);margin-top:2px;}
+
+/* Active filter pills */
+.active-filters{display:flex;gap:6px;flex-wrap:wrap;padding:8px 20px;background:var(--navy2);border-bottom:1px solid var(--b);flex-shrink:0;min-height:36px;align-items:center;}
+.af-label{font-family:var(--fm);font-size:8px;color:var(--t3);letter-spacing:1px;}
+.af-pill{display:flex;align-items:center;gap:5px;background:var(--td);border:1px solid rgba(0,197,165,.3);border-radius:4px;padding:2px 8px;font-family:var(--fm);font-size:8px;color:var(--teal);}
+.af-pill span{cursor:pointer;opacity:.7;}
+.af-pill span:hover{opacity:1;}
+.af-clear{font-family:var(--fm);font-size:8px;color:var(--t3);cursor:pointer;margin-left:auto;}
+.af-clear:hover{color:var(--red);}
+
+/* Table */
+.tbl-wrap{flex:1;overflow:auto;}
+table.av-tbl{width:100%;border-collapse:collapse;min-width:900px;}
+table.av-tbl thead tr{background:var(--navy3);position:sticky;top:0;z-index:20;}
+table.av-tbl th{
+  padding:0;border-bottom:1px solid var(--b2);border-right:1px solid var(--b);
+  font-weight:500;white-space:nowrap;user-select:none;
+}
+table.av-tbl th:last-child{border-right:none;}
+/* th inner */
+.th-inner{display:flex;flex-direction:column;}
+.th-label{
+  display:flex;align-items:center;gap:5px;padding:7px 10px 4px;
+  font-family:var(--fm);font-size:8px;color:var(--t3);letter-spacing:1.5px;
+  cursor:pointer;transition:color .15s;
+}
+.th-label:hover{color:var(--t2);}
+.th-label.sorted{color:var(--teal);}
+.sort-ico{font-size:9px;opacity:.6;}
+/* filter row inside header */
+.th-filter{padding:3px 6px 6px;}
+.th-filter select{
+  width:100%;background:var(--navy4);border:1px solid var(--b);border-radius:3px;
+  padding:4px 6px;font-family:var(--fm);font-size:8px;color:var(--t2);outline:none;cursor:pointer;
+}
+.th-filter select:focus{border-color:var(--teal);}
+.th-filter select option{background:var(--navy3);}
+.th-filter input{
+  width:100%;background:var(--navy4);border:1px solid var(--b);border-radius:3px;
+  padding:4px 6px;font-family:var(--fm);font-size:8px;color:var(--t);outline:none;
+}
+.th-filter input:focus{border-color:var(--teal);}
+.th-filter input::placeholder{color:var(--t4);}
+
+/* rows */
+table.av-tbl td{
+  padding:9px 10px;border-bottom:1px solid rgba(255,255,255,.04);
+  border-right:1px solid rgba(255,255,255,.03);vertical-align:middle;font-size:12px;
+}
+table.av-tbl td:last-child{border-right:none;}
+table.av-tbl tr:hover td{background:rgba(255,255,255,.025);}
+table.av-tbl tr.row-sel td{background:rgba(0,197,165,.06)!important;}
+table.av-tbl tr.row-atrasada td:first-child{border-left:3px solid var(--red);}
+table.av-tbl tr.row-curso td:first-child{border-left:3px solid var(--orange);}
+table.av-tbl tr.row-iniciar td:first-child{border-left:3px solid var(--teal);}
+
+/* progress mini */
+.pm{display:flex;align-items:center;gap:6px;min-width:90px;}
+.pm-t{flex:1;height:4px;background:var(--navy4);border-radius:3px;overflow:hidden;}
+.pm-f{height:100%;border-radius:3px;}
+.pm-v{font-family:var(--fm);font-size:9px;font-weight:600;width:26px;text-align:right;}
+
+.td-seq{font-family:var(--fm);font-size:10px;font-weight:600;color:var(--teal);}
+.td-m{font-family:var(--fm);font-size:10px;color:var(--t2);}
+.td-name{font-weight:600;}
+
+/* no-results */
+.no-rows{text-align:center;padding:48px;font-family:var(--fm);font-size:9px;color:var(--t3);letter-spacing:2px;}
+
+/* ── NC floating btn ── */
+.nc-float{position:fixed;bottom:72px;right:18px;width:48px;height:48px;border-radius:50%;background:var(--red);border:none;font-size:20px;cursor:pointer;box-shadow:0 4px 14px rgba(255,77,106,.4);z-index:200;display:flex;align-items:center;justify-content:center;transition:transform .2s;}
+.nc-float:hover{transform:scale(1.08);}
+
+/* ═══════════════════════════════════════════════════════════════
+   SCREEN 3 — PANTALLA AVANCE DE OP (subventanas)
+═══════════════════════════════════════════════════════════════ */
+.avop-layout{display:flex;flex-direction:column;flex:1;overflow:hidden;}
+
+/* Project context bar */
+.avop-bar{
+  height:44px;flex-shrink:0;background:var(--navy2);border-bottom:1px solid var(--b);
+  display:flex;align-items:center;padding:0 16px;gap:10px;
+}
+.avop-bc{font-family:var(--fm);font-size:9px;color:var(--t3);cursor:pointer;letter-spacing:1px;}
+.avop-bc:hover{color:var(--teal);}
+.avop-sep{color:var(--t4);font-size:12px;}
+.avop-op-title{font-size:14px;font-weight:700;}
+.avop-op-meta{font-family:var(--fm);font-size:9px;color:var(--t3);margin-left:2px;}
+.avop-bar-right{margin-left:auto;display:flex;gap:7px;align-items:center;}
+
+/* Op info strip */
+.avop-info{
+  flex-shrink:0;background:var(--navy3);border-bottom:1px solid var(--b);
+  padding:10px 16px;display:flex;align-items:center;gap:16px;flex-wrap:wrap;
+}
+.avop-info-item{display:flex;flex-direction:column;gap:1px;}
+.aii-lbl{font-family:var(--fm);font-size:7px;color:var(--t3);letter-spacing:2px;}
+.aii-val{font-size:12px;font-weight:600;}
+
+/* Main 3-column grid */
+.avop-grid{flex:1;display:grid;grid-template-columns:1fr 1fr 1fr;gap:0;overflow:hidden;}
+.avop-col{display:flex;flex-direction:column;overflow:hidden;border-right:1px solid var(--b);}
+.avop-col:last-child{border-right:none;}
+
+/* Column header */
+.avc-hdr{
+  height:38px;flex-shrink:0;background:var(--navy4);border-bottom:1px solid var(--b2);
+  display:flex;align-items:center;padding:0 14px;gap:8px;
+}
+.avc-hdr-num{
+  width:22px;height:22px;border-radius:50%;background:var(--teal);
+  display:flex;align-items:center;justify-content:center;
+  font-family:var(--fm);font-size:10px;font-weight:700;color:var(--navy);flex-shrink:0;
+}
+.avc-hdr-num.done{background:var(--green);}
+.avc-hdr-title{font-family:var(--fm);font-size:9px;color:var(--t2);letter-spacing:2px;}
+/* Column body */
+.avc-body{flex:1;overflow-y:auto;padding:14px;}
+
+/* ── COLUMN 1: instrucciones ── */
+.instr-item{display:flex;gap:10px;padding:9px 0;border-bottom:1px solid rgba(255,255,255,.04);}
+.instr-item:last-child{border-bottom:none;}
+.instr-num{font-family:var(--fm);font-size:11px;font-weight:700;color:var(--teal);flex-shrink:0;width:20px;}
+.instr-txt{font-size:12px;color:var(--t2);line-height:1.55;}
+.criterio-box{background:rgba(30,111,255,.06);border:1px solid rgba(30,111,255,.18);border-radius:6px;padding:11px 13px;font-size:12px;color:var(--t2);line-height:1.6;font-style:italic;margin-bottom:12px;}
+.instr-sec-lbl{font-family:var(--fm);font-size:8px;color:var(--t3);letter-spacing:2px;margin:12px 0 6px;}
+
+/* ── COLUMN 2: avance ── */
+.avance-panel{display:flex;flex-direction:column;gap:14px;}
+
+/* fecha inicio real */
+.fie{background:var(--navy4);border:1px solid var(--b);border-radius:6px;padding:9px 12px;display:flex;align-items:center;justify-content:space-between;}
+.fie-lbl{font-family:var(--fm);font-size:8px;color:var(--t3);letter-spacing:1px;margin-bottom:2px;}
+.fie-val{font-family:var(--fm);font-size:11px;font-weight:600;color:var(--green);}
+.fie-edit{font-family:var(--fm);font-size:8px;color:var(--teal);cursor:pointer;}
+.fie-edit:hover{text-decoration:underline;}
+
+/* tipo de avance label */
+.av-tipo-lbl{font-family:var(--fm);font-size:8px;color:var(--t3);letter-spacing:2px;text-align:center;}
+
+/* SLIDER (PORCENTAJE) */
+.slider-wrap{display:flex;flex-direction:column;align-items:center;gap:10px;padding:10px 0;}
+.pct-big{font-family:var(--fm);font-size:56px;font-weight:700;color:var(--teal);line-height:1;text-align:center;}
+.pct-prev{font-family:var(--fm);font-size:9px;color:var(--t3);text-align:center;}
+.slider{width:100%;accent-color:var(--teal);height:6px;cursor:pointer;}
+.slider-ticks{display:flex;justify-content:space-between;width:100%;font-family:var(--fm);font-size:8px;color:var(--t3);}
+
+/* CANTIDAD */
+.cant-wrap{display:flex;flex-direction:column;align-items:center;gap:6px;padding:8px 0;}
+.cant-row{display:flex;align-items:center;justify-content:center;gap:16px;}
+.cant-btn{width:52px;height:52px;border-radius:50%;border:2px solid var(--b2);background:transparent;font-size:26px;color:var(--t2);cursor:pointer;transition:all .15s;display:flex;align-items:center;justify-content:center;}
+.cant-btn:hover{border-color:var(--teal);color:var(--teal);}
+.cant-big{font-family:var(--fm);font-size:44px;font-weight:700;color:var(--teal);min-width:100px;text-align:center;}
+.cant-meta{font-family:var(--fm);font-size:9px;color:var(--t3);}
+
+/* BINARIO */
+.bin-wrap{display:flex;flex-direction:column;align-items:center;gap:12px;padding:8px 0;}
+.bin-btn{width:110px;height:110px;border-radius:50%;border:3px solid var(--b2);background:transparent;font-size:38px;cursor:pointer;transition:all .2s;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;}
+.bin-btn.done{border-color:var(--green);background:rgba(45,212,160,.08);}
+.bin-lbl{font-family:var(--fm);font-size:9px;color:var(--t2);}
+.photo-req{background:rgba(255,197,66,.07);border:1px solid rgba(255,197,66,.22);border-radius:5px;padding:9px 12px;font-family:var(--fm);font-size:9px;color:var(--yellow);text-align:center;}
+
+/* status calc */
+.av-calc-box{background:var(--navy4);border:1px solid var(--b);border-radius:6px;padding:10px 12px;}
+.acb-row{display:flex;justify-content:space-between;font-family:var(--fm);font-size:9px;padding:3px 0;border-bottom:1px solid rgba(255,255,255,.04);}
+.acb-row:last-child{border-bottom:none;}
+.acb-k{color:var(--t3);}
+.acb-v{font-weight:600;}
+
+.avance-confirm-btn{width:100%;padding:12px;border-radius:6px;background:var(--teal);border:none;font-family:var(--fm);font-size:10px;font-weight:700;color:var(--navy);cursor:pointer;letter-spacing:2px;transition:all .18s;display:flex;align-items:center;justify-content:center;gap:8px;}
+.avance-confirm-btn:hover{background:var(--teal2);}
+.avance-confirm-btn:disabled{background:var(--navy4);color:var(--t4);cursor:not-allowed;}
+
+/* ── COLUMN 3: materiales ── */
+/* Material rows */
+.mat-hdr-row{display:grid;grid-template-columns:1fr 60px 60px 70px 60px;gap:4px;padding:5px 8px;background:var(--navy4);border-radius:5px 5px 0 0;border-bottom:1px solid var(--b);}
+.mhr{font-family:var(--fm);font-size:7px;color:var(--t3);letter-spacing:1px;}
+.mhr.r{text-align:right;}
+.mat-row{display:grid;grid-template-columns:1fr 60px 60px 70px 60px;gap:4px;padding:9px 8px;border-bottom:1px solid rgba(255,255,255,.04);align-items:center;transition:background .15s;}
+.mat-row:last-child{border-bottom:none;}
+.mat-row:hover{background:rgba(255,255,255,.02);}
+.mat-name-col{}
+.mat-name{font-size:11px;font-weight:600;}
+.mat-code{font-family:var(--fm);font-size:8px;color:var(--blue2);}
+.mat-num{font-family:var(--fm);font-size:11px;text-align:right;color:var(--t2);}
+.mat-input{
+  width:100%;background:var(--navy4);border:1px solid var(--b);border-radius:3px;
+  padding:5px 6px;font-family:var(--fm);font-size:11px;color:var(--t);outline:none;text-align:center;
+  transition:border-color .15s;
+}
+.mat-input:focus{border-color:var(--teal);}
+.mat-unit{font-family:var(--fm);font-size:9px;color:var(--t3);text-align:center;}
+
+/* desvio coloring */
+.dev-ok{color:var(--green);}
+.dev-warn{color:var(--yellow);}
+.dev-over{color:var(--red);}
+
+.mat-confirm-btn{width:100%;padding:11px;border-radius:6px;background:var(--teal);border:none;font-family:var(--fm);font-size:10px;font-weight:700;color:var(--navy);cursor:pointer;letter-spacing:2px;transition:all .18s;display:flex;align-items:center;justify-content:center;gap:8px;margin-top:12px;}
+.mat-confirm-btn:hover{background:var(--teal2);}
+.mat-total-bar{display:flex;justify-content:space-between;align-items:center;padding:8px 8px;background:var(--navy4);border-radius:0 0 5px 5px;margin-bottom:8px;}
+.mtb-lbl{font-family:var(--fm);font-size:8px;color:var(--t3);}
+.mtb-ok{font-family:var(--fm);font-size:9px;color:var(--green);font-weight:600;}
+.mtb-warn{font-family:var(--fm);font-size:9px;color:var(--yellow);font-weight:600;}
+
+/* confirmed overlay */
+.confirmed-overlay{display:none;flex-direction:column;align-items:center;justify-content:center;gap:14px;height:100%;padding:20px;text-align:center;}
+.confirmed-overlay.on{display:flex;}
+</style>
+</head>
+<body>
+
+<!-- TOPNAV -->
+<div class="topnav">
+  <span class="logo">OBRA360</span>
+  <div class="tn-tab on" id="tn-projects" onclick="go('home')">Projects</div>
+  <div class="tn-tab" id="tn-systools" onclick="go('systools')">System Tools</div>
+  <div class="tn-right">
+    <span class="tn-ico">🔔</span>
+    <span class="tn-ico">⚙️</span>
+    <div class="avatar" id="avatar-btn" title="Juan Romero · Planificador">JR</div>
+  </div>
+</div>
+
+<div class="app">
+  <nav class="sidebar">
+    <div class="sb on" title="Projects" onclick="go('home')">🏗️</div>
+    <div class="sb" title="System Tools" onclick="go('systools')">⚙️</div>
+    <div class="sb-sep"></div>
+    <div class="sb" title="Avances" onclick="go('avances')">📈</div>
+    <div class="sb" title="BOM Materiales" onclick="toast('BOM Materiales')">📦</div>
+    <div class="sb-sep"></div>
+    <div class="sb" title="No Conformidades" onclick="openM('m-nc')">⚠️<div class="sb-dot"></div></div>
+    <div class="sb" title="Dashboard" onclick="toast('Dashboard')">📊</div>
+  </nav>
+
+  <div class="content">
+
+    <!-- ═══════════════════════════════
+         S0 — HOME
+    ═══════════════════════════════ -->
+    <div class="screen on" id="s-home">
+      <div class="home-wrap">
+        <div class="home-label">Projects</div>
+        <div class="ih-grid">
+
+          <div class="ihc" onclick="goHub('Torre Nordeste','PRJ-2024-047','34')">
+            <div class="ih-box" style="background:var(--teal)">
+              <span class="ih-emoji">🏗️</span>
+              <span class="ih-pct">34%</span>
+              <span class="ih-st s-ok">EN PLAZO</span>
+              <div class="ih-ops">
+                <span class="ih-op-tag" style="background:rgba(255,140,66,.35);color:#fff">4 EN CURSO</span>
+                <span class="ih-op-tag" style="background:rgba(255,77,106,.35);color:#fff">1 ATRASADA</span>
+              </div>
+            </div>
+            <div class="ih-meta">PRJ-2024-047</div>
+            <div class="ih-name">Torre Nordeste</div>
+          </div>
+
+          <div class="ihc" onclick="goHub('Residencial Buen Pastor','PRJ-2024-031','78')">
+            <div class="ih-box" style="background:#2a3a55">
+              <span class="ih-emoji">🏢</span>
+              <span class="ih-pct">78%</span>
+              <span class="ih-st s-warn">LEVE ATRASO</span>
+              <div class="ih-ops">
+                <span class="ih-op-tag" style="background:rgba(255,140,66,.35);color:#fff">2 EN CURSO</span>
+              </div>
+            </div>
+            <div class="ih-meta">PRJ-2024-031</div>
+            <div class="ih-name">Res. Buen Pastor</div>
+          </div>
+
+          <div class="ihc" onclick="goHub('Complejo San Vicente','PRJ-2025-002','12')">
+            <div class="ih-box" style="background:#1e2a3a">
+              <span class="ih-emoji">🏘️</span>
+              <span class="ih-pct">12%</span>
+              <span class="ih-st s-ok">EN PLAZO</span>
+            </div>
+            <div class="ih-meta">PRJ-2025-002</div>
+            <div class="ih-name">Complejo San Vicente</div>
+          </div>
+
+          <div class="ihc" onclick="goHub('Planta Industrial Norte','PRJ-2025-003','0')">
+            <div class="ih-box" style="background:#14202e">
+              <span class="ih-emoji">🏭</span>
+              <span class="ih-pct">0%</span>
+              <span class="ih-st s-plan">PLANIFICACIÓN</span>
+            </div>
+            <div class="ih-meta">PRJ-2025-003</div>
+            <div class="ih-name">Planta Industrial Norte</div>
+          </div>
+
+          <div class="ihc" onclick="goHub('Casa Unifamiliar Alberdi','PRJ-2025-004','5')">
+            <div class="ih-box" style="background:#2a3020">
+              <span class="ih-emoji">🏠</span>
+              <span class="ih-pct">5%</span>
+              <span class="ih-st s-ok">EN PLAZO</span>
+            </div>
+            <div class="ih-meta">PRJ-2025-004</div>
+            <div class="ih-name">Casa Alberdi</div>
+          </div>
+
+          <div class="ihc" onclick="goHub('Refacción Edificio Centro','PRJ-2025-005','61')">
+            <div class="ih-box" style="background:#2a2035">
+              <span class="ih-emoji">🔧</span>
+              <span class="ih-pct">61%</span>
+              <span class="ih-st s-late">ATRASADO</span>
+              <div class="ih-ops">
+                <span class="ih-op-tag" style="background:rgba(255,77,106,.35);color:#fff">2 ATRASADAS</span>
+              </div>
+            </div>
+            <div class="ih-meta">PRJ-2025-005</div>
+            <div class="ih-name">Ref. Edificio Centro</div>
+          </div>
+
+          <div class="ihc new-c" onclick="toast('Crear nuevo proyecto')">
+            <div class="ih-box" style="background:transparent;border:2px dashed var(--b2);">
+              <span class="ih-emoji" style="font-size:42px;color:var(--t3)">+</span>
+            </div>
+            <div class="ih-meta">Nuevo</div>
+            <div class="ih-name">Crear Proyecto</div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════
+         S0b — SYSTEM TOOLS
+    ═══════════════════════════════ -->
+    <div class="screen" id="s-systools">
+      <div class="home-wrap">
+        <div class="home-label" style="display:flex;align-items:center;justify-content:space-between;">
+          <span>System Tools</span>
+          <span style="font-family:var(--fm);font-size:9px;color:var(--t3);letter-spacing:2px;">DATOS MAESTROS Y GESTIÓN GLOBAL DE LA EMPRESA</span>
+        </div>
+        <div class="ih-grid">
+
+          <div class="ihc" onclick="toast('Ingreso de Materiales — OC, Facturas y Remitos')">
+            <div class="ih-box" style="background:var(--blue)">
+              <span class="ih-emoji">📦</span>
+              <span class="ih-st" style="background:rgba(30,111,255,.25);color:#90b8ff">MULTI-PROYECTO</span>
+            </div>
+            <div class="ih-meta">System Tools</div>
+            <div class="ih-name">Ingreso de Materiales</div>
+          </div>
+
+          <div class="ihc" onclick="toast('Catálogo de Materiales — Lista maestra de la empresa')">
+            <div class="ih-box" style="background:#1a3a2a">
+              <span class="ih-emoji">🗂️</span>
+              <span class="ih-st" style="background:rgba(45,212,160,.2);color:var(--green)">CATÁLOGO</span>
+            </div>
+            <div class="ih-meta">System Tools</div>
+            <div class="ih-name">Catálogo de Materiales</div>
+          </div>
+
+          <div class="ihc" onclick="toast('Clientes — Gestión de clientes y CUIT')">
+            <div class="ih-box" style="background:#2a1a3a">
+              <span class="ih-emoji">🤝</span>
+            </div>
+            <div class="ih-meta">System Tools</div>
+            <div class="ih-name">Clientes</div>
+          </div>
+
+          <div class="ihc" onclick="toast('Proveedores — Score A/B/C y gestión de entregas')">
+            <div class="ih-box" style="background:#1a2a3a">
+              <span class="ih-emoji">🏢</span>
+              <span class="ih-st" style="background:rgba(255,197,66,.15);color:var(--yellow)">12 ACTIVOS</span>
+            </div>
+            <div class="ih-meta">System Tools</div>
+            <div class="ih-name">Proveedores</div>
+          </div>
+
+          <div class="ihc" onclick="toast('Usuarios y Roles — Gestión de acceso y permisos')">
+            <div class="ih-box" style="background:#3a1a1a">
+              <span class="ih-emoji">👤</span>
+              <span class="ih-st" style="background:rgba(255,77,106,.15);color:var(--red)">8 USUARIOS</span>
+            </div>
+            <div class="ih-meta">System Tools</div>
+            <div class="ih-name">Usuarios y Roles</div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════
+         S1 — HUB PROYECTO
+    ═══════════════════════════════ -->
+    <div class="screen" id="s-hub">
+      <div class="hub-hdr">
+        <div class="bc" onclick="go('home')">← APPLICATIONS</div>
+        <div class="hub-row">
+          <div class="hub-title" id="hub-title">Torre Nordeste</div>
+          <span class="chip c0">EN PLAZO</span>
+        </div>
+        <div class="hub-meta" id="hub-meta">PRJ-2024-047 · Desarrollos Colón S.A.</div>
+        <div class="hub-kpis">
+          <div class="kpi-p"><span class="kpi-lbl">AVANCE</span><span class="kpi-val" style="color:var(--teal)" id="hub-pct">34%</span></div>
+          <div class="kpi-p"><span class="kpi-lbl">EN CURSO</span><span class="kpi-val" style="color:var(--orange)">4</span></div>
+          <div class="kpi-p"><span class="kpi-lbl">ATRASADAS</span><span class="kpi-val" style="color:var(--red)">1</span></div>
+          <div class="kpi-p"><span class="kpi-lbl">NC ABIERTAS</span><span class="kpi-val" style="color:var(--red)">3</span></div>
+        </div>
+      </div>
+      <div style="flex:1;overflow-y:auto;">
+        <div class="hub-body">
+          <div class="hub-sub" id="hub-rol-sub">MÓDULOS DEL PROYECTO</div>
+          <div class="hub-grid" id="hub-grid"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════
+         S2 — TABLA AVANCES (filtrable)
+    ═══════════════════════════════ -->
+    <div class="screen" id="s-avances">
+      <div class="av-hdr">
+        <div class="bc" id="av-bc" onclick="go('hub')">← TORRE NORDESTE</div>
+        <div style="display:flex;align-items:center;justify-content:space-between;">
+          <div>
+            <div class="av-title">Avance de Operaciones</div>
+            <div class="av-sub">Operaciones en curso y disponibles para iniciar</div>
+          </div>
+          <button class="btn btn-r btn-sm" onclick="openM('m-nc')">⚠ Reportar NC</button>
+        </div>
+      </div>
+
+      <!-- Active filters bar -->
+      <div class="active-filters" id="active-filters">
+        <span class="af-label">FILTROS ACTIVOS:</span>
+        <span style="font-family:var(--fm);font-size:8px;color:var(--t4)">Ninguno — mostrando todas las operaciones</span>
+      </div>
+
+      <!-- Table -->
+      <div class="tbl-wrap">
+        <table class="av-tbl" id="av-tbl">
+          <thead>
+            <tr>
+              <!-- SEQ -->
+              <th style="min-width:70px">
+                <div class="th-inner">
+                  <div class="th-label" onclick="sortTable('seq')">SEQ <span class="sort-ico">↕</span></div>
+                  <div class="th-filter"><input placeholder="Buscar..." onchange="applyFilter('seq',this.value)" oninput="applyFilter('seq',this.value)"></div>
+                </div>
+              </th>
+              <!-- OPERACIÓN -->
+              <th style="min-width:200px">
+                <div class="th-inner">
+                  <div class="th-label" onclick="sortTable('name')">OPERACIÓN <span class="sort-ico">↕</span></div>
+                  <div class="th-filter"><input placeholder="Buscar..." onchange="applyFilter('name',this.value)" oninput="applyFilter('name',this.value)"></div>
+                </div>
+              </th>
+              <!-- ETAPA -->
+              <th style="min-width:100px">
+                <div class="th-inner">
+                  <div class="th-label">ETAPA</div>
+                  <div class="th-filter">
+                    <select onchange="applyFilter('eta',this.value)">
+                      <option value="">Todas</option>
+                      <option>E1</option><option>E2</option><option>E3</option>
+                      <option>E4</option><option>E5</option><option>E6</option>
+                      <option>E7</option><option>E8</option>
+                    </select>
+                  </div>
+                </div>
+              </th>
+              <!-- RESPONSABLE -->
+              <th style="min-width:100px">
+                <div class="th-inner">
+                  <div class="th-label">RESP.</div>
+                  <div class="th-filter">
+                    <select onchange="applyFilter('resp',this.value)">
+                      <option value="">Todos</option>
+                      <option>CUA-A</option><option>CUA-B</option><option>CUA-C</option>
+                      <option>CUA-D</option><option>CUA-E</option><option>CUA-F</option>
+                      <option>SUB-01</option><option>SUB-02</option><option>SUB-03</option>
+                      <option>SUB-04</option><option>SUB-05</option><option>SUB-06</option>
+                      <option>CUA-A+B</option>
+                    </select>
+                  </div>
+                </div>
+              </th>
+              <!-- ESTADO -->
+              <th style="min-width:130px">
+                <div class="th-inner">
+                  <div class="th-label">ESTADO</div>
+                  <div class="th-filter">
+                    <select onchange="applyFilter('st',this.value)">
+                      <option value="">Todos</option>
+                      <option value="ATRASADA">ATRASADA</option>
+                      <option value="EN_CURSO">EN CURSO</option>
+                      <option value="PUEDE_INICIAR">PUEDE INICIAR</option>
+                    </select>
+                  </div>
+                </div>
+              </th>
+              <!-- AVANCE -->
+              <th style="min-width:120px">
+                <div class="th-inner">
+                  <div class="th-label" onclick="sortTable('pct')">AVANCE <span class="sort-ico">↕</span></div>
+                  <div class="th-filter"><select onchange="applyFilter('pct_range',this.value)">
+                    <option value="">Cualquiera</option>
+                    <option value="0">Sin iniciar (0%)</option>
+                    <option value="1-99">En progreso (1-99%)</option>
+                    <option value="100">Completo (100%)</option>
+                  </select></div>
+                </div>
+              </th>
+              <!-- FIN REPROG -->
+              <th style="min-width:110px">
+                <div class="th-inner">
+                  <div class="th-label" onclick="sortTable('fin')">FIN REPROG. <span class="sort-ico">↕</span></div>
+                  <div class="th-filter"><input placeholder="dd/mm" oninput="applyFilter('fin',this.value)"></div>
+                </div>
+              </th>
+              <!-- ACCIÓN -->
+              <th style="min-width:90px">
+                <div class="th-inner">
+                  <div class="th-label">ACCIÓN</div>
+                  <div class="th-filter" style="padding-top:6px;"></div>
+                </div>
+              </th>
+            </tr>
+          </thead>
+          <tbody id="av-tbody"></tbody>
+        </table>
+      </div>
+      <button class="nc-float" onclick="openM('m-nc')" title="Reportar NC">⚠</button>
+    </div>
+
+    <!-- ═══════════════════════════════
+         S3 — AVANCE DE OP (subventanas)
+    ═══════════════════════════════ -->
+    <div class="screen" id="s-avop">
+      <div class="avop-layout">
+
+        <!-- Context bar -->
+        <div class="avop-bar">
+          <span class="avop-bc" onclick="go('avances')">← AVANCES</span>
+          <span class="avop-sep">/</span>
+          <span class="avop-op-title" id="avop-title">Armado hierro losa PB</span>
+          <span class="avop-op-meta" id="avop-meta">OP-600 · Torre Nordeste</span>
+          <div class="avop-bar-right">
+            <button class="btn btn-r btn-sm" onclick="openM('m-nc')">⚠ Reportar NC</button>
+            <button class="btn btn-g btn-sm" onclick="go('avances')">✕ Cancelar</button>
+          </div>
+        </div>
+
+        <!-- Info strip -->
+        <div class="avop-info">
+          <div class="avop-info-item">
+            <span class="aii-lbl">ETAPA</span>
+            <span class="aii-val" id="avop-eta">E2 · Estructura PB-P3</span>
+          </div>
+          <div style="width:1px;height:30px;background:var(--b)"></div>
+          <div class="avop-info-item">
+            <span class="aii-lbl">RESPONSABLE</span>
+            <span class="aii-val" id="avop-resp">CUA-C</span>
+          </div>
+          <div style="width:1px;height:30px;background:var(--b)"></div>
+          <div class="avop-info-item">
+            <span class="aii-lbl">DURACIÓN EST.</span>
+            <span class="aii-val" id="avop-dur">24 hs</span>
+          </div>
+          <div style="width:1px;height:30px;background:var(--b)"></div>
+          <div class="avop-info-item">
+            <span class="aii-lbl">FIN REPROG.</span>
+            <span class="aii-val" style="color:var(--yellow)" id="avop-fin">12/06/2025</span>
+          </div>
+          <div style="width:1px;height:30px;background:var(--b)"></div>
+          <div class="avop-info-item">
+            <span class="aii-lbl">AVANCE ACTUAL</span>
+            <span class="aii-val" style="color:var(--orange)" id="avop-pct-strip">75%</span>
+          </div>
+          <div style="width:1px;height:30px;background:var(--b)"></div>
+          <div class="avop-info-item">
+            <span class="aii-lbl">ESTADO</span>
+            <span class="aii-val" id="avop-st-strip"><span class="chip c1">EN CURSO</span></span>
+          </div>
+        </div>
+
+        <!-- 3 columns -->
+        <div class="avop-grid">
+
+          <!-- COL 1: Instrucciones de trabajo -->
+          <div class="avop-col">
+            <div class="avc-hdr">
+              <div class="avc-hdr-num done">✓</div>
+              <span class="avc-hdr-title">INSTRUCCIONES DE TRABAJO</span>
+            </div>
+            <div class="avc-body">
+              <div class="criterio-box" id="col1-criterio">"100% del hierro colocado y atado según plano E-PB-02. Director firma conformidad."</div>
+              <div class="instr-sec-lbl">PASOS</div>
+              <div id="col1-steps"></div>
+            </div>
+          </div>
+
+          <!-- COL 2: Avance -->
+          <div class="avop-col">
+            <div class="avc-hdr">
+              <div class="avc-hdr-num active" id="col2-num">2</div>
+              <span class="avc-hdr-title">REGISTRAR AVANCE</span>
+            </div>
+            <div class="avc-body" id="col2-body">
+              <div class="avance-panel">
+                <!-- fecha inicio real (solo si primer avance) -->
+                <div class="fie" id="fie-block" style="display:none;">
+                  <div>
+                    <div class="fie-lbl">FECHA DE INICIO REAL</div>
+                    <div class="fie-val" id="fie-val">Hoy, 09/06/2025</div>
+                  </div>
+                  <span class="fie-edit" onclick="openM('m-edit-fecha')">✏ Modificar</span>
+                </div>
+                <!-- tipo label -->
+                <div class="av-tipo-lbl" id="av-tipo-lbl">PORCENTAJE DE AVANCE</div>
+                <!-- INICIAR button (solo visible si PUEDE_INICIAR) -->
+                <button class="iniciar-op-btn" id="iniciar-op-btn" style="display:none;" onclick="confirmarIniciarDesdeAvop()">
+                  ▶ INICIAR ESTA OPERACIÓN
+                </button>
+                <!-- progress input -->
+                <div id="prog-input"></div>
+                <!-- calcs -->
+                <div class="av-calc-box" id="av-calc-box"></div>
+                <!-- confirm -->
+                <button class="avance-confirm-btn" id="av-confirm-btn" onclick="confirmarAvance()">
+                  ✓ REGISTRAR AVANCE
+                </button>
+                <!-- HISTORIAL AVANCES -->
+                <div class="hist-lbl">HISTORIAL DE AVANCES</div>
+                <div id="hist-avances"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- COL 3: Materiales -->
+          <div class="avop-col">
+            <div class="avc-hdr">
+              <div class="avc-hdr-num" id="col3-num">3</div>
+              <span class="avc-hdr-title">CONSUMO DE MATERIALES</span>
+            </div>
+            <div class="avc-body" id="col3-body">
+              <!-- table header -->
+              <div class="mat-hdr-row" style="grid-template-columns:1fr 60px 60px 70px 60px;">
+                <span class="mhr">MATERIAL</span>
+                <span class="mhr r">TEÓRICO</span>
+                <span class="mhr r">HOY</span>
+                <span class="mhr r" style="color:var(--teal)">TOTAL AC.</span>
+                <span class="mhr r">UNID.</span>
+              </div>
+              <div id="mat-rows"></div>
+              <div class="mat-total-bar" id="mat-total-bar">
+                <span class="mtb-lbl">Cargá las cantidades consumidas hoy</span>
+                <span class="mtb-ok" id="mat-status-lbl"></span>
+              </div>
+              <button class="mat-confirm-btn" id="mat-confirm-btn" onclick="confirmarMateriales()">✓ CONFIRMAR CONSUMO</button>
+              <div style="font-family:var(--fm);font-size:8px;color:var(--t3);text-align:center;margin-top:8px;" id="mat-note">
+                El consumo se registra independientemente del avance
+              </div>
+              <!-- Confirmed state -->
+              <div class="confirmed-overlay" id="mat-confirmed">
+                <div style="font-size:36px">✅</div>
+                <div style="font-size:14px;font-weight:700;color:var(--green)">Consumo registrado</div>
+                <div style="font-family:var(--fm);font-size:9px;color:var(--t3);text-align:center">Stock actualizado</div>
+                <button class="btn btn-g btn-sm" onclick="resetMatConfirm()">+ Registrar más</button>
+              </div>
+              <!-- HISTORIAL CONSUMOS -->
+              <div class="cons-hist">
+                <div class="cons-hist-lbl">CONSUMOS REGISTRADOS HOY</div>
+                <div id="hist-consumos"></div>
+              </div>
+            </div>
+          </div>
+
+        </div><!-- /avop-grid -->
+      </div><!-- /avop-layout -->
+    </div>
+
+  </div><!-- /content -->
+</div><!-- /app -->
+
+<!-- ══ MODALES ══ -->
+
+<!-- NC -->
+<div class="moverlay" id="m-nc">
+  <div class="modal">
+    <div class="m-title">Reportar No Conformidad</div>
+    <div class="m-sub">Registrá el problema con foto y descripción</div>
+    <div class="fg">
+      <div class="field"><label>Tipo *</label>
+        <select><option>MATERIAL DAÑADO</option><option>CANTIDAD INCORRECTA</option><option>PROBLEMA DE CALIDAD</option><option>FALTANTE</option><option>OTRO</option></select>
+      </div>
+      <div class="field"><label>Severidad *</label>
+        <select><option>CRÍTICA</option><option>ADVERTENCIA</option><option>OBSERVACIÓN</option></select>
+      </div>
+      <div class="field s2"><label>FOTO DEL PROBLEMA</label>
+        <div style="border:2px dashed var(--b2);border-radius:6px;padding:20px;text-align:center;cursor:pointer;background:var(--navy4);" onclick="toast('Capturar foto...')">
+          <div style="font-size:24px;margin-bottom:6px">📷</div>
+          <div style="font-size:12px;font-weight:600">Foto del problema</div>
+          <div style="font-family:var(--fm);font-size:9px;color:var(--t3);margin-top:3px">Tap para capturar</div>
+        </div>
+      </div>
+      <div class="field s2"><label>Descripción *</label>
+        <textarea placeholder="Describí el problema..."></textarea>
+      </div>
+      <div class="field"><label>Operación</label>
+        <select><option>OP-600 · Armado hierro PB</option><option>General</option></select>
+      </div>
+      <div class="field"><label>Fecha límite respuesta</label>
+        <input type="date" value="2025-06-16">
+      </div>
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-g" onclick="closeM('m-nc')">Cancelar</button>
+      <button class="btn btn-r" onclick="closeM('m-nc');toast('NC reportada — supervisor notificado')">Reportar NC</button>
+    </div>
+  </div>
+</div>
+
+<!-- Editar fecha inicio -->
+<div class="moverlay" id="m-edit-fecha">
+  <div class="modal">
+    <div class="m-title">Fecha de Inicio Real</div>
+    <div class="m-sub">¿Cuándo comenzó realmente esta operación?</div>
+    <div class="fg full">
+      <div class="field"><label>FECHA DE INICIO REAL *</label>
+        <input type="date" value="2025-06-06">
+        <div style="font-family:var(--fm);font-size:8px;color:var(--t3);margin-top:3px">Máximo: hoy. No puede ser fecha futura.</div>
+      </div>
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-g" onclick="closeM('m-edit-fecha')">Cancelar</button>
+      <button class="btn btn-p" onclick="closeM('m-edit-fecha');toast('Fecha de inicio actualizada')">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- CONFIRM INICIAR POPUP -->
+<div class="confirm-popup" id="confirm-popup">
+  <div class="cp-box">
+    <div class="cp-ico">▶</div>
+    <div class="cp-title">¿Confirmar inicio de operación?</div>
+    <div class="cp-sub">Vas a registrar el inicio de:</div>
+    <div class="cp-op-name" id="cp-op-name">OP-700 · Colado hormigón losa PB</div>
+    <div style="font-family:var(--fm);font-size:9px;color:var(--t3);text-align:center;margin-bottom:14px;">
+      Se registrará la <strong style="color:var(--green)">fecha de inicio real</strong> como hoy y la operación pasará a estado <strong style="color:var(--orange)">EN CURSO</strong>.
+    </div>
+    <div class="cp-btns">
+      <button class="btn btn-g" style="flex:1" onclick="closeConfirmPopup()">Cancelar</button>
+      <button class="btn btn-p" style="flex:2" onclick="doIniciar()">▶ Sí, iniciar operación</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast-el">✓ <span id="toast-msg">OK</span></div>
+
+<script>
+// ══════════════════════════════════════════════════
+// DATA
+// ══════════════════════════════════════════════════
+const ALL_OPS = [
+  // ── OPERACIONES CON CONTENIDO COMPLETO (se puede entrar adentro) ──
+  {seq:'600',name:'Armado hierro losa PB',eta:'E2',resp:'CUA-C',
+   st:'EN_CURSO',pct:75,fin:'12/06',tipo:'PORCENTAJE',dur:'24 hs',
+   crit:'100% del hierro colocado y atado según plano E-PB-02. Director firma conformidad.',
+   instrText:'Verificar encofrado completo y apuntalado. Colocar hierros principales Ø12 cada 20cm según plano E-PB-02. Colocar secundarios Ø8 cada 25cm. Atar cruces con alambre negro cada dos crucetas. Verificar recubrimiento mínimo 2cm con separadores plásticos. Llamar al director antes del colado para aprobación visual.',
+   mats:[{code:'MAT-034',name:'Hierro Ø12 nervado',teorica:120,unit:'kg'},{code:'MAT-035',name:'Alambre negro',teorica:5,unit:'kg'},{code:'MAT-036',name:'Separadores plásticos',teorica:50,unit:'unid'}],
+   histAv:[{pct:75,prev:40,fecha:'Hoy 09:30',user:'CUA-C'},{pct:40,prev:20,fecha:'Ayer 16:00',user:'CUA-C'},{pct:20,prev:0,fecha:'07/06 08:00',user:'Sistema'}]},
+  {seq:'700',name:'Colado hormigón losa PB',eta:'E2',resp:'CUA-A+B',
+   st:'PUEDE_INICIAR',pct:0,fin:'14/06',tipo:'BINARIO',dur:'8 hs',
+   crit:'Hormigón colado, vibrado y nivelado. Sin poros visibles.',
+   instrText:'Verificar aprobación del armado por el director de obra. Coordinar llegada del mixer con 30 minutos de anticipación. Colar en capas máximas de 40cm vibrando cada capa con vibrador de inmersión. Nivelar superficie superior con regle. Cubrir con film plástico y mantener húmedo mínimo 24hs.',
+   mats:[{code:'MAT-001',name:'Cemento Portland',teorica:48,unit:'bolsas'},{code:'MAT-012',name:'Arena fina',teorica:6,unit:'m³'},{code:'MAT-040',name:'Aditivo plastificante',teorica:4,unit:'lt'}],
+   histAv:[]},
+  {seq:'800',name:'Mampostería cerramiento PB',eta:'E2',resp:'CUA-D',
+   st:'ATRASADA',pct:20,fin:'23/06',tipo:'CANTIDAD',dur:'32 hs',
+   crit:'Mampostería completa en todo el perímetro del piso. Plomada verificada cada 5 hiladas.',
+   instrText:'Trazar líneas guía en el piso según plano A-PB-01. Preparar mezcla 1:3 (cal-arena). Levantar hiladas comenzando siempre por las esquinas. Verificar plomada y nivel cada 5 hiladas. Dejar juntas para marcos de ventana según medidas del plano.',
+   mats:[{code:'MAT-020',name:'Ladrillo cerámico 8cm',teorica:850,unit:'unid'},{code:'MAT-030',name:'Cal hidráulica',teorica:8,unit:'bolsas'},{code:'MAT-012',name:'Arena gruesa',teorica:2,unit:'m³'}],
+   histAv:[{pct:20,prev:0,fecha:'08/06 07:30',user:'CUA-D'}]},
+  {seq:'520',name:'Impermeabilización losa baja',eta:'E5',resp:'CUA-E',
+   st:'EN_CURSO',pct:30,fin:'16/06',tipo:'PORCENTAJE',dur:'16 hs',
+   crit:'Membrana aplicada en toda la superficie sin burbujas ni arrugas. Solapas soldadas correctamente.',
+   instrText:'Limpiar y secar completamente la superficie (sin humedad ni polvo). Aplicar imprimación asfáltica con rodillo y esperar mínimo 2 horas de secado. Extender membrana solapando 10cm entre paños. Soldar solapas con soplete verificando adhesión completa.',
+   mats:[{code:'MAT-050',name:'Membrana asfáltica',teorica:80,unit:'m²'},{code:'MAT-051',name:'Imprimación asfáltica',teorica:4,unit:'lt'}],
+   histAv:[{pct:30,prev:0,fecha:'Hoy 08:00',user:'CUA-E'}]},
+
+  // ── OPERACIONES DE RELLENO PARA PROBAR FILTROS ──
+  {seq:'100',name:'Excavación y movimiento de suelos',eta:'E1',resp:'CUA-A',st:'COMPLETA',pct:100,fin:'08/04',tipo:'BINARIO',dur:'40 hs',crit:'—',instrText:'',mats:[],histAv:[]},
+  {seq:'200',name:'Armado bases y zapatas',eta:'E1',resp:'CUA-A',st:'COMPLETA',pct:100,fin:'15/04',tipo:'PORCENTAJE',dur:'32 hs',crit:'—',instrText:'',mats:[],histAv:[]},
+  {seq:'300',name:'Colado hormigón bases',eta:'E1',resp:'CUA-A',st:'COMPLETA',pct:100,fin:'22/04',tipo:'BINARIO',dur:'16 hs',crit:'—',instrText:'',mats:[],histAv:[]},
+  {seq:'400',name:'Instalación sanitaria subsuelo',eta:'E1',resp:'SUB-02',st:'COMPLETA',pct:100,fin:'23/04',tipo:'BINARIO',dur:'20 hs',crit:'—',instrText:'',mats:[],histAv:[]},
+  {seq:'500',name:'Encofrado losa PB',eta:'E2',resp:'CUA-B',st:'COMPLETA',pct:100,fin:'05/06',tipo:'BINARIO',dur:'24 hs',crit:'—',instrText:'',mats:[],histAv:[]},
+  {seq:'850',name:'Instalación eléctrica PB',eta:'E2',resp:'SUB-01',st:'PUEDE_INICIAR',pct:0,fin:'21/06',tipo:'BINARIO',dur:'20 hs',crit:'—',instrText:'',mats:[],histAv:[]},
+  {seq:'900',name:'Encofrado losa P1',eta:'E3',resp:'CUA-B',st:'PUEDE_INICIAR',pct:0,fin:'25/06',tipo:'BINARIO',dur:'24 hs',crit:'—',instrText:'',mats:[],histAv:[]},
+  {seq:'1000',name:'Armado hierro losa P1',eta:'E3',resp:'CUA-C',st:'PUEDE_INICIAR',pct:0,fin:'28/06',tipo:'PORCENTAJE',dur:'24 hs',crit:'—',instrText:'',mats:[],histAv:[]},
+  {seq:'1100',name:'Colado hormigón losa P1',eta:'E3',resp:'CUA-A+B',st:'PUEDE_INICIAR',pct:0,fin:'30/06',tipo:'BINARIO',dur:'8 hs',crit:'—',instrText:'',mats:[],histAv:[]},
+  {seq:'1200',name:'Mampostería cerramiento P1',eta:'E3',resp:'CUA-D',st:'PUEDE_INICIAR',pct:0,fin:'05/07',tipo:'CANTIDAD',dur:'32 hs',crit:'—',instrText:'',mats:[],histAv:[]},
+  {seq:'1300',name:'Instalación eléctrica P1',eta:'E3',resp:'SUB-01',st:'PUEDE_INICIAR',pct:0,fin:'08/07',tipo:'BINARIO',dur:'20 hs',crit:'—',instrText:'',mats:[],histAv:[]},
+  {seq:'1400',name:'Instalación sanitaria P1',eta:'E3',resp:'SUB-02',st:'PUEDE_INICIAR',pct:0,fin:'10/07',tipo:'BINARIO',dur:'16 hs',crit:'—',instrText:'',mats:[],histAv:[]},
+  {seq:'1500',name:'Encofrado losa P2',eta:'E4',resp:'CUA-B',st:'PUEDE_INICIAR',pct:0,fin:'14/07',tipo:'BINARIO',dur:'24 hs',crit:'—',instrText:'',mats:[],histAv:[]},
+  {seq:'1600',name:'Armado hierro losa P2',eta:'E4',resp:'CUA-C',st:'PUEDE_INICIAR',pct:0,fin:'17/07',tipo:'PORCENTAJE',dur:'24 hs',crit:'—',instrText:'',mats:[],histAv:[]},
+  {seq:'1700',name:'Colado hormigón losa P2',eta:'E4',resp:'CUA-A+B',st:'PUEDE_INICIAR',pct:0,fin:'19/07',tipo:'BINARIO',dur:'8 hs',crit:'—',instrText:'',mats:[],histAv:[]},
+  {seq:'1800',name:'Mampostería cerramiento P2',eta:'E4',resp:'CUA-D',st:'PUEDE_INICIAR',pct:0,fin:'25/07',tipo:'CANTIDAD',dur:'32 hs',crit:'—',instrText:'',mats:[],histAv:[]},
+  {seq:'1900',name:'Revestimiento fachada',eta:'E6',resp:'SUB-03',st:'PUEDE_INICIAR',pct:0,fin:'01/08',tipo:'PORCENTAJE',dur:'40 hs',crit:'—',instrText:'',mats:[],histAv:[]},
+  {seq:'2000',name:'Pintura interior PB',eta:'E6',resp:'CUA-E',st:'PUEDE_INICIAR',pct:0,fin:'05/08',tipo:'PORCENTAJE',dur:'20 hs',crit:'—',instrText:'',mats:[],histAv:[]},
+  {seq:'2100',name:'Pintura interior P1',eta:'E6',resp:'CUA-E',st:'PUEDE_INICIAR',pct:0,fin:'08/08',tipo:'PORCENTAJE',dur:'20 hs',crit:'—',instrText:'',mats:[],histAv:[]},
+  {seq:'2200',name:'Pintura exterior fachada norte',eta:'E6',resp:'CUA-E',st:'PUEDE_INICIAR',pct:0,fin:'12/08',tipo:'PORCENTAJE',dur:'16 hs',crit:'—',instrText:'',mats:[],histAv:[]},
+  {seq:'2300',name:'Colocación carpintería aluminio PB',eta:'E7',resp:'SUB-04',st:'PUEDE_INICIAR',pct:0,fin:'15/08',tipo:'BINARIO',dur:'24 hs',crit:'—',instrText:'',mats:[],histAv:[]},
+  {seq:'2400',name:'Colocación carpintería aluminio P1',eta:'E7',resp:'SUB-04',st:'PUEDE_INICIAR',pct:0,fin:'18/08',tipo:'BINARIO',dur:'24 hs',crit:'—',instrText:'',mats:[],histAv:[]},
+  {seq:'2500',name:'Piso cerámico PB — área común',eta:'E7',resp:'CUA-F',st:'PUEDE_INICIAR',pct:0,fin:'22/08',tipo:'CANTIDAD',dur:'32 hs',crit:'—',instrText:'',mats:[],histAv:[]},
+  {seq:'2600',name:'Piso flotante departamentos P1',eta:'E7',resp:'CUA-F',st:'PUEDE_INICIAR',pct:0,fin:'26/08',tipo:'CANTIDAD',dur:'28 hs',crit:'—',instrText:'',mats:[],histAv:[]},
+  {seq:'2700',name:'Cielorraso drywall PB',eta:'E7',resp:'SUB-05',st:'PUEDE_INICIAR',pct:0,fin:'29/08',tipo:'BINARIO',dur:'20 hs',crit:'—',instrText:'',mats:[],histAv:[]},
+  {seq:'2800',name:'Instalación gas natural',eta:'E8',resp:'SUB-06',st:'PUEDE_INICIAR',pct:0,fin:'02/09',tipo:'BINARIO',dur:'16 hs',crit:'—',instrText:'',mats:[],histAv:[]},
+  {seq:'2900',name:'Limpieza general y entrega',eta:'E8',resp:'CUA-A',st:'PUEDE_INICIAR',pct:0,fin:'05/09',tipo:'BINARIO',dur:'8 hs',crit:'—',instrText:'',mats:[],histAv:[]},
+  {seq:'580',name:'Pintura interior dpto A — Buen Pastor',eta:'E5',resp:'CUA-E',st:'PUEDE_INICIAR',pct:0,fin:'21/06',tipo:'PORCENTAJE',dur:'20 hs',crit:'—',instrText:'',mats:[{code:'MAT-060',name:'Pintura látex blanca',teorica:24,unit:'lt'}],histAv:[]},
+];
+
+// Historial consumos por operación (se acumula en sesión)
+const histConsumos = {}; // {seq: [{fecha, user, items:[{name,qty,unit}]}]}
+
+// ── filter state ──
+let filters = {seq:'',name:'',proj:'',eta:'',resp:'',st:'',pct_range:'',fin:''};
+let sortKey = null, sortDir = 1;
+let currentOp = null;
+let currentPct = 0;
+let currentRol = 'PLAN'; // CAP or PLAN
+let currentProj = 'Torre Nordeste';
+
+// ══════════════════════════════════════════════════
+// NAVIGATION
+// ══════════════════════════════════════════════════
+function go(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('on'));
+  document.getElementById('s-'+id).classList.add('on');
+  document.querySelectorAll('.sb').forEach(s=>s.classList.remove('on'));
+  // topnav tab highlight
+  document.getElementById('tn-projects').classList.remove('on');
+  document.getElementById('tn-systools').classList.remove('on');
+  if(id==='systools') document.getElementById('tn-systools').classList.add('on');
+  else document.getElementById('tn-projects').classList.add('on');
+  // sidebar highlight
+  if(id==='home')document.querySelector('.sb').classList.add('on');
+  if(id==='avances'){document.querySelectorAll('.sb')[2].classList.add('on');buildTable();}
+}
+
+function goHub(name,id,pct){
+  currentProj=name;
+  document.getElementById('hub-title').textContent=name;
+  document.getElementById('hub-meta').textContent=id+' · Desarrollos Colón S.A.';
+  document.getElementById('hub-pct').textContent=pct+'%';
+  document.getElementById('av-bc').textContent='← '+name.toUpperCase();
+  renderHub();
+  go('hub');
+}
+
+function renderHub(){
+  const grid=document.getElementById('hub-grid');
+  const isPlan=currentRol==='PLAN';
+  document.getElementById('hub-rol-sub').textContent=isPlan?'MÓDULOS DEL PROYECTO':'TUS MÓDULOS';
+  const mods = isPlan ? [
+    {ico:'📋',name:'Programación',desc:'Cronograma, Gantt y reprogramación automática.',badge:'36 OPS',bc:'mb0',mc:'var(--teal)',fn:()=>toast('Programación — APS + Gantt')},
+    {ico:'📈',name:'Avance de Operaciones',desc:'Estado de todas las operaciones y registro de avances.',badge:'4 EN CURSO',bc:'mb1',mc:'var(--orange)',fn:()=>go('avances')},
+    {ico:'📦',name:'BOM / Materiales',desc:'Materiales por operación y stock disponible.',badge:'27 SIN COD.',bc:'mb1',mc:'var(--blue2)',fn:()=>toast('BOM Materiales')},
+    {ico:'⚠️',name:'No Conformidades',desc:'Registro y seguimiento de problemas.',badge:'3 ABIERTAS',bc:'mb2',mc:'var(--red)',fn:()=>openM('m-nc')},
+    {ico:'👷',name:'Cuadrillas',desc:'Rendimiento y jornadas.',badge:'5 ACTIVAS',bc:'mb4',mc:'var(--purple)',fn:()=>toast('Cuadrillas')},
+    {ico:'📊',name:'Dashboard',desc:'KPIs consolidados del proyecto.',badge:'EN VIVO',bc:'mb0',mc:'var(--green)',fn:()=>toast('Dashboard')},
+  ] : [
+    {ico:'📈',name:'Avance de Operaciones',desc:'Tus operaciones activas. Registrá avances y consumos.',badge:'4 EN CURSO',bc:'mb1',mc:'var(--orange)',fn:()=>go('avances')},
+    {ico:'⚠️',name:'Reportar NC',desc:'Reportá un problema con foto.',badge:'3 ABIERTAS',bc:'mb2',mc:'var(--red)',fn:()=>openM('m-nc')},
+  ];
+  grid.innerHTML=mods.map(m=>`
+    <div class="mod-card" style="--mc:${m.mc}">
+      <div class="mod-ico">${m.ico}</div>
+      <div class="mod-name">${m.name}</div>
+      <div class="mod-desc">${m.desc}</div>
+      <div class="mod-badge ${m.bc}">${m.badge}</div>
+    </div>`).join('');
+  grid.querySelectorAll('.mod-card').forEach((c,i)=>c.onclick=mods[i].fn);
+}
+
+// Toggle rol with avatar
+document.getElementById('avatar-btn').addEventListener('click',function(){
+  currentRol=currentRol==='PLAN'?'CAP':'PLAN';
+  this.textContent=currentRol==='PLAN'?'JR':'CA';
+  this.title=currentRol==='PLAN'?'Juan Romero · Planificador':'Carlos Almiron · Capataz';
+  toast('Rol: '+( currentRol==='PLAN'?'Planificador':'Capataz'));
+  if(document.getElementById('s-hub').classList.contains('on'))renderHub();
+});
+
+// ══════════════════════════════════════════════════
+// TABLE BUILD
+// ══════════════════════════════════════════════════
+const ST_C={EN_CURSO:'c1',PUEDE_INICIAR:'c0',ATRASADA:'c2'};
+const ST_L={EN_CURSO:'EN CURSO',PUEDE_INICIAR:'PUEDE INICIAR',ATRASADA:'ATRASADA'};
+const ROW_C={EN_CURSO:'row-curso',PUEDE_INICIAR:'row-iniciar',ATRASADA:'row-atrasada'};
+
+function filteredOps(){
+  return ALL_OPS.filter(op=>{
+    if(filters.seq && !op.seq.includes(filters.seq)) return false;
+    if(filters.name && !op.name.toLowerCase().includes(filters.name.toLowerCase())) return false;
+    if(filters.proj && op.proj!==filters.proj) return false;
+    if(filters.eta && op.eta!==filters.eta) return false;
+    if(filters.resp && op.resp!==filters.resp) return false;
+    if(filters.st && op.st!==filters.st) return false;
+    if(filters.fin && !op.fin.includes(filters.fin)) return false;
+    if(filters.pct_range){
+      if(filters.pct_range==='0' && op.pct!==0) return false;
+      if(filters.pct_range==='1-99' && (op.pct===0||op.pct===100)) return false;
+      if(filters.pct_range==='100' && op.pct!==100) return false;
+    }
+    return true;
+  }).sort((a,b)=>{
+    if(!sortKey)return 0;
+    const va=sortKey==='pct'?a.pct:a[sortKey];
+    const vb=sortKey==='pct'?b.pct:b[sortKey];
+    return (va>vb?1:-1)*sortDir;
+  });
+}
+
+function buildTable(){
+  const tb=document.getElementById('av-tbody');
+  const ops=filteredOps();
+  if(!ops.length){
+    tb.innerHTML=`<tr><td colspan="8" class="no-rows">Sin resultados con los filtros activos</td></tr>`;
+    return;
+  }
+  // sort: atrasadas first, then en_curso, then puede_iniciar
+  const order={ATRASADA:0,EN_CURSO:1,PUEDE_INICIAR:2};
+  ops.sort((a,b)=>{
+    if(sortKey)return 0;
+    return (order[a.st]??3)-(order[b.st]??3);
+  });
+  tb.innerHTML=ops.map(op=>{
+    const pc=op.pct===100?'var(--green)':op.pct>0?'var(--orange)':'var(--t3)';
+    const rc=ROW_C[op.st]||'';
+    const accionBtn=op.st==='PUEDE_INICIAR'
+      ?`<button class="btn btn-p btn-xs" onclick="event.stopPropagation();openAvOp('${op.seq}')">📈 AVANZAR</button>`
+      :`<button class="btn btn-s btn-xs" onclick="event.stopPropagation();openAvOp('${op.seq}')">📈 AVANZAR</button>`;
+    const iniciarBadge=op.st==='PUEDE_INICIAR'
+      ?`<span class="iniciar-badge" onclick="event.stopPropagation();confirmIniciar('${op.seq}')">▶ INICIAR</span>`
+      :'';
+    return `<tr class="${rc}" onclick="openAvOp('${op.seq}')">
+      <td class="td-seq">${op.seq}</td>
+      <td><div class="td-name">${op.name}${iniciarBadge}</div></td>
+      <td><span class="chip c3 nd" style="font-size:7px">${op.eta}</span></td>
+      <td style="font-family:var(--fm);font-size:10px;color:var(--t2)">${op.resp}</td>
+      <td><span class="chip ${ST_C[op.st]||'c4'}">${ST_L[op.st]||op.st}</span></td>
+      <td><div class="pm">
+        <div class="pm-t"><div class="pm-f" style="width:${op.pct}%;background:${pc}"></div></div>
+        <span class="pm-v" style="color:${pc}">${op.pct}%</span>
+      </div></td>
+      <td class="td-m" style="${op.fin<'12/06'?'color:var(--red)':''}">${op.fin}</td>
+      <td>${accionBtn}</td>
+    </tr>`;
+  }).join('');
+  updateFilterPills();
+}
+
+function applyFilter(key,val){
+  filters[key]=val;
+  buildTable();
+  updateFilterPills();
+}
+
+function sortTable(key){
+  if(sortKey===key)sortDir*=-1; else{sortKey=key;sortDir=1;}
+  buildTable();
+}
+
+function updateFilterPills(){
+  const af=document.getElementById('active-filters');
+  const active=Object.entries(filters).filter(([k,v])=>v);
+  if(!active.length){
+    af.innerHTML='<span class="af-label">FILTROS ACTIVOS:</span><span style="font-family:var(--fm);font-size:8px;color:var(--t4)">Ninguno</span>';
+    return;
+  }
+  const LABELS={seq:'SEQ',name:'OP',proj:'PROYECTO',eta:'ETAPA',resp:'RESP.',st:'ESTADO',pct_range:'AVANCE',fin:'FIN'};
+  let html='<span class="af-label">FILTROS ACTIVOS:</span>';
+  active.forEach(([k,v])=>{
+    html+=`<span class="af-pill">${LABELS[k]||k}: ${v} <span onclick="clearFilter('${k}')">✕</span></span>`;
+  });
+  html+=`<span class="af-clear" onclick="clearAllFilters()">✕ Limpiar todo</span>`;
+  af.innerHTML=html;
+}
+
+function clearFilter(key){
+  filters[key]='';
+  // reset the DOM input/select
+  document.querySelectorAll('.th-filter input,.th-filter select').forEach(el=>{
+    const col=el.closest('th');
+    if(!col)return;
+    if(el.tagName==='INPUT' && col.textContent.toLowerCase().includes(KEYMAP[key]||''))el.value='';
+    if(el.tagName==='SELECT') el.value='';
+  });
+  // simpler: reset all inputs/selects in the correct column by index
+  buildTable();
+}
+const KEYMAP={seq:'seq',name:'operación',proj:'proyecto',eta:'etapa',resp:'resp',st:'estado',pct_range:'avance',fin:'fin'};
+
+function clearAllFilters(){
+  Object.keys(filters).forEach(k=>filters[k]='');
+  document.querySelectorAll('.th-filter input').forEach(el=>el.value='');
+  document.querySelectorAll('.th-filter select').forEach(el=>el.selectedIndex=0);
+  buildTable();
+}
+
+// ══════════════════════════════════════════════════
+// OPEN OP SCREEN
+// ══════════════════════════════════════════════════
+// ── CONFIRM INICIAR (from table badge) ──
+let pendingIniciarSeq = null;
+function confirmIniciar(seq){
+  const op=ALL_OPS.find(o=>o.seq===seq);
+  if(!op)return;
+  pendingIniciarSeq=seq;
+  document.getElementById('cp-op-name').textContent=`OP-${op.seq} · ${op.name}`;
+  document.getElementById('confirm-popup').classList.add('on');
+}
+function closeConfirmPopup(){
+  document.getElementById('confirm-popup').classList.remove('on');
+  pendingIniciarSeq=null;
+}
+function doIniciar(){
+  const op=ALL_OPS.find(o=>o.seq===pendingIniciarSeq);
+  if(!op)return;
+  op.st='EN_CURSO';
+  op.histAv=[{pct:0,prev:0,fecha:'Hoy '+new Date().toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'}),user:op.resp}];
+  closeConfirmPopup();
+  buildTable();
+  openAvOp(op.seq);
+  toast(`OP-${op.seq} iniciada — fecha de inicio real: hoy 09/06/2025`);
+}
+function confirmarIniciarDesdeAvop(){
+  const op=currentOp;if(!op)return;
+  pendingIniciarSeq=op.seq;
+  document.getElementById('cp-op-name').textContent=`OP-${op.seq} · ${op.name}`;
+  document.getElementById('confirm-popup').classList.add('on');
+}
+// Close confirm popup clicking overlay
+document.getElementById('confirm-popup').addEventListener('click',function(e){if(e.target===this)closeConfirmPopup();});
+
+// ── RENDER HISTORIAL AVANCES ──
+function renderHistAvances(op){
+  const el=document.getElementById('hist-avances');
+  if(!op.histAv||!op.histAv.length){
+    el.innerHTML='<div class="cons-empty">Sin avances registrados aún</div>';return;
+  }
+  el.innerHTML=op.histAv.map(h=>{
+    const delta=h.pct-h.prev;
+    return `<div class="hist-row">
+      <span class="hist-pct">${h.pct}%</span>
+      <div class="hist-info">
+        <div class="hist-date">${h.fecha}</div>
+        <div class="hist-user">${h.user}</div>
+      </div>
+      <span class="hist-delta">${delta>0?'+'+delta+'%':delta+'%'}</span>
+    </div>`;
+  }).join('');
+}
+
+// ── RENDER HISTORIAL CONSUMOS ──
+function renderHistConsumos(seq){
+  const el=document.getElementById('hist-consumos');
+  const entries=histConsumos[seq]||[];
+  if(!entries.length){
+    el.innerHTML='<div class="cons-empty">Sin consumos registrados hoy</div>';return;
+  }
+  // compute totals
+  const totals={};
+  entries.forEach(e=>e.items.forEach(i=>{
+    if(!totals[i.name])totals[i.name]={qty:0,unit:i.unit};
+    totals[i.name].qty+=i.qty;
+  }));
+  const totalsHtml=Object.entries(totals).map(([name,t])=>
+    `<div class="cons-line"><span class="cons-mat" style="font-weight:600;color:var(--t)">${name}</span><span class="cons-qty">${t.qty} ${t.unit}</span></div>`
+  ).join('');
+  const entriesHtml=entries.map(e=>`
+    <div class="cons-entry">
+      <div class="cons-hdr">
+        <span class="cons-date">${e.fecha}</span>
+        <span class="cons-user">${e.user}</span>
+      </div>
+      ${e.items.map(i=>`<div class="cons-line"><span class="cons-mat">${i.name}</span><span class="cons-qty">${i.qty} ${i.unit}</span></div>`).join('')}
+    </div>`).join('');
+  el.innerHTML=`
+    ${entriesHtml}
+    <div style="background:rgba(0,197,165,.07);border:1px solid rgba(0,197,165,.2);border-radius:5px;padding:8px 10px;margin-top:6px;">
+      <div style="font-family:var(--fm);font-size:8px;color:var(--teal);letter-spacing:1px;margin-bottom:5px;">TOTAL ACUMULADO</div>
+      ${totalsHtml}
+    </div>`;
+}
+
+function openAvOp(seq){
+  const op=ALL_OPS.find(o=>o.seq===seq);
+  if(!op)return;
+  currentOp=op;
+  currentPct=op.pct;
+
+  // info strip
+  document.getElementById('avop-title').textContent=op.name;
+  document.getElementById('avop-meta').textContent=`OP-${op.seq} · ${op.proj}`;
+  document.getElementById('avop-eta').textContent=op.eta;
+  document.getElementById('avop-resp').textContent=op.resp;
+  document.getElementById('avop-dur').textContent=op.dur;
+  document.getElementById('avop-fin').textContent=op.fin+'/2025';
+  document.getElementById('avop-pct-strip').textContent=op.pct+'%';
+  const stChipC={EN_CURSO:'c1',PUEDE_INICIAR:'c0',ATRASADA:'c2'};
+  document.getElementById('avop-st-strip').innerHTML=`<span class="chip ${stChipC[op.st]||'c4'}">${ST_L[op.st]||op.st}</span>`;
+
+  // col 1: instrucciones
+  document.getElementById('col1-criterio').textContent=`"${op.crit}"`;
+  const stepsEl=document.getElementById('col1-steps');
+  if(op.instrText){
+    stepsEl.innerHTML=`<div style="font-size:12px;color:var(--t2);line-height:1.75;white-space:pre-line">${op.instrText}</div>`;
+  } else {
+    stepsEl.innerHTML='<div style="font-family:var(--fm);font-size:9px;color:var(--t4);padding:8px 0">Sin instrucciones cargadas</div>';
+  }
+
+  // col 2: avance
+  const isPuedeIniciar=op.st==='PUEDE_INICIAR';
+  document.getElementById('fie-block').style.display=(op.pct===0&&!isPuedeIniciar)?'flex':'none';
+  document.getElementById('fie-val').textContent='Hoy, 09/06/2025';
+  // show/hide INICIAR btn
+  document.getElementById('iniciar-op-btn').style.display=isPuedeIniciar?'flex':'none';
+  document.getElementById('prog-input').style.display=isPuedeIniciar?'none':'block';
+  document.getElementById('av-calc-box').style.display=isPuedeIniciar?'none':'block';
+  document.getElementById('av-confirm-btn').style.display=isPuedeIniciar?'none':'flex';
+  if(!isPuedeIniciar){
+    renderProgInput(op);
+    renderCalcBox(op.pct);
+  }
+  renderHistAvances(op);
+
+  // col 3: materiales
+  renderMatRows(op);
+  document.getElementById('mat-confirmed').classList.remove('on');
+  document.getElementById('mat-rows').style.display='';
+  document.getElementById('mat-total-bar').style.display='';
+  document.getElementById('mat-confirm-btn').style.display='';
+  document.getElementById('mat-note').style.display='';
+  renderHistConsumos(op.seq);
+
+  go('avop');
+}
+
+// ── PROGRESS INPUT ──
+function renderProgInput(op){
+  const wrap=document.getElementById('prog-input');
+  const tipoLbl=document.getElementById('av-tipo-lbl');
+  if(op.tipo==='PORCENTAJE'){
+    tipoLbl.textContent='PORCENTAJE DE AVANCE ACUMULADO';
+    wrap.innerHTML=`<div class="slider-wrap">
+      <div class="pct-big" id="pct-big">${op.pct}%</div>
+      <div class="pct-prev">Anterior: ${op.pct}%</div>
+      <input type="range" class="slider" min="0" max="100" value="${op.pct}" id="pct-slider"
+        oninput="onSlider(this.value)">
+      <div class="slider-ticks"><span>0%</span><span>25%</span><span>50%</span><span>75%</span><span>100%</span></div>
+    </div>`;
+  } else if(op.tipo==='CANTIDAD'){
+    tipoLbl.textContent='CANTIDAD PRODUCIDA HOY';
+    const meta=op.dur.replace(' hs','')*5;
+    wrap.innerHTML=`<div class="cant-wrap">
+      <div class="cant-row">
+        <button class="cant-btn" onclick="adjCant(-10)">−</button>
+        <div class="cant-big" id="cant-big">${op.pct}</div>
+        <button class="cant-btn" onclick="adjCant(+10)">+</button>
+      </div>
+      <div class="cant-meta">de ~${meta} unidades estimadas</div>
+    </div>`;
+  } else {
+    tipoLbl.textContent='OPERACIÓN BINARIA';
+    const done=op.pct===100;
+    wrap.innerHTML=`<div class="bin-wrap">
+      <button class="bin-btn ${done?'done':''}" id="bin-btn" onclick="toggleBin()">
+        <span style="font-size:36px" id="bin-ico">${done?'✅':'⭕'}</span>
+        <span class="bin-lbl" id="bin-lbl">${done?'COMPLETADA':'MARCAR COMPLETA'}</span>
+      </button>
+      <div class="photo-req" id="photo-req" style="display:${done?'none':'block'}">📷 Se requerirá foto al completar</div>
+    </div>`;
+  }
+}
+
+function onSlider(v){
+  currentPct=+v;
+  document.getElementById('pct-big').textContent=v+'%';
+  renderCalcBox(+v);
+}
+function adjCant(d){
+  currentPct=Math.max(0,currentPct+d);
+  document.getElementById('cant-big').textContent=currentPct;
+  renderCalcBox(currentPct);
+}
+function toggleBin(){
+  currentPct=currentPct===100?0:100;
+  const done=currentPct===100;
+  const btn=document.getElementById('bin-btn');
+  btn.className='bin-btn'+(done?' done':'');
+  document.getElementById('bin-ico').textContent=done?'✅':'⭕';
+  document.getElementById('bin-lbl').textContent=done?'COMPLETADA':'MARCAR COMPLETA';
+  document.getElementById('photo-req').style.display=done?'none':'block';
+  renderCalcBox(currentPct);
+}
+
+function renderCalcBox(pct){
+  const op=currentOp;if(!op)return;
+  const dur=parseInt(op.dur);
+  const restante=Math.round(dur*(1-pct/100));
+  const el=document.getElementById('av-calc-box');
+  el.innerHTML=`
+    <div class="acb-row"><span class="acb-k">Avance anterior</span><span class="acb-v" style="color:var(--t2)">${op.pct}%</span></div>
+    <div class="acb-row"><span class="acb-k">Nuevo avance</span><span class="acb-v" style="color:var(--teal)">${pct}%</span></div>
+    <div class="acb-row"><span class="acb-k">Duración restante est.</span><span class="acb-v" style="color:var(--yellow)">${restante} hs</span></div>
+    <div class="acb-row"><span class="acb-k">Motor de reprogramación</span><span class="acb-v" style="color:var(--yellow);font-size:8px">${pct>=op.pct?'Recalculará sucesoras':'—'}</span></div>`;
+}
+
+// ── MATERIALS ──
+function renderMatRows(op){
+  const wrap=document.getElementById('mat-rows');
+  // calculate accumulated totals from histConsumos
+  const acum={};
+  (histConsumos[op.seq]||[]).forEach(entry=>{
+    entry.items.forEach(it=>{
+      acum[it.name]=(acum[it.name]||0)+it.qty;
+    });
+  });
+  wrap.innerHTML=op.mats.map((m,i)=>{
+    const totalAcum=acum[m.name]||0;
+    const acumColor=totalAcum===0?'var(--t3)':totalAcum>m.teorica?'var(--red)':totalAcum/m.teorica>0.8?'var(--yellow)':'var(--teal)';
+    return `<div class="mat-row">
+      <div class="mat-name-col">
+        <div class="mat-name">${m.name}</div>
+        <div class="mat-code">${m.code}</div>
+      </div>
+      <div class="mat-num">${m.teorica}</div>
+      <div>
+        <input type="number" class="mat-input" value="0" min="0" id="mat-inp-${i}"
+          oninput="calcMatDev(${i},${m.teorica},'${m.unit}')">
+      </div>
+      <div class="mat-num" style="color:${acumColor};font-weight:700">${totalAcum>0?totalAcum:'—'}</div>
+      <div class="mat-unit" id="mat-dev-${i}" style="color:var(--t3)">${m.unit}</div>
+    </div>`;
+  }).join('');
+}
+
+function calcMatDev(i,teorica,unit){
+  const val=parseFloat(document.getElementById('mat-inp-'+i).value)||0;
+  const dev=teorica>0?val/teorica:0;
+  const el=document.getElementById('mat-dev-'+i);
+  let cls='';let txt=unit;
+  if(val>0){
+    if(dev>1.2)cls='dev-over';
+    else if(dev>0.9)cls='dev-ok';
+    else cls='dev-warn';
+    txt=unit+(dev>1.2?' ⬆':'');
+  }
+  el.className='mat-unit '+cls;el.textContent=txt;
+}
+
+function confirmarAvance(){
+  const op=currentOp;if(!op)return;
+  const prev=op.pct;
+  if(currentPct===prev){toast('El avance no cambió');return;}
+  // push to historial
+  const now=new Date().toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'});
+  if(!op.histAv)op.histAv=[];
+  op.histAv.unshift({pct:currentPct,prev,fecha:'Hoy '+now,user:op.resp});
+  op.pct=currentPct;
+  // update list
+  buildTable();
+  // update strip
+  document.getElementById('avop-pct-strip').textContent=currentPct+'%';
+  if(currentPct===100){
+    op.st='COMPLETA';
+    document.getElementById('avop-st-strip').innerHTML='<span class="chip c0">COMPLETA</span>';
+  }
+  // re-render historial
+  renderHistAvances(op);
+  // confirm btn feedback
+  const btn=document.getElementById('av-confirm-btn');
+  const origTxt=btn.textContent;
+  btn.textContent='✓ AVANCE REGISTRADO';
+  btn.style.background='var(--green)';
+  btn.disabled=true;
+  setTimeout(()=>{
+    btn.textContent=origTxt;btn.style.background='';btn.disabled=false;
+  },2500);
+  toast(`Avance OP-${op.seq} → ${currentPct}% · Cronograma actualizado`);
+}
+
+function confirmarMateriales(){
+  const op=currentOp;if(!op)return;
+  // collect items with qty > 0
+  const items=op.mats.map((m,i)=>{
+    const val=parseFloat(document.getElementById('mat-inp-'+i)?.value)||0;
+    return val>0?{name:m.name,qty:val,unit:m.unit}:null;
+  }).filter(Boolean);
+  if(!items.length){toast('Ingresá al menos una cantidad');return;}
+  // store in histConsumos
+  const now=new Date().toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'});
+  if(!histConsumos[op.seq])histConsumos[op.seq]=[];
+  histConsumos[op.seq].unshift({fecha:'Hoy '+now,user:op.resp,items});
+  // show confirmed overlay
+  document.getElementById('mat-rows').style.display='none';
+  document.getElementById('mat-total-bar').style.display='none';
+  document.getElementById('mat-confirm-btn').style.display='none';
+  document.getElementById('mat-note').style.display='none';
+  document.getElementById('mat-confirmed').classList.add('on');
+  // re-render historial consumos (visible below overlay)
+  renderHistConsumos(op.seq);
+  // re-render mat rows when user clicks "registrar más" (totals will update)
+  toast('Consumo registrado');
+}
+function resetMatConfirm(){
+  document.getElementById('mat-rows').style.display='';
+  document.getElementById('mat-total-bar').style.display='';
+  document.getElementById('mat-confirm-btn').style.display='';
+  document.getElementById('mat-note').style.display='';
+  document.getElementById('mat-confirmed').classList.remove('on');
+  renderMatRows(currentOp); // re-render so TOTAL ACUM. column updates
+}
+
+// ══════════════════════════════════════════════════
+// MODALS / TOAST
+// ══════════════════════════════════════════════════
+function openM(id){document.getElementById(id).classList.add('on');}
+function closeM(id){document.getElementById(id).classList.remove('on');}
+document.querySelectorAll('.moverlay').forEach(m=>{
+  m.addEventListener('click',e=>{if(e.target===m)m.classList.remove('on');});
+});
+function toast(msg){
+  const t=document.getElementById('toast-el');
+  document.getElementById('toast-msg').textContent=msg;
+  t.classList.add('on');clearTimeout(t._t);
+  t._t=setTimeout(()=>t.classList.remove('on'),3000);
+}
+
+// INIT
+renderHub();
+buildTable();
+</script>
+</body>
+</html>

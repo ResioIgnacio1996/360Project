@@ -22,6 +22,8 @@ app.use('/api/materiales', require('./routes/materiales.routes'));
 app.use( '/api/registro-compra',require('./routes/RegistroCompra.routes'));
 app.use('/api/remitos', require('./routes/Remito.routes'));
 app.use('/api/stock-general', require('./routes/StockGeneral.routes'));
+app.use('/api/programacion', require('./routes/Programacion.routes'));
+app.use('/api/importacion-programacion', require('./routes/ImportacionProgramacion.routes'));
 //app.use('/api/Acciones-Rol',require('./routes/AccionesRol.routes'));
 
 const PORT = process.env.PORT || 3000;

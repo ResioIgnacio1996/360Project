@@ -45,6 +45,8 @@ import { RemitoDetalle } from './features/ingreso-materiales/remito/pages/remito
 import { StockGeneralMaster } from './features/ingreso-materiales/stock-general/pages/stock-general-master/stock-general-master';
 
 import { containerMaster } from './features/ingreso-materiales/container/pages/conteiner-master/conteiner-master';
+import { Programacion } from './features/programacion/programacion';
+import { ImportacionProgramacion } from './features/programacion/importacion-programacion/importacion-programacion';
 export const routes: Routes = [
   { path: '', redirectTo: 'login', pathMatch: 'full' },
 
@@ -69,6 +71,8 @@ export const routes: Routes = [
     { path: 'proyectos/nuevo', component: ProyectoForm },
     { path: 'proyectos/editar/:id', component: ProyectoForm },
     { path: 'proyectos/:id/stock', component: containerMaster },
+    { path: 'proyectos/:id/programacion', component: Programacion },
+    { path: 'proyectos/:id/programacion/importar', component: ImportacionProgramacion },
 
     { path: 'configuracion', component: Configuracion },
 
