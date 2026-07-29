@@ -18,6 +18,7 @@ import { RolFormComponent } from './features/seguridad/roles/rol-form/rol-form';
 
 import { Proyectos } from './features/proyectos/proyectos';
 import { ProyectoForm } from './features/proyectos/proyecto-form';
+import { ProyectoHome } from './features/proyectos/proyecto-home';
 
 import { Configuracion } from './features/configuracion/configuracion';
 
@@ -47,6 +48,8 @@ import { StockGeneralMaster } from './features/ingreso-materiales/stock-general/
 import { containerMaster } from './features/ingreso-materiales/container/pages/conteiner-master/conteiner-master';
 import { Programacion } from './features/programacion/programacion';
 import { ImportacionProgramacion } from './features/programacion/importacion-programacion/importacion-programacion';
+import { SystemTools } from './features/system-tools/system-tools';
+import { AvanceOperaciones } from './features/avance-operaciones/avance-operaciones';
 export const routes: Routes = [
   { path: '', redirectTo: 'login', pathMatch: 'full' },
 
@@ -70,9 +73,12 @@ export const routes: Routes = [
     { path: 'proyectos', component: Proyectos },
     { path: 'proyectos/nuevo', component: ProyectoForm },
     { path: 'proyectos/editar/:id', component: ProyectoForm },
+    { path: 'proyectos/:id', component: ProyectoHome },
     { path: 'proyectos/:id/stock', component: containerMaster },
     { path: 'proyectos/:id/programacion', component: Programacion },
     { path: 'proyectos/:id/programacion/importar', component: ImportacionProgramacion },
+    { path: 'proyectos/:id/avances', component: AvanceOperaciones },
+    { path: 'system-tools', component: SystemTools },
 
     { path: 'configuracion', component: Configuracion },
 

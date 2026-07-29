@@ -6,6 +6,28 @@
       <p>Administración de obras y asignación de materiales.</p>
     </div>
     <div class="header-actions">
+      <div class="view-switch" role="group" aria-label="Modo de visualización">
+        <button
+          type="button"
+          [class.active]="vista === 'tarjetas'"
+          [attr.aria-pressed]="vista === 'tarjetas'"
+          (click)="cambiarVista('tarjetas')"
+          title="Ver proyectos como tarjetas"
+        >
+          <mat-icon>grid_view</mat-icon>
+          <span>Tarjetas</span>
+        </button>
+        <button
+          type="button"
+          [class.active]="vista === 'lista'"
+          [attr.aria-pressed]="vista === 'lista'"
+          (click)="cambiarVista('lista')"
+          title="Abrir el master de proyectos"
+        >
+          <mat-icon>table_rows</mat-icon>
+          <span>Master</span>
+        </button>
+      </div>
       <button
         *ngIf="clienteFijo"
         mat-icon-button
@@ -20,7 +42,7 @@
       </button>
     </div>
   </div>
-  <section class="block">
+  <section class="block" *ngIf="vista === 'lista'">
     <div class="block-header"><h2 class="block-title">Filtros</h2></div>
     <div class="filters-bar project-filters">
       <mat-form-field appearance="outline" class="filter-search"
@@ -157,14 +179,60 @@
       </button>
     </div>
   </section>
-  <section class="block">
+  <section class="block projects-result">
     <div class="block-header">
-      <h2 class="block-title">Listado maestro</h2>
-      <span class="chip c-blue">{{ filtrados.length }} PROYECTOS</span>
+      <div class="result-title">
+        <h2 class="block-title">{{ vista === 'tarjetas' ? 'Proyectos' : 'Listado maestro' }}</h2>
+        <span class="chip c-blue">{{ filtrados.length }} PROYECTOS</span>
+      </div>
     </div>
     <div class="state-message" *ngIf="cargando">Cargando proyectos...</div>
     <div class="state-message error" *ngIf="error">{{ error }}</div>
-    <div class="table-wrap" *ngIf="!cargando">
+    <div class="projects-home" *ngIf="!cargando && vista === 'tarjetas'">
+      <div class="project-grid" *ngIf="filtrados.length">
+        <article class="project-card" *ngFor="let p of filtrados">
+          <button class="project-cover" type="button" (click)="abrirProyecto(p.proyecto_id)">
+            <mat-icon class="project-icon">domain</mat-icon>
+            <span class="project-status" [ngClass]="claseEstado(p.estado)">{{ p.estado || 'SIN ESTADO' }}</span>
+            <span class="project-client">{{ p.cliente_nombre || p.cliente || 'Sin cliente' }}</span>
+          </button>
+          <div class="project-meta">{{ codigoProyecto(p) }}</div>
+          <h3>{{ p.nombre }}</h3>
+          <div class="project-location">
+            <mat-icon>location_on</mat-icon>
+            <span>{{ p.direccion || 'Ubicación no informada' }}</span>
+          </div>
+          <div class="project-dates">
+            <span><small>INICIO</small>{{ (p.fecha_inicio | date: 'dd/MM/yyyy') || '-' }}</span>
+            <mat-icon>arrow_forward</mat-icon>
+            <span><small>ENTREGA</small>{{ (p.fecha_fin_estimada | date: 'dd/MM/yyyy') || '-' }}</span>
+          </div>
+          <div class="project-actions">
+            <button type="button" (click)="programacion(p.proyecto_id)" title="Programación">
+              <mat-icon>calendar_month</mat-icon>
+            </button>
+            <button type="button" (click)="stock(p.proyecto_id)" title="Materiales">
+              <mat-icon>inventory_2</mat-icon>
+            </button>
+            <button type="button" (click)="editar(p.proyecto_id)" title="Editar">
+              <mat-icon>edit</mat-icon>
+            </button>
+            <button class="danger" type="button" (click)="eliminar(p)" title="Eliminar">
+              <mat-icon>delete</mat-icon>
+            </button>
+          </div>
+        </article>
+        <button class="new-project-card" type="button" (click)="nuevo()">
+          <span class="new-project-cover"><mat-icon>add</mat-icon></span>
+          <span class="project-meta">NUEVO</span>
+          <strong>Crear proyecto</strong>
+        </button>
+      </div>
+      <div class="empty-state" *ngIf="!filtrados.length">
+        No hay proyectos para los filtros seleccionados.
+      </div>
+    </div>
+    <div class="table-wrap" *ngIf="!cargando && vista === 'lista'">
       <table>
         <thead>
           <tr>

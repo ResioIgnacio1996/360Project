@@ -31,6 +31,7 @@ import { ProyectoService } from '../../core/services/proyecto/proyecto';
   styleUrl: './proyectos.css'
 })
 export class Proyectos implements OnInit {
+  vista: 'tarjetas' | 'lista' = 'tarjetas';
   proyectos: any[] = [];
   filtrados: any[] = [];
   cargando = false;
@@ -189,8 +190,31 @@ export class Proyectos implements OnInit {
     this.router.navigate(['/proyectos', id, 'programacion']);
   }
 
+  abrirProyecto(id: number): void {
+    this.router.navigate(['/proyectos', id]);
+  }
+
   volverAClientes(): void {
     this.router.navigate(['/clientes']);
+  }
+
+  cambiarVista(vista: 'tarjetas' | 'lista'): void {
+    this.vista = vista;
+  }
+
+  codigoProyecto(proyecto: any): string {
+    const codigo = proyecto.codigo || proyecto.codigo_proyecto;
+    return codigo ? String(codigo) : `PRJ-${String(proyecto.proyecto_id || '').padStart(4, '0')}`;
+  }
+
+  claseEstado(estado: any): string {
+    switch (String(estado || '').toUpperCase()) {
+      case 'ACTIVO': return 'estado-activo';
+      case 'PAUSADO': return 'estado-pausado';
+      case 'FINALIZADO': return 'estado-finalizado';
+      case 'CANCELADO': return 'estado-cancelado';
+      default: return 'estado-default';
+    }
   }
 
   eliminar(proyecto: any): void {

@@ -153,6 +153,18 @@ nav a.active {
   color: var(--primary);
 }
 
+.nav-separator {
+  width: 28px;
+  height: 1px;
+  margin: 5px 4px;
+  background: var(--border);
+  flex: 0 0 auto;
+}
+
+.sidebar.open .nav-separator {
+  width: calc(100% - 8px);
+}
+
 .logout-btn {
   width: 100%;
   display: inline-flex;

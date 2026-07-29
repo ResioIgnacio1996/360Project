@@ -26,6 +26,15 @@
   </div>
 
   <nav>
+    <a routerLink="/proyectos" routerLinkActive="active" (click)="navegar()">
+      <span class="material-icons">construction</span>
+      <span>Projects</span>
+    </a>
+    <a routerLink="/system-tools" routerLinkActive="active" (click)="navegar()">
+      <span class="material-icons">settings</span>
+      <span>System Tools</span>
+    </a>
+    <span class="nav-separator" aria-hidden="true"></span>
     <a routerLink="/dashboard" routerLinkActive="active" (click)="navegar()">
       <span class="material-icons">dashboard</span>
       <span>Dashboard</span>
@@ -36,19 +45,7 @@
     </a>
     <a routerLink="/seguridad" routerLinkActive="active" (click)="navegar()">
       <span class="material-icons">admin_panel_settings</span>
-      <span>Seguridad</span>
-    </a>
-    <a routerLink="/proyectos" routerLinkActive="active" (click)="navegar()">
-      <span class="material-icons">account_tree</span>
-      <span>Proyectos</span>
-    </a>
-    <a routerLink="/proveedores" routerLinkActive="active" (click)="navegar()">
-      <span class="material-icons">warehouse</span>
-      <span>Proveedores</span>
-    </a>
-    <a routerLink="/clientes" routerLinkActive="active" (click)="navegar()">
-      <span class="material-icons">business</span>
-      <span>Clientes</span>
+      <span>Usuarios y Roles</span>
     </a>
     <a routerLink="/orden-compra" routerLinkActive="active" (click)="navegar()">
       <span class="material-icons">upload_file</span>

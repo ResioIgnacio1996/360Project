@@ -1,0 +1,152 @@
+<section class="av-page">
+  <header class="av-header">
+    <button class="back" type="button" (click)="volver()"><mat-icon>arrow_back</mat-icon> HUB DEL PROYECTO</button>
+    <div class="title-row">
+      <div>
+        <span class="eyebrow">EJECUCIÓN DE OBRA</span>
+        <h1>Avance de Operaciones</h1>
+        <p>{{ proyecto?.nombre }} <span *ngIf="proyecto?.version_codigo">· Plan {{ proyecto.version_codigo }}</span></p>
+      </div>
+      <div class="header-kpi">
+        <small>AVANCE GENERAL</small><strong>{{ avanceGeneral | number:'1.0-1' }}%</strong>
+      </div>
+    </div>
+  </header>
+
+  <div class="notice error" *ngIf="error">{{ error }}</div>
+  <div class="notice success" *ngIf="mensaje">{{ mensaje }}</div>
+  <div class="loading" *ngIf="cargando">Cargando operaciones reales del proyecto...</div>
+
+  <main *ngIf="!cargando">
+    <div class="summary-strip" *ngIf="operaciones.length">
+      <div class="summary-card teal"><span class="summary-icon"><mat-icon>analytics</mat-icon></span><p><small>AVANCE PROMEDIO</small><strong>{{ avanceGeneral | number:'1.0-1' }}%</strong></p></div>
+      <div class="summary-card blue"><span class="summary-icon"><mat-icon>format_list_numbered</mat-icon></span><p><small>OPERACIONES DEL PLAN</small><strong>{{ operaciones.length }}</strong></p></div>
+      <div class="summary-card orange"><span class="summary-icon"><mat-icon>construction</mat-icon></span><p><small>EN EJECUCIÓN</small><strong>{{ enCurso }}</strong></p></div>
+      <div class="summary-card green"><span class="summary-icon"><mat-icon>task_alt</mat-icon></span><p><small>FINALIZADAS</small><strong>{{ finalizadas }}</strong></p></div>
+      <div class="summary-card gray"><span class="summary-icon"><mat-icon>schedule</mat-icon></span><p><small>SIN INICIAR</small><strong>{{ pendientes }}</strong></p></div>
+    </div>
+
+    <div class="toolbar" *ngIf="operaciones.length">
+      <label class="search"><mat-icon>search</mat-icon><input [(ngModel)]="busqueda" placeholder="Buscar operación, etapa o responsable"></label>
+      <select [(ngModel)]="etapa" aria-label="Filtrar por etapa"><option value="TODAS">Todas las etapas</option><option *ngFor="let e of etapas" [value]="e">{{ e }}</option></select>
+      <select [(ngModel)]="estado" aria-label="Filtrar por estado"><option value="TODAS">Todos los estados</option><option *ngFor="let e of estados" [value]="e">{{ e }}</option></select>
+      <select [(ngModel)]="orden" aria-label="Ordenar"><option value="secuencia">Orden del plan</option><option value="avance">Por avance</option><option value="fecha">Fin planificado</option><option value="reprog">Fin reprogramado</option><option value="nombre">Por nombre</option></select>
+    </div>
+
+    <ng-container *ngIf="operaciones.length; else sinPlan">
+    <div class="section-caption"><div><span>CONTROL DE EJECUCIÓN</span><strong>Operaciones del plan activo</strong></div><small>PLAN {{ proyecto?.version_codigo }} · {{ filtradas.length }} DE {{ operaciones.length }} OPERACIONES</small></div>
+    <div class="sheet">
+      <div class="sheet-head">
+        <span class="play-head"></span>
+        <button type="button" (click)="ordenar('secuencia')">OP.<mat-icon>{{ iconoOrden('secuencia') }}</mat-icon></button>
+        <button type="button" (click)="ordenar('nombre')">OPERACIÓN / ETAPA<mat-icon>{{ iconoOrden('nombre') }}</mat-icon></button>
+        <button type="button" (click)="ordenar('responsable')">RESPONSABLE<mat-icon>{{ iconoOrden('responsable') }}</mat-icon></button>
+        <button type="button" (click)="ordenar('fecha')">FIN PLAN<mat-icon>{{ iconoOrden('fecha') }}</mat-icon></button>
+        <button type="button" (click)="ordenar('reprog')">FIN REPROG.<mat-icon>{{ iconoOrden('reprog') }}</mat-icon></button>
+        <button type="button" (click)="ordenar('estado')">ESTADO<mat-icon>{{ iconoOrden('estado') }}</mat-icon></button>
+        <button type="button" (click)="ordenar('avance')">AVANCE<mat-icon>{{ iconoOrden('avance') }}</mat-icon></button>
+        <span>ACCIÓN</span>
+      </div>
+      <div class="sheet-row" *ngFor="let op of filtradas" role="button" tabindex="0" (click)="seleccionar(op)" (keydown.enter)="seleccionar(op)" [ngClass]="claseEstado(op)">
+        <span class="play-cell">
+          <button *ngIf="!op.fecha_inicio_real" class="play-button" type="button" (click)="iniciarFila($event, op)" title="Iniciar operación" aria-label="Iniciar operación"><mat-icon>play_arrow</mat-icon></button>
+          <span *ngIf="op.fecha_inicio_real" class="started-mark" title="Operación iniciada"><mat-icon>check</mat-icon></span>
+        </span>
+        <span class="mono op-code">{{ op.secuencia }}</span>
+        <span class="op-name"><strong>{{ op.nombre }}</strong><small>{{ op.etapa_codigo }} · {{ op.etapa_nombre }}</small></span>
+        <span>{{ op.responsable_nombre || 'Sin asignar' }}</span>
+        <span class="date-main"><small>PLAN</small><strong>{{ (op.fecha_fin_estimada | date:'dd/MM/yyyy') || '—' }}</strong></span>
+        <span class="date-main reprog"><small>REPROG.</small><strong>{{ (op.fecha_fin_reprog | date:'dd/MM/yyyy') || '—' }}</strong></span>
+        <span><b class="status" [ngClass]="claseEstado(op)">{{ op.estado_label || op.estado_codigo }}</b></span>
+        <span class="progress-cell"><span class="bar"><i [style.width.%]="op.pct_avance_actual"></i></span><b>{{ op.pct_avance_actual | number:'1.0-1' }}%</b></span>
+        <span class="action-cell"><button type="button" (click)="$event.stopPropagation(); seleccionar(op)">AVANZAR <mat-icon>arrow_forward</mat-icon></button></span>
+      </div>
+      <div class="empty" *ngIf="!filtradas.length">No hay operaciones que coincidan con los filtros.</div>
+    </div>
+    </ng-container>
+
+    <ng-template #sinPlan>
+      <section class="no-plan">
+        <div class="no-plan-mark"><mat-icon>event_busy</mat-icon></div>
+        <span class="eyebrow">PROGRAMACIÓN REQUERIDA</span>
+        <h2>Este proyecto todavía no tiene un plan activo</h2>
+        <p>Avance de Operaciones se alimenta exclusivamente de las operaciones cargadas en Programación. No se encontraron versiones ni operaciones asociadas a este proyecto.</p>
+        <div class="no-plan-project"><small>PROYECTO ACTUAL</small><strong>{{ proyecto?.nombre }}</strong><span class="mono">ID {{ proyectoId }}</span></div>
+        <div class="no-plan-actions">
+          <button class="primary" type="button" (click)="importarPlan()"><mat-icon>upload_file</mat-icon> Importar programación</button>
+          <button class="outline" type="button" (click)="verProgramacion()"><mat-icon>calendar_month</mat-icon> Abrir Programación</button>
+        </div>
+      </section>
+    </ng-template>
+  </main>
+</section>
+
+<div class="detail-backdrop" *ngIf="seleccionada" (click)="cerrarDetalle()"></div>
+<aside class="detail" *ngIf="seleccionada">
+  <header class="detail-head">
+    <button type="button" (click)="cerrarDetalle()" aria-label="Cerrar"><mat-icon>close</mat-icon></button>
+    <div><span class="mono">OP {{ seleccionada.secuencia }} · {{ seleccionada.etapa_codigo }}</span><h2>{{ seleccionada.nombre }}</h2><p>{{ seleccionada.responsable_nombre || 'Sin responsable asignado' }}</p></div>
+    <b class="status" [ngClass]="claseEstado(seleccionada)">{{ seleccionada.estado_label }}</b>
+  </header>
+  <div class="detail-progress">
+    <div><small>ETAPA</small><strong>{{ seleccionada.etapa_nombre }}</strong></div>
+    <div><small>FIN PLANIFICADO</small><strong>{{ (seleccionada.fecha_fin_estimada | date:'dd/MM/yyyy') || '—' }}</strong></div>
+    <div><small>FIN REPROGRAMADO</small><strong>{{ (seleccionada.fecha_fin_reprog | date:'dd/MM/yyyy') || '—' }}</strong></div>
+    <div class="detail-progress-value"><small>AVANCE ACTUAL</small><strong>{{ seleccionada.pct_avance_actual | number:'1.0-1' }}%</strong></div>
+  </div>
+
+  <div class="detail-columns">
+    <section class="panel instructions">
+      <div class="panel-title"><span>01</span><div><strong>Instrucciones</strong><small>Alcance y cierre</small></div></div>
+      <article><h3>Descripción</h3><p>{{ seleccionada.descripcion || 'Sin descripción informada.' }}</p></article>
+      <article><h3>Criterio de cierre</h3><p>{{ seleccionada.criterio_cierre || 'Sin criterio de cierre informado.' }}</p></article>
+      <dl>
+        <div><dt>Unidad de avance</dt><dd>{{ seleccionada.unidad_avance }}</dd></div>
+        <div><dt>Meta</dt><dd>{{ seleccionada.cantidad_meta || '—' }}</dd></div>
+        <div><dt>Dependencias</dt><dd>{{ seleccionada.dependencias_secuencia || 'Sin predecesoras' }}</dd></div>
+        <div><dt>Inicio real</dt><dd>{{ (seleccionada.fecha_inicio_real | date:'dd/MM/yyyy') || 'Pendiente' }}</dd></div>
+      </dl>
+      <button class="outline full" *ngIf="!seleccionada.fecha_inicio_real" type="button" (click)="iniciar()" [disabled]="guardando"><mat-icon>play_arrow</mat-icon> Iniciar operación hoy</button>
+    </section>
+
+    <section class="panel advance">
+      <div class="panel-title"><span>02</span><div><strong>Registrar avance</strong><small>Producción ejecutada</small></div></div>
+      <label>Fecha del parte<input type="date" [(ngModel)]="fecha"></label>
+      <div class="current"><small>AVANCE ACTUAL</small><strong>{{ seleccionada.pct_avance_actual | number:'1.0-1' }}%</strong></div>
+
+      <ng-container *ngIf="esBinaria(); else avanceMedible">
+        <div class="binary">
+          <button type="button" [class.active]="porcentaje === 0" (click)="porcentaje=0">Pendiente</button>
+          <button type="button" [class.active]="porcentaje === 100" (click)="porcentaje=100">Completada</button>
+        </div>
+      </ng-container>
+      <ng-template #avanceMedible>
+        <label>Nuevo porcentaje <b>{{ porcentaje }}%</b><input class="range" type="range" min="0" max="100" step="1" [(ngModel)]="porcentaje"></label>
+        <label *ngIf="esCantidad()">Cantidad ejecutada hoy<input type="number" min="0" [(ngModel)]="cantidadHoy"></label>
+      </ng-template>
+      <label>Observaciones<textarea rows="3" [(ngModel)]="nota" placeholder="Detalle del avance, frentes o incidencias..."></textarea></label>
+
+      <div class="photo-box">
+        <input #fotoInput type="file" accept="image/*" (change)="seleccionarFoto($event)" hidden>
+        <button type="button" (click)="fotoInput.click()"><mat-icon>add_a_photo</mat-icon><span><strong>Agregar evidencia</strong><small>{{ fotoNombre || 'JPG, PNG o imagen desde cámara' }}</small></span></button>
+        <img *ngIf="fotoPreview" [src]="fotoPreview" alt="Previsualización de la evidencia seleccionada">
+        <p>La imagen se previsualiza, pero todavía no se almacena.</p>
+      </div>
+      <button class="primary full" type="button" (click)="guardarAvance()" [disabled]="guardando || porcentaje < seleccionada.pct_avance_actual">Confirmar avance</button>
+
+      <div class="history"><h3>Historial de avances</h3><div *ngFor="let a of historialAvances | slice:0:5"><span>{{ a.fecha_registro | date:'dd/MM/yyyy' }}</span><b>{{ a.pct_avance_nuevo }}%</b><small>{{ a.nota || a.registrado_por_nombre }}</small></div><p *ngIf="!historialAvances.length">Todavía no hay avances registrados.</p></div>
+    </section>
+
+    <section class="panel materials">
+      <div class="panel-title"><span>03</span><div><strong>Consumo de materiales</strong><small>BOM de la operación</small></div></div>
+      <div class="material" *ngFor="let m of materialesSeleccionados">
+        <div><strong>{{ m.material_nombre || m.descripcion_libre }}</strong><small class="mono">LÍNEA {{ m.numero_linea }} · {{ m.uom_nombre }}</small></div>
+        <div class="material-stats"><span><small>TEÓRICO</small>{{ m.cantidad_teorica }}</span><span><small>ACUMULADO</small>{{ m.cantidad_consumida }}</span></div>
+        <label>Consumido hoy<input type="number" min="0" [(ngModel)]="consumosHoy[m.bom_id]"></label>
+      </div>
+      <div class="empty-materials" *ngIf="!materialesSeleccionados.length"><mat-icon>inventory_2</mat-icon><p>Esta operación no tiene materiales BOM asignados.</p></div>
+      <button class="primary full" type="button" (click)="guardarConsumos()" [disabled]="guardando || !materialesSeleccionados.length">Guardar consumos</button>
+      <div class="history"><h3>Últimos consumos</h3><div *ngFor="let c of historialConsumos | slice:0:5"><span>{{ c.fecha_consumo | date:'dd/MM/yyyy' }}</span><b>{{ c.cantidad_consumida }} {{ c.uom_nombre }}</b></div><p *ngIf="!historialConsumos.length">Todavía no hay consumos registrados.</p></div>
+    </section>
+  </div>
+</aside>
