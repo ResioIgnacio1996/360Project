@@ -29,8 +29,12 @@ export class Programacion implements OnInit, OnDestroy {
   filtroEstado = 'TODAS';
   filtroEtapa = 'TODAS';
   capas = { estimado: true, reprogramado: true, real: true };
-  modal: 'duracion' | 'nmt' | 'crear' | 'editar' | null = null;
-  operacionEditada: any = { secuencia: null, nombre: '', duracion_hs: 0, descripcion: '' };
+  modal: 'duracion' | 'nmt' | 'crear' | 'editar' | 'excepcion' | null = null;
+  operacionEditada: any = { secuencia: null, nombre: '', duracion_hs: 0, descripcion: '', dependencias: [] };
+  nuevaExcepcion: any = {
+    fecha: '', tipo: 'FERIADO', hs_disponibles: 0, motivo: '', recuperable: false
+  };
+  alturaTablaPct = 47;
   nuevaOperacion: any = {
     etapa_id: null, secuencia: null, nombre: '', responsable_id: null, duracion_hs: 8,
     unidad_avance: 'PORCENTAJE', cantidad_meta: null, peso_pct: 0,
@@ -38,6 +42,8 @@ export class Programacion implements OnInit, OnDestroy {
   };
   busquedaPredecesora = '';
   sugerenciasPredecesoras: OperacionProgramada[] = [];
+  busquedaPredecesoraEdicion = '';
+  sugerenciasPredecesorasEdicion: OperacionProgramada[] = [];
   private nombresOperacion = new Map<number, string>();
   private excepcionesPorFecha = new Map<string, any>();
   private rangoGantt = { inicio: Date.now(), dias: 14 };
@@ -50,6 +56,7 @@ export class Programacion implements OnInit, OnDestroy {
   fechaNmt = '';
   motivo = '';
   guardando = false;
+  errorFormulario = '';
   mensaje = '';
   hoyISO = '';
   descripcionHoy = '';
@@ -138,6 +145,40 @@ export class Programacion implements OnInit, OnDestroy {
     this.nuevaOperacion.dependencias =
       (this.nuevaOperacion.dependencias || []).filter((valor: number) => Number(valor) !== Number(secuencia));
     this.actualizarSugerenciasPredecesoras();
+  }
+  actualizarSugerenciasEdicion(): void {
+    const q = this.busquedaPredecesoraEdicion.trim().toLowerCase();
+    const seleccionadas = new Set<number>(this.operacionEditada.dependencias || []);
+    const propia = Number(this.seleccionada?.secuencia);
+    const sucesoras = new Set<number>();
+    let cambio = true;
+    while (cambio) {
+      cambio = false;
+      for (const op of this.operaciones) {
+        const deps = String(op.dependencias_secuencia || '').split(',').map(Number).filter(Number.isInteger);
+        if (!sucesoras.has(Number(op.secuencia)) && deps.some(dep => dep === propia || sucesoras.has(dep))) {
+          sucesoras.add(Number(op.secuencia));
+          cambio = true;
+        }
+      }
+    }
+    this.sugerenciasPredecesorasEdicion = this.operaciones
+      .filter(op => !op.archivada && Number(op.secuencia) !== propia &&
+        !sucesoras.has(Number(op.secuencia)) && !seleccionadas.has(Number(op.secuencia)))
+      .filter(op => !q || `${op.secuencia} ${op.nombre}`.toLowerCase().includes(q))
+      .sort((a, b) => Number(a.secuencia) - Number(b.secuencia));
+  }
+  agregarPredecesoraEdicion(op: OperacionProgramada): void {
+    this.operacionEditada.dependencias = [
+      ...new Set<number>([...(this.operacionEditada.dependencias || []), Number(op.secuencia)])
+    ];
+    this.busquedaPredecesoraEdicion = '';
+    this.actualizarSugerenciasEdicion();
+  }
+  quitarPredecesoraEdicion(secuencia: number): void {
+    this.operacionEditada.dependencias =
+      (this.operacionEditada.dependencias || []).filter((valor: number) => Number(valor) !== Number(secuencia));
+    this.actualizarSugerenciasEdicion();
   }
   get filtradas(): OperacionProgramada[] {
     const q = this.busqueda.toLowerCase().trim();
@@ -300,6 +341,25 @@ export class Programacion implements OnInit, OnDestroy {
     this.actualizarSugerenciasPredecesoras();
     this.modal = 'crear';
   }
+  abrirExcepcion(): void {
+    this.nuevaExcepcion = {
+      fecha: this.hoyISO, tipo: 'FERIADO', hs_disponibles: 0, motivo: '', recuperable: false
+    };
+    this.modal = 'excepcion';
+  }
+  guardarExcepcion(): void {
+    const ex = this.nuevaExcepcion;
+    if (!ex.fecha || !ex.tipo || !ex.motivo.trim() ||
+        (ex.tipo !== 'FERIADO' && !(Number(ex.hs_disponibles) >= 0))) return;
+    this.guardando = true;
+    this.service.guardarExcepcion(this.proyectoId, ex).subscribe({
+      next: r => this.finalizar(r.message),
+      error: e => {
+        this.guardando = false;
+        this.error = e?.error?.message || 'No se pudo guardar la excepción';
+      }
+    });
+  }
   trackOperacion(_: number, op: OperacionProgramada): number { return op.operacion_id; }
   trackEtapa(_: number, etapa: EtapaProgramada): number { return etapa.etapa_id; }
   trackDia(_: number, dia: number): number { return dia; }
@@ -312,20 +372,26 @@ export class Programacion implements OnInit, OnDestroy {
       secuencia: this.seleccionada.secuencia,
       nombre: this.seleccionada.nombre,
       duracion_hs: Number(this.seleccionada.duracion_hs),
-      descripcion: this.seleccionada.descripcion || ''
+      descripcion: this.seleccionada.descripcion || '',
+      dependencias: String(this.seleccionada.dependencias_secuencia || '')
+        .split(',').map(Number).filter(Number.isInteger)
     };
+    this.busquedaPredecesoraEdicion = '';
+    this.errorFormulario = '';
+    this.actualizarSugerenciasEdicion();
     this.modal = 'editar';
   }
   guardarOperacionEditada(): void {
     if (!this.seleccionada || Number(this.seleccionada.pct_avance_actual) !== 0) return;
     const datos = this.operacionEditada;
     if (!datos.secuencia || !datos.nombre.trim() || !(datos.duracion_hs > 0)) return;
+    this.errorFormulario = '';
     this.guardando = true;
     this.service.actualizarOperacion(this.seleccionada.operacion_id, datos).subscribe({
       next: r => this.finalizar(r.message),
       error: e => {
         this.guardando = false;
-        this.error = e?.error?.message || 'No se pudo actualizar la operación';
+        this.errorFormulario = e?.error?.message || 'No se pudo actualizar la operación';
       }
     });
   }

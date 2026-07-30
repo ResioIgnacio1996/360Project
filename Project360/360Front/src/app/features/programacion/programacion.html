@@ -62,7 +62,7 @@
       </select>
     </div>
   </section>
-  <main class="workspace" *ngIf="!cargando">
+  <main class="workspace" *ngIf="!cargando" [style.--table-height]="alturaTablaPct + '%'">
     <section class="aps">
       <div class="section-title">
         <span>TABLA APS</span><small>{{ filtradas.length }} operaciones visibles</small>
@@ -145,7 +145,13 @@
         <span>CAPAS DEL GANTT</span>
         <button [class.on]="capas.estimado" (click)="toggle('estimado')">● ESTIMADO</button
         ><button [class.on]="capas.reprogramado" (click)="toggle('reprogramado')">● REPROGRAMADO</button
-        ><button [class.on]="capas.real" (click)="toggle('real')">● REAL</button>
+        ><button [class.on]="capas.real" (click)="toggle('real')">● REAL</button
+        ><button class="calendar-action" (click)="abrirExcepcion()">＋ EXCEPCIÓN</button>
+        <label class="layout-size">
+          <span>TABLA</span>
+          <input type="range" min="25" max="70" step="1" [(ngModel)]="alturaTablaPct" />
+          <span>GANTT</span>
+        </label>
       </div>
       <div class="section-title">
         <span>GANTT COMPARATIVO</span><small>{{ descripcionHoy }} · Estimado · Reprogramado · Real</small>
@@ -364,7 +370,28 @@
         <label class="wide">WI · INSTRUCCIONES DE TRABAJO
           <textarea [(ngModel)]="operacionEditada.descripcion" name="wiEditada"></textarea>
         </label>
+        <label class="wide predecessor-field">PREDECESORAS
+          <input
+            [(ngModel)]="busquedaPredecesoraEdicion"
+            (ngModelChange)="actualizarSugerenciasEdicion()"
+            name="buscarPredecesoraEdicion"
+            autocomplete="off"
+            placeholder="Filtrar por secuencia o nombre…"
+          />
+          <div class="predecessor-suggestions predecessor-list" *ngIf="sugerenciasPredecesorasEdicion.length">
+            <button type="button" *ngFor="let op of sugerenciasPredecesorasEdicion; trackBy: trackSecuencia" (click)="agregarPredecesoraEdicion(op)">
+              <b>{{ op.secuencia }}</b><span>{{ op.nombre }}</span><small>{{ op.etapa_codigo }}</small>
+            </button>
+          </div>
+          <div class="selected-predecessors" *ngIf="operacionEditada.dependencias.length">
+            <span *ngFor="let secuencia of operacionEditada.dependencias; trackBy: trackNumero">
+              <b>{{ secuencia }}</b> · {{ nombrePredecesora(secuencia) }}
+              <button type="button" (click)="quitarPredecesoraEdicion(secuencia)" title="Quitar">×</button>
+            </span>
+          </div>
+        </label>
       </div>
+      <div class="form-error" *ngIf="errorFormulario">{{ errorFormulario }}</div>
       <div class="impact">La modificación quedará auditada y recalculará las fechas reprogramadas de la cadena.</div>
       <footer>
         <button type="button" class="ghost" (click)="modal = null">Cancelar</button>
@@ -372,7 +399,37 @@
       </footer>
     </form>
   </div>
-  <div class="overlay" *ngIf="modal && modal !== 'crear' && modal !== 'editar'" (click)="modal = null">
+  <div class="overlay" *ngIf="modal === 'excepcion'" (click)="modal = null">
+    <form class="modal calendar-modal" (click)="$event.stopPropagation()" (ngSubmit)="guardarExcepcion()">
+      <h2>Excepción de calendario</h2>
+      <p>Modifica el calendario operativo y recalcula la línea reprogramada.</p>
+      <div class="create-grid">
+        <label>FECHA<input type="date" [(ngModel)]="nuevaExcepcion.fecha" name="fechaExcepcion" required /></label>
+        <label>TIPO
+          <select [(ngModel)]="nuevaExcepcion.tipo" name="tipoExcepcion">
+            <option value="FERIADO">Feriado · no laborable</option>
+            <option value="JORNADA_REDUCIDA">Jornada reducida</option>
+            <option value="JORNADA_EXTENDIDA">Jornada extendida</option>
+          </select>
+        </label>
+        <label *ngIf="nuevaExcepcion.tipo !== 'FERIADO'">HORAS DISPONIBLES
+          <input type="number" min="0" step=".5" [(ngModel)]="nuevaExcepcion.hs_disponibles" name="horasExcepcion" required />
+        </label>
+        <label class="check-field">RECUPERABLE
+          <input type="checkbox" [(ngModel)]="nuevaExcepcion.recuperable" name="recuperable" />
+        </label>
+        <label class="wide">MOTIVO
+          <textarea maxlength="200" [(ngModel)]="nuevaExcepcion.motivo" name="motivoExcepcion" required></textarea>
+        </label>
+      </div>
+      <div class="impact">Si ya existe una excepción en esa fecha, se actualizará. La línea estimada original no se modifica.</div>
+      <footer>
+        <button type="button" class="ghost" (click)="modal = null">Cancelar</button>
+        <button type="submit" [disabled]="guardando">{{ guardando ? 'Guardando…' : 'Guardar excepción' }}</button>
+      </footer>
+    </form>
+  </div>
+  <div class="overlay" *ngIf="modal && modal !== 'crear' && modal !== 'editar' && modal !== 'excepcion'" (click)="modal = null">
     <form
       class="modal"
       (click)="$event.stopPropagation()"

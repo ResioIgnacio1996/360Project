@@ -192,12 +192,17 @@ const actualizarNmt = async (req, res) => {
   const fecha = req.body.fecha_no_antes_del || null;
   const motivo = String(req.body.motivo || '').trim();
   if (!motivo) return res.status(400).json({ message: 'El motivo es obligatorio' });
+  let tx;
   try {
     const pool = await conectarDB();
-    const tx = new sql.Transaction(pool);
+    tx = new sql.Transaction(pool);
     await tx.begin();
     const actual = await new sql.Request(tx).input('id', sql.BigInt, req.params.id)
-      .query('SELECT fecha_no_antes_del FROM Operacion WHERE operacion_id=@id');
+      .query('SELECT fecha_no_antes_del,fecha_inicio_real FROM Operacion WHERE operacion_id=@id');
+    if (fecha && actual.recordset[0]?.fecha_inicio_real) {
+      await tx.rollback();
+      return res.status(409).json({ message: 'NMT solo puede aplicarse a una operación que todavía no inició' });
+    }
     if (!actual.recordset.length) { await tx.rollback(); return res.status(404).json({ message: 'Operación no encontrada' }); }
     await new sql.Request(tx).input('id', sql.BigInt, req.params.id).input('fecha', sql.Date, fecha)
       .query('UPDATE Operacion SET fecha_no_antes_del=@fecha,fecha_actualizacion=SYSDATETIME() WHERE operacion_id=@id');
@@ -209,6 +214,7 @@ const actualizarNmt = async (req, res) => {
     await tx.commit();
     res.json({ message: fecha ? 'Restricción aplicada y auditada' : 'Restricción eliminada y auditada' });
   } catch (error) {
+    if (tx?._aborted === false) try { await tx.rollback(); } catch {}
     res.status(500).json({ message: 'No se pudo actualizar la restricción', error: error.message });
   }
 };
@@ -219,11 +225,13 @@ const actualizarOperacion = async (req, res) => {
   const nombre = String(req.body.nombre || '').trim();
   const duracion = Number(req.body.duracion_hs);
   const instrucciones = String(req.body.descripcion || '').trim() || null;
+  const dependencias = [...new Set((req.body.dependencias || []).map(Number).filter(Number.isInteger))];
   if (!Number.isInteger(id) || !Number.isInteger(secuencia) || !nombre || !(duracion > 0))
     return res.status(400).json({ message: 'Secuencia, nombre y duración válida son obligatorios' });
+  let tx;
   try {
     const pool = await conectarDB();
-    const tx = new sql.Transaction(pool);
+    tx = new sql.Transaction(pool);
     await tx.begin();
     const actual = await new sql.Request(tx).input('id', sql.BigInt, id).query(`
       SELECT operacion_id,proyecto_id,version_id,secuencia,nombre,duracion_hs,descripcion,pct_avance_actual
@@ -246,11 +254,64 @@ const actualizarOperacion = async (req, res) => {
       await tx.rollback();
       return res.status(409).json({ message: `Ya existe la secuencia ${secuencia} en el plan activo` });
     }
+    if (dependencias.includes(Number(op.secuencia))) {
+      await tx.rollback();
+      return res.status(400).json({ message: 'Una operación no puede depender de sí misma' });
+    }
+    let predecesoras = [];
+    if (dependencias.length) {
+      const depRequest = new sql.Request(tx).input('p', sql.BigInt, op.proyecto_id)
+        .input('v', sql.BigInt, op.version_id);
+      const parametros = dependencias.map((valor, i) => {
+        depRequest.input(`dep${i}`, sql.Int, valor);
+        return `@dep${i}`;
+      });
+      const resultado = await depRequest.query(`SELECT operacion_id,secuencia FROM Operacion
+        WHERE proyecto_id=@p AND version_id=@v AND ISNULL(archivada,0)=0
+          AND secuencia IN (${parametros.join(',')})`);
+      predecesoras = resultado.recordset;
+      if (predecesoras.length !== dependencias.length) {
+        await tx.rollback();
+        return res.status(400).json({ message: 'Una o más predecesoras no pertenecen al plan activo' });
+      }
+    }
+    const aristas = await new sql.Request(tx).input('v', sql.BigInt, op.version_id)
+      .input('id', sql.BigInt, id).query(`
+        SELECT od.operacion_id,od.operacion_predecesora_id
+        FROM OperacionDependencia od JOIN Operacion o ON o.operacion_id=od.operacion_id
+        WHERE o.version_id=@v AND o.operacion_id<>@id
+      `);
+    const grafo = new Map();
+    for (const arista of aristas.recordset)
+      grafo.set(Number(arista.operacion_id), [
+        ...(grafo.get(Number(arista.operacion_id)) || []),
+        Number(arista.operacion_predecesora_id)
+      ]);
+    grafo.set(id, predecesoras.map(item => Number(item.operacion_id)));
+    const visitando = new Set(), visitados = new Set();
+    const tieneCiclo = nodo => {
+      if (visitando.has(nodo)) return true;
+      if (visitados.has(nodo)) return false;
+      visitando.add(nodo);
+      for (const pred of grafo.get(nodo) || []) if (tieneCiclo(pred)) return true;
+      visitando.delete(nodo);
+      visitados.add(nodo);
+      return false;
+    };
+    if ([...grafo.keys()].some(tieneCiclo)) {
+      await tx.rollback();
+      return res.status(422).json({ message: 'Las predecesoras generan un ciclo en la programación' });
+    }
     await new sql.Request(tx).input('id', sql.BigInt, id).input('s', sql.Int, secuencia)
       .input('n', sql.NVarChar(200), nombre).input('dh', sql.Decimal(8,2), duracion)
       .input('d', sql.NVarChar(sql.MAX), instrucciones)
       .query(`UPDATE Operacion SET secuencia=@s,nombre=@n,duracion_hs=@dh,descripcion=@d,
               fecha_actualizacion=SYSDATETIME() WHERE operacion_id=@id`);
+    await new sql.Request(tx).input('id', sql.BigInt, id)
+      .query('DELETE FROM OperacionDependencia WHERE operacion_id=@id');
+    for (const pred of predecesoras)
+      await new sql.Request(tx).input('id', sql.BigInt, id).input('pred', sql.BigInt, pred.operacion_id)
+        .query('INSERT INTO OperacionDependencia(operacion_id,operacion_predecesora_id,desfase_hs) VALUES(@id,@pred,0)');
     await new sql.Request(tx).input('id', sql.BigInt, id).input('u', sql.BigInt, req.usuario.usuario_id)
       .input('anterior', sql.NVarChar(sql.MAX), JSON.stringify({
         secuencia: op.secuencia, nombre: op.nombre, duracion_hs: op.duracion_hs, descripcion: op.descripcion
@@ -261,7 +322,7 @@ const actualizarOperacion = async (req, res) => {
     await tx.commit();
     res.json({ message: 'Operación actualizada; el cronograma fue recalculado' });
   } catch (error) {
-    if (tx._aborted === false) try { await tx.rollback(); } catch {}
+    if (tx?._aborted === false) try { await tx.rollback(); } catch {}
     res.status(500).json({ message: 'No se pudo actualizar la operación', error: error.message });
   }
 };
@@ -277,9 +338,10 @@ const crearOperacion = async (req, res) => {
   if (!Number.isInteger(proyectoId) || !Number.isInteger(secuencia) || !Number.isInteger(etapaId) ||
       !nombre || !(duracion > 0) || !dependencias.length || peso < 0 || peso > 100)
     return res.status(400).json({ message: 'Etapa, secuencia, nombre, duración y al menos una predecesora son obligatorios' });
+  let tx;
   try {
     const pool = await conectarDB();
-    const tx = new sql.Transaction(pool);
+    tx = new sql.Transaction(pool);
     await tx.begin();
     const rq = () => new sql.Request(tx);
     const contexto = await rq().input('p', sql.BigInt, proyectoId).input('e', sql.BigInt, etapaId).query(`
@@ -366,9 +428,43 @@ const crearOperacion = async (req, res) => {
     await tx.commit();
     res.status(201).json({ message: 'Operación creada e incorporada al cronograma', operacion_id: operacionId });
   } catch (error) {
-    if (tx._aborted === false) try { await tx.rollback(); } catch {}
+    if (tx?._aborted === false) try { await tx.rollback(); } catch {}
     res.status(500).json({ message: 'No se pudo crear la operación', error: error.message });
   }
 };
 
-module.exports = { getProgramacion, actualizarDuracion, actualizarNmt, actualizarOperacion, crearOperacion };
+const guardarExcepcionCalendario = async (req, res) => {
+  const proyectoId = Number(req.params.id);
+  const fecha = String(req.body.fecha || '').trim();
+  const tipo = String(req.body.tipo || '').toUpperCase();
+  const motivo = String(req.body.motivo || '').trim();
+  const horas = tipo === 'FERIADO' ? 0 : Number(req.body.hs_disponibles);
+  if (!Number.isInteger(proyectoId) || !/^\d{4}-\d{2}-\d{2}$/.test(fecha) || !motivo ||
+      !['FERIADO','JORNADA_REDUCIDA','JORNADA_EXTENDIDA'].includes(tipo) ||
+      !Number.isFinite(horas) || horas < 0)
+    return res.status(400).json({ message: 'Fecha, tipo, horas y motivo válidos son obligatorios' });
+  try {
+    const pool = await conectarDB();
+    await pool.request().input('p', sql.BigInt, proyectoId).input('f', sql.Date, fecha)
+      .input('t', sql.NVarChar(30), tipo).input('h', sql.Decimal(4,2), horas)
+      .input('m', sql.NVarChar(200), motivo).input('r', sql.Bit, req.body.recuperable ? 1 : 0)
+      .query(`
+        DECLARE @calendario_id bigint=(SELECT TOP 1 calendario_id FROM CalendarioProyecto WHERE proyecto_id=@p);
+        IF @calendario_id IS NULL THROW 50001,'El proyecto no tiene calendario configurado',1;
+        MERGE ExcepcionCalendario AS dst
+        USING (SELECT @calendario_id calendario_id,@f fecha) src
+          ON dst.calendario_id=src.calendario_id AND dst.fecha=src.fecha
+        WHEN MATCHED THEN UPDATE SET tipo=@t,hs_disponibles=@h,motivo=@m,recuperable=@r
+        WHEN NOT MATCHED THEN INSERT(calendario_id,fecha,tipo,hs_disponibles,motivo,recuperable)
+          VALUES(@calendario_id,@f,@t,@h,@m,@r);
+      `);
+    res.status(201).json({ message: 'Excepción guardada; la programación fue recalculada' });
+  } catch (error) {
+    res.status(500).json({ message: 'No se pudo guardar la excepción', error: error.message });
+  }
+};
+
+module.exports = {
+  getProgramacion, actualizarDuracion, actualizarNmt, actualizarOperacion,
+  crearOperacion, guardarExcepcionCalendario
+};

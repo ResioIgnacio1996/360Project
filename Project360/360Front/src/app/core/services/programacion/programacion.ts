@@ -30,4 +30,7 @@ export class ProgramacionService {
   crearOperacion(proyectoId: number, data: any): Observable<any> {
     return this.http.post(`${this.api}/proyectos/${proyectoId}/operaciones`, data);
   }
+  guardarExcepcion(proyectoId: number, data: any): Observable<any> {
+    return this.http.post(`${this.api}/proyectos/${proyectoId}/excepciones`, data);
+  }
 }
