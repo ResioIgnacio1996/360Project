@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnDestroy, OnInit } from '@angular/core';
+import { Component, ElementRef, OnDestroy, OnInit, ViewChild } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import {
@@ -17,6 +17,7 @@ import { CalendarioService } from '../../core/services/calendario/calendario.ser
   styleUrl: './programacion.css',
 })
 export class Programacion implements OnInit, OnDestroy {
+  @ViewChild('workspace') workspaceRef?: ElementRef<HTMLElement>;
   proyecto: any = null;
   operaciones: OperacionProgramada[] = [];
   etapasProgramadas: EtapaProgramada[] = [];
@@ -61,6 +62,9 @@ export class Programacion implements OnInit, OnDestroy {
   hoyISO = '';
   descripcionHoy = '';
   private actualizadorFecha?: ReturnType<typeof setInterval>;
+  private redimensionando = false;
+  private readonly moverPanel = (evento: PointerEvent) => this.redimensionarPanel(evento);
+  private readonly soltarPanel = () => this.finalizarRedimension();
   readonly proyectoId: number;
   constructor(
     private route: ActivatedRoute,
@@ -77,6 +81,7 @@ export class Programacion implements OnInit, OnDestroy {
   }
   ngOnDestroy(): void {
     if (this.actualizadorFecha) clearInterval(this.actualizadorFecha);
+    this.finalizarRedimension();
   }
   cargarFechaOficial(): void {
     this.calendarioService.obtenerFechaServidor().subscribe({
@@ -366,6 +371,28 @@ export class Programacion implements OnInit, OnDestroy {
   trackMes(_: number, mes: { clave: string }): string { return mes.clave; }
   trackSecuencia(_: number, op: OperacionProgramada): number { return Number(op.secuencia); }
   trackNumero(_: number, valor: number): number { return Number(valor); }
+  iniciarRedimension(evento: PointerEvent): void {
+    evento.preventDefault();
+    this.redimensionando = true;
+    document.body.style.cursor = 'row-resize';
+    document.body.style.userSelect = 'none';
+    window.addEventListener('pointermove', this.moverPanel);
+    window.addEventListener('pointerup', this.soltarPanel, { once: true });
+  }
+  private redimensionarPanel(evento: PointerEvent): void {
+    if (!this.redimensionando || !this.workspaceRef) return;
+    const rect = this.workspaceRef.nativeElement.getBoundingClientRect();
+    const porcentaje = ((evento.clientY - rect.top) / rect.height) * 100;
+    this.alturaTablaPct = Math.max(22, Math.min(72, Math.round(porcentaje)));
+  }
+  private finalizarRedimension(): void {
+    if (!this.redimensionando) return;
+    this.redimensionando = false;
+    document.body.style.cursor = '';
+    document.body.style.userSelect = '';
+    window.removeEventListener('pointermove', this.moverPanel);
+    window.removeEventListener('pointerup', this.soltarPanel);
+  }
   abrirEditarOperacion(): void {
     if (!this.seleccionada || Number(this.seleccionada.pct_avance_actual) !== 0) return;
     this.operacionEditada = {

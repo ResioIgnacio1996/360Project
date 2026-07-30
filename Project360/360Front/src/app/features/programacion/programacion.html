@@ -62,7 +62,7 @@
       </select>
     </div>
   </section>
-  <main class="workspace" *ngIf="!cargando" [style.--table-height]="alturaTablaPct + '%'">
+  <main #workspace class="workspace" *ngIf="!cargando" [style.--table-height]="alturaTablaPct + '%'">
     <section class="aps">
       <div class="section-title">
         <span>TABLA APS</span><small>{{ filtradas.length }} operaciones visibles</small>
@@ -140,6 +140,16 @@
         </div>
       </div>
     </section>
+    <div
+      class="workspace-resizer"
+      role="separator"
+      aria-orientation="horizontal"
+      [attr.aria-valuenow]="alturaTablaPct"
+      aria-valuemin="22"
+      aria-valuemax="72"
+      title="Arrastrar para ajustar Tabla / Gantt"
+      (pointerdown)="iniciarRedimension($event)"
+    ><i></i></div>
     <section class="gantt">
       <div class="gantt-controls">
         <span>CAPAS DEL GANTT</span>
@@ -147,11 +157,6 @@
         ><button [class.on]="capas.reprogramado" (click)="toggle('reprogramado')">● REPROGRAMADO</button
         ><button [class.on]="capas.real" (click)="toggle('real')">● REAL</button
         ><button class="calendar-action" (click)="abrirExcepcion()">＋ EXCEPCIÓN</button>
-        <label class="layout-size">
-          <span>TABLA</span>
-          <input type="range" min="25" max="70" step="1" [(ngModel)]="alturaTablaPct" />
-          <span>GANTT</span>
-        </label>
       </div>
       <div class="section-title">
         <span>GANTT COMPARATIVO</span><small>{{ descripcionHoy }} · Estimado · Reprogramado · Real</small>
