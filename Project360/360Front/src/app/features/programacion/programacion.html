@@ -1,32 +1,420 @@
 <div class="programacion-page">
   <header class="project-bar">
-    <div><div><button class="crumb" (click)="volver()">PROYECTOS</button><span> / PROGRAMACIÓN</span></div><h1>{{proyecto?.nombre||'Programación de obra'}}</h1><p>Plan APS · {{proyecto?.version_codigo||'Sin versión activa'}}</p></div>
-    <div class="kpis"><div><span>AVANCE</span><b>{{progreso}}%</b></div><div><span>OPERACIONES</span><b>{{operaciones.length}}</b></div><div class="late"><span>ATRASADAS</span><b>{{atrasadas}}</b></div><button (click)="importarBop()">📥 Importar BOP</button><button (click)="volver()">← Proyecto</button></div>
+    <div>
+      <div>
+        <button class="crumb" (click)="volver()">PROYECTOS</button><span> / PROGRAMACIÓN</span>
+      </div>
+      <h1>{{ proyecto?.nombre || 'Programación de obra' }}</h1>
+      <p>Plan APS · {{ proyecto?.version_codigo || 'Sin versión activa' }}</p>
+    </div>
+    <div class="kpis">
+      <div>
+        <span>AVANCE</span><b>{{ progreso }}%</b>
+      </div>
+      <div>
+        <span>OPERACIONES</span><b>{{ operaciones.length }}</b>
+      </div>
+      <div class="late">
+        <span>ATRASADAS</span><b>{{ atrasadas }}</b>
+      </div>
+      <button (click)="abrirCrearOperacion()">＋ Nueva operación</button>
+      <button class="import-bop" (click)="importarBop()">📥 Importar BOP</button
+      ><button (click)="volver()">← Proyecto</button>
+    </div>
   </header>
   <section class="toolbar">
-    <select [(ngModel)]="filtroEtapa"><option value="TODAS">Todas las etapas</option><option *ngFor="let e of etapas" [value]="e">{{e}}</option></select>
-    <select [(ngModel)]="filtroEstado"><option value="TODAS">Todos los estados</option><option value="PENDIENTE">Pendientes</option><option value="EN_CURSO">En curso</option><option value="ATRASADA">Atrasadas</option><option value="COMPLETA">Completas</option><option value="BLOQUEADA">Bloqueadas</option></select>
-    <button [class.on]="capas.estimado" (click)="toggle('estimado')">● ESTIMADO</button><button [class.on]="capas.reprogramado" (click)="toggle('reprogramado')">● REPROGRAMADO</button><button [class.on]="capas.real" (click)="toggle('real')">● REAL</button>
-    <input [(ngModel)]="busqueda" placeholder="Buscar operación...">
+    <input [(ngModel)]="busqueda" placeholder="Buscar operación..." />
   </section>
-  <div class="notice error" *ngIf="error">{{error}}</div><div class="notice" *ngIf="mensaje">{{mensaje}}</div><div class="loading" *ngIf="cargando">Cargando programación…</div>
+  <div class="notice error" *ngIf="error">{{ error }}</div>
+  <div class="notice" *ngIf="mensaje">{{ mensaje }}</div>
+  <div class="loading" *ngIf="cargando">Cargando programación…</div>
+  <section class="stage-progress" *ngIf="!cargando && etapasProgramadas.length">
+    <div class="stage-filter-tools all-stages">
+      <span>FILTRAR ETAPA</span>
+      <button [class.active]="filtroEtapa === 'TODAS'" (click)="filtroEtapa = 'TODAS'">
+        TODAS LAS ETAPAS
+      </button>
+    </div>
+    <button
+      class="stage-card"
+      *ngFor="let etapa of etapasProgramadas"
+      [class.active]="filtroEtapa === etapa.nombre"
+      [title]="'Aporta ' + etapa.aporte_proyecto + '% al proyecto'"
+      (click)="filtroEtapa = filtroEtapa === etapa.nombre ? 'TODAS' : etapa.nombre"
+    >
+      <header>
+        <span>{{ etapa.codigo }}</span>
+        <b>{{ etapa.pct_avance | number: '1.0-1' }}%</b>
+      </header>
+      <p>{{ etapa.nombre }}</p>
+      <div><i [style.width.%]="etapa.pct_avance"></i></div>
+      <small>Peso {{ etapa.peso_pct | number: '1.0-1' }}% · Aporte {{ etapa.aporte_proyecto | number: '1.0-1' }}%</small>
+    </button>
+    <div class="stage-filter-tools state-filter">
+      <span>ESTADO OPERACIÓN</span>
+      <select [(ngModel)]="filtroEstado">
+        <option value="TODAS">Todos los estados</option>
+        <option value="PENDIENTE">Pendientes</option>
+        <option value="EN_CURSO">En curso</option>
+        <option value="ATRASADA">Atrasadas</option>
+        <option value="COMPLETA">Completas</option>
+        <option value="BLOQUEADA">Bloqueadas</option>
+      </select>
+    </div>
+  </section>
   <main class="workspace" *ngIf="!cargando">
-    <section class="aps"><div class="section-title"><span>TABLA APS</span><small>{{filtradas.length}} operaciones visibles</small></div><div class="table-scroll">
-      <table><thead><tr><th>SEQ</th><th>OPERACIÓN</th><th>ETAPA</th><th>DEP.</th><th>RESP.</th><th>INI.EST.</th><th>FIN EST.</th><th>INI.REP.</th><th>FIN REP.</th><th>INI.REAL</th><th>FIN REAL</th><th>AVANCE</th><th>ESTADO</th></tr></thead>
-      <tbody><tr *ngFor="let op of filtradas" (click)="seleccionar(op)" [class.selected]="seleccionada?.operacion_id===op.operacion_id">
-        <td class="seq">{{op.secuencia}}</td><td class="op-name">{{op.nombre}} <em *ngIf="op.fecha_no_antes_del">NMT</em><em *ngIf="op.archivada">ARCHIVADA</em></td><td>{{op.etapa_codigo}} · {{op.etapa_nombre}}</td><td class="mono">{{op.dependencias_secuencia||'—'}}</td><td>{{op.responsable_nombre||'Sin asignar'}}</td>
-        <td class="est">{{op.fecha_inicio_estimada|date:'dd/MM/yy'}}</td><td class="est">{{op.fecha_fin_estimada|date:'dd/MM/yy'}}</td><td class="rep">{{op.fecha_inicio_reprog|date:'dd/MM/yy'}}</td><td class="rep">{{op.fecha_fin_reprog|date:'dd/MM/yy'}}</td><td class="real">{{op.fecha_inicio_real?(op.fecha_inicio_real|date:'dd/MM/yy'):'—'}}</td><td class="real">{{op.fecha_fin_real?(op.fecha_fin_real|date:'dd/MM/yy'):'—'}}</td>
-        <td><div class="progress"><span [style.width.%]="op.pct_avance_actual"></span></div><small>{{op.pct_avance_actual}}%</small></td><td><span class="status" [ngClass]="claseEstado(op)">{{op.estado_label}}</span></td>
-      </tr></tbody></table>
-      <div class="empty" *ngIf="!filtradas.length"><span>▤</span><h2>No hay operaciones programadas</h2><p>Este proyecto todavía no tiene un BOP activo. Al importar el plan, las operaciones aparecerán acá con sus fechas estimadas y reprogramadas.</p></div>
-    </div></section>
-    <section class="gantt"><div class="section-title"><span>GANTT COMPARATIVO</span><small>Estimado · Reprogramado · Real</small></div><div class="gantt-scroll">
-      <div class="gantt-grid" [style.--days]="rango.dias"><div class="g-head label">OPERACIÓN</div><div class="g-head dates"><span *ngFor="let d of dias()" [class.weekend]="esFinSemana(d)">{{fechaDia(d)|date:'dd'}}</span></div>
-        <ng-container *ngFor="let op of filtradas"><button class="g-label" (click)="seleccionar(op)"><b>{{op.secuencia}}</b><span>{{op.nombre}}</span></button><div class="track" [class.active]="seleccionada?.operacion_id===op.operacion_id"><i *ngFor="let d of dias()" [class.weekend]="esFinSemana(d)"></i><button *ngIf="capas.estimado&&op.fecha_inicio_estimada" class="bar estimated" [style.left.%]="posicion(op.fecha_inicio_estimada)" [style.width.%]="ancho(op.fecha_inicio_estimada,op.fecha_fin_estimada)" (click)="seleccionar(op)"></button><button *ngIf="capas.reprogramado&&op.fecha_inicio_reprog" class="bar reprogrammed" [style.left.%]="posicion(op.fecha_inicio_reprog)" [style.width.%]="ancho(op.fecha_inicio_reprog,op.fecha_fin_reprog)" (click)="seleccionar(op)">{{op.pct_avance_actual}}%</button><button *ngIf="capas.real&&op.fecha_inicio_real" class="bar actual" [style.left.%]="posicion(op.fecha_inicio_real)" [style.width.%]="ancho(op.fecha_inicio_real,op.fecha_fin_real||op.fecha_inicio_real)" (click)="seleccionar(op)"></button></div></ng-container>
-        <div class="empty-gantt" *ngIf="!filtradas.length">El cronograma se construirá automáticamente con las dependencias del BOP.</div>
-      </div></div><div class="legend"><span><i class="estimated"></i>Estimado</span><span><i class="reprogrammed"></i>Reprogramado</span><span><i class="actual"></i>Real</span><span><i class="week"></i>Fin de semana</span></div>
+    <section class="aps">
+      <div class="section-title">
+        <span>TABLA APS</span><small>{{ filtradas.length }} operaciones visibles</small>
+      </div>
+      <div class="table-scroll">
+        <table>
+          <colgroup>
+            <col class="col-seq" />
+            <col class="col-operacion" />
+            <col class="col-etapa" />
+            <col class="col-dependencia" />
+            <col class="col-responsable" />
+            <col class="col-fecha" span="6" />
+            <col class="col-avance" />
+            <col class="col-estado" />
+          </colgroup>
+          <thead>
+            <tr>
+              <th>SEQ</th>
+              <th>OPERACIÓN</th>
+              <th>ETAPA</th>
+              <th>DEP.</th>
+              <th>RESP.</th>
+              <th>INI.EST.</th>
+              <th>FIN EST.</th>
+              <th>INI.REP.</th>
+              <th>FIN REP.</th>
+              <th>INI.REAL</th>
+              <th>FIN REAL</th>
+              <th>AVANCE</th>
+              <th>ESTADO</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr
+              *ngFor="let op of filtradas"
+              (click)="seleccionar(op)"
+              [class.selected]="seleccionada?.operacion_id === op.operacion_id"
+            >
+              <td class="seq">{{ op.secuencia }}</td>
+              <td class="op-name">
+                {{ op.nombre }} <em *ngIf="op.fecha_no_antes_del">NMT</em
+                ><em *ngIf="op.archivada">ARCHIVADA</em>
+              </td>
+              <td>{{ op.etapa_codigo }} · {{ op.etapa_nombre }}</td>
+              <td class="mono">{{ op.dependencias_secuencia || '—' }}</td>
+              <td>{{ op.responsable_nombre || 'Sin asignar' }}</td>
+              <td class="est">{{ op.fecha_inicio_estimada | date: 'dd/MM/yy' }}</td>
+              <td class="est">{{ op.fecha_fin_estimada | date: 'dd/MM/yy' }}</td>
+              <td class="rep">{{ op.fecha_inicio_reprog | date: 'dd/MM/yy' }}</td>
+              <td class="rep">{{ op.fecha_fin_reprog | date: 'dd/MM/yy' }}</td>
+              <td class="real">
+                {{ op.fecha_inicio_real ? (op.fecha_inicio_real | date: 'dd/MM/yy') : '—' }}
+              </td>
+              <td class="real">
+                {{ op.fecha_fin_real ? (op.fecha_fin_real | date: 'dd/MM/yy') : '—' }}
+              </td>
+              <td>
+                <div class="progress"><span [style.width.%]="op.pct_avance_actual"></span></div>
+                <small>{{ op.pct_avance_actual }}%</small>
+              </td>
+              <td>
+                <span class="status" [ngClass]="claseEstado(op)">{{ op.estado_label }}</span>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+        <div class="empty" *ngIf="!filtradas.length">
+          <span>▤</span>
+          <h2>No hay operaciones programadas</h2>
+          <p>
+            Este proyecto todavía no tiene un BOP activo. Al importar el plan, las operaciones
+            aparecerán acá con sus fechas estimadas y reprogramadas.
+          </p>
+        </div>
+      </div>
+    </section>
+    <section class="gantt">
+      <div class="gantt-controls">
+        <span>CAPAS DEL GANTT</span>
+        <button [class.on]="capas.estimado" (click)="toggle('estimado')">● ESTIMADO</button
+        ><button [class.on]="capas.reprogramado" (click)="toggle('reprogramado')">● REPROGRAMADO</button
+        ><button [class.on]="capas.real" (click)="toggle('real')">● REAL</button>
+      </div>
+      <div class="section-title">
+        <span>GANTT COMPARATIVO</span><small>{{ descripcionHoy }} · Estimado · Reprogramado · Real</small>
+      </div>
+      <div class="gantt-scroll">
+        <div
+          class="gantt-grid"
+          [style.--days]="rango.dias"
+          [style.--timeline-width]="anchoTimelinePx + 'px'"
+          [style.width.px]="anchoGanttPx"
+          [style.min-width.px]="anchoGanttPx"
+        >
+          <div class="g-head label"><strong>OPERACIÓN</strong><small>DÍA DE SEMANA · FECHA</small></div>
+          <div class="g-head timeline-head">
+            <div class="months">
+              <span
+                *ngFor="let mes of mesesGantt()"
+                [style.grid-column]="mes.inicio + 1 + ' / span ' + mes.dias"
+              >MES {{ mes.etiqueta }}</span>
+            </div>
+            <div class="dates">
+              <span *ngFor="let d of dias()" [ngClass]="claseDia(d)" [class.es-hoy]="esHoy(d)" [title]="detalleDia(d)">
+                <em>{{ nombreDiaCorto(d) }}</em>
+                <b>{{ fechaDia(d) | date: 'dd':'UTC' }}</b>
+              </span>
+            </div>
+          </div>
+          <ng-container *ngFor="let op of filtradas"
+            ><button class="g-label" (click)="seleccionar(op)">
+              <b>{{ op.secuencia }}</b
+              ><span>{{ op.nombre }}</span>
+            </button>
+            <div class="track" [class.active]="seleccionada?.operacion_id === op.operacion_id">
+              <i *ngFor="let d of dias()" [ngClass]="claseDia(d)" [class.es-hoy]="esHoy(d)" [title]="detalleDia(d)"></i
+              ><button
+                *ngIf="capas.estimado && op.fecha_inicio_estimada"
+                class="bar estimated"
+                [style.left.%]="posicion(op.fecha_inicio_estimada)"
+                [style.width.%]="ancho(op.fecha_inicio_estimada, op.fecha_fin_estimada)"
+                (click)="seleccionar(op)"
+              ></button
+              ><button
+                *ngIf="capas.reprogramado && op.fecha_inicio_reprog"
+                class="bar reprogrammed"
+                [style.left.%]="posicion(op.fecha_inicio_reprog)"
+                [style.width.%]="ancho(op.fecha_inicio_reprog, op.fecha_fin_reprog)"
+                (click)="seleccionar(op)"
+              >
+                {{ op.pct_avance_actual }}%</button
+              ><button
+                *ngIf="capas.real && op.fecha_inicio_real"
+                class="bar actual"
+                [style.left.%]="posicion(op.fecha_inicio_real)"
+                [style.width.%]="
+                  ancho(op.fecha_inicio_real, op.fecha_fin_real || op.fecha_inicio_real)
+                "
+                (click)="seleccionar(op)"
+              ></button></div
+          ></ng-container>
+          <div class="empty-gantt" *ngIf="!filtradas.length">
+            El cronograma se construirá automáticamente con las dependencias del BOP.
+          </div>
+        </div>
+      </div>
+      <div class="legend">
+        <span><i class="estimated"></i>Estimado</span
+        ><span><i class="reprogrammed"></i>Reprogramado</span><span><i class="actual"></i>Real</span
+        ><span><i class="week"></i>No laborable</span
+        ><span><i class="partial"></i>Jornada parcial</span
+        ><span><i class="exception-holiday"></i>Feriado</span
+        ><span><i class="exception-reduced"></i>Jornada reducida</span
+        ><span><i class="exception-extended"></i>Jornada extendida</span>
+      </div>
     </section>
   </main>
-  <aside class="detail" [class.open]="seleccionada"><button class="close" (click)="seleccionada=null">×</button><div *ngIf="seleccionada as op"><small>OP {{op.secuencia}} · {{op.etapa_codigo}}</small><h2>{{op.nombre}}</h2><span class="status" [ngClass]="claseEstado(op)">{{op.estado_label}}</span><h3>COMPARACIÓN DE FECHAS</h3><div class="date-cards"><div><small>ESTIMADO</small><b>{{op.fecha_inicio_estimada|date:'dd/MM'}} → {{op.fecha_fin_estimada|date:'dd/MM'}}</b></div><div><small>REPROGRAMADO</small><b>{{op.fecha_inicio_reprog|date:'dd/MM'}} → {{op.fecha_fin_reprog|date:'dd/MM'}}</b></div><div><small>REAL</small><b>{{op.fecha_inicio_real?(op.fecha_inicio_real|date:'dd/MM'):'—'}} → {{op.fecha_fin_real?(op.fecha_fin_real|date:'dd/MM'):'—'}}</b></div></div><h3>DATOS DE OPERACIÓN</h3><dl><div><dt>Responsable</dt><dd>{{op.responsable_nombre||'Sin asignar'}}</dd></div><div><dt>Duración</dt><dd>{{op.duracion_hs}} hs</dd></div><div><dt>Avance</dt><dd>{{op.pct_avance_actual}}%</dd></div><div><dt>Dependencias</dt><dd>{{op.dependencias_secuencia||'Sin predecesoras'}}</dd></div></dl><h3>CRITERIO DE CIERRE</h3><p class="box">{{op.criterio_cierre||'Sin criterio de cierre cargado.'}}</p><h3>INSTRUCCIONES</h3><p class="box">{{op.descripcion||'Sin instrucciones cargadas.'}}</p><div class="actions"><button (click)="abrirDuracion()">Editar duración</button><button class="warn" (click)="abrirNmt()">Restricción NMT</button></div></div></aside>
-  <div class="overlay" *ngIf="modal" (click)="modal=null"><form class="modal" (click)="$event.stopPropagation()" (ngSubmit)="modal==='duracion'?guardarDuracion():guardarNmt()"><h2>{{modal==='duracion'?'Modificar duración':'Fecha de inicio más temprana'}}</h2><p>{{seleccionada?.secuencia}} · {{seleccionada?.nombre}}</p><label *ngIf="modal==='duracion'">NUEVA DURACIÓN (HS)<input type="number" min=".01" step=".25" [(ngModel)]="nuevaDuracion" name="duracion" required></label><label *ngIf="modal==='nmt'">NO INICIAR ANTES DEL<input type="date" [(ngModel)]="fechaNmt" name="fecha"></label><label>MOTIVO OBLIGATORIO<textarea [(ngModel)]="motivo" name="motivo" required placeholder="Justificación auditable del cambio"></textarea></label><div class="impact">El cronograma reprogramado se recalculará en cascada. Las fechas estimadas originales permanecen inmutables.</div><footer><button type="button" class="ghost" (click)="modal=null">Cancelar</button><button *ngIf="modal==='nmt'&&seleccionada?.fecha_no_antes_del" type="button" class="danger" [disabled]="!motivo.trim()||guardando" (click)="guardarNmt(true)">Quitar restricción</button><button type="submit" [disabled]="!motivo.trim()||guardando">{{guardando?'Guardando…':'Aplicar y recalcular'}}</button></footer></form></div>
+  <aside class="detail" [class.open]="seleccionada">
+    <button class="close" (click)="seleccionada = null">×</button>
+    <div *ngIf="seleccionada as op">
+      <small>OP {{ op.secuencia }} · {{ op.etapa_codigo }}</small>
+      <h2>{{ op.nombre }}</h2>
+      <span class="status" [ngClass]="claseEstado(op)">{{ op.estado_label }}</span>
+      <h3>COMPARACIÓN DE FECHAS</h3>
+      <div class="date-cards">
+        <div>
+          <small>ESTIMADO</small
+          ><b
+            >{{ op.fecha_inicio_estimada | date: 'dd/MM' }} →
+            {{ op.fecha_fin_estimada | date: 'dd/MM' }}</b
+          >
+        </div>
+        <div>
+          <small>REPROGRAMADO</small
+          ><b
+            >{{ op.fecha_inicio_reprog | date: 'dd/MM' }} →
+            {{ op.fecha_fin_reprog | date: 'dd/MM' }}</b
+          >
+        </div>
+        <div>
+          <small>REAL</small
+          ><b
+            >{{ op.fecha_inicio_real ? (op.fecha_inicio_real | date: 'dd/MM') : '—' }} →
+            {{ op.fecha_fin_real ? (op.fecha_fin_real | date: 'dd/MM') : '—' }}</b
+          >
+        </div>
+      </div>
+      <h3>DATOS DE OPERACIÓN</h3>
+      <dl>
+        <div>
+          <dt>Responsable</dt>
+          <dd>{{ op.responsable_nombre || 'Sin asignar' }}</dd>
+        </div>
+        <div>
+          <dt>Duración</dt>
+          <dd>{{ op.duracion_hs }} hs</dd>
+        </div>
+        <div>
+          <dt>Avance</dt>
+          <dd>{{ op.pct_avance_actual }}%</dd>
+        </div>
+        <div>
+          <dt>Dependencias</dt>
+          <dd>{{ op.dependencias_secuencia || 'Sin predecesoras' }}</dd>
+        </div>
+      </dl>
+      <h3>CRITERIO DE CIERRE</h3>
+      <p class="box">{{ op.criterio_cierre || 'Sin criterio de cierre cargado.' }}</p>
+      <h3>INSTRUCCIONES</h3>
+      <p class="box">{{ op.descripcion || 'Sin instrucciones cargadas.' }}</p>
+      <div class="actions">
+        <button *ngIf="+op.pct_avance_actual === 0" (click)="abrirEditarOperacion()">Editar operación</button
+        ><button class="warn" (click)="abrirNmt()">Restricción NMT</button>
+      </div>
+      <p class="edit-lock" *ngIf="+op.pct_avance_actual > 0">
+        La edición de nombre, WI, duración y secuencia se bloqueó porque la operación ya tiene avance.
+      </p>
+    </div>
+  </aside>
+  <div class="overlay" *ngIf="modal === 'crear'" (click)="modal = null">
+    <form class="modal create-operation" (click)="$event.stopPropagation()" (ngSubmit)="guardarNuevaOperacion()">
+      <h2>Nueva operación manual</h2>
+      <p>Se incorporará a la versión activa y al recálculo del Gantt.</p>
+      <div class="create-grid">
+        <label>ETAPA
+          <select [(ngModel)]="nuevaOperacion.etapa_id" name="etapa" required>
+            <option *ngFor="let etapa of etapasProgramadas" [ngValue]="etapa.etapa_id">{{ etapa.codigo }} · {{ etapa.nombre }}</option>
+          </select>
+        </label>
+        <label>SECUENCIA<input type="number" [(ngModel)]="nuevaOperacion.secuencia" name="secuencia" required /></label>
+        <label class="wide">NOMBRE<input [(ngModel)]="nuevaOperacion.nombre" name="nombre" maxlength="200" required /></label>
+        <label>RESPONSABLE
+          <select [(ngModel)]="nuevaOperacion.responsable_id" name="responsable">
+            <option [ngValue]="null">Sin asignar</option>
+            <option *ngFor="let responsable of responsables" [ngValue]="responsable.id">{{ responsable.nombre }}</option>
+          </select>
+        </label>
+        <label>DURACIÓN (HS)<input type="number" min=".25" step=".25" [(ngModel)]="nuevaOperacion.duracion_hs" name="duracionNueva" required /></label>
+        <label>UNIDAD DE AVANCE
+          <select [(ngModel)]="nuevaOperacion.unidad_avance" name="unidad">
+            <option value="PORCENTAJE">Porcentaje</option>
+            <option value="CANTIDAD">Cantidad</option>
+            <option value="BINARIO">Binario</option>
+          </select>
+        </label>
+        <label *ngIf="nuevaOperacion.unidad_avance === 'CANTIDAD'">CANTIDAD META
+          <input type="number" min=".01" [(ngModel)]="nuevaOperacion.cantidad_meta" name="cantidadMeta" required />
+        </label>
+        <label>PESO EN ETAPA (%)<input type="number" min="0" max="100" step=".01" [(ngModel)]="nuevaOperacion.peso_pct" name="peso" /></label>
+        <label class="wide predecessor-field">OPERACIÓN PREDECESORA
+          <input
+            [(ngModel)]="busquedaPredecesora"
+            name="buscarPredecesora"
+            autocomplete="off"
+            placeholder="Buscar por secuencia o nombre…"
+          />
+          <div class="predecessor-suggestions predecessor-list" *ngIf="sugerenciasPredecesoras.length">
+            <button type="button" *ngFor="let op of sugerenciasPredecesoras" (click)="agregarPredecesora(op)">
+              <b>{{ op.secuencia }}</b><span>{{ op.nombre }}</span><small>{{ op.etapa_codigo }}</small>
+            </button>
+          </div>
+          <div class="predecessor-empty" *ngIf="!sugerenciasPredecesoras.length">
+            No hay operaciones disponibles que coincidan con la búsqueda.
+          </div>
+          <div class="selected-predecessors" *ngIf="nuevaOperacion.dependencias.length">
+            <span *ngFor="let secuencia of nuevaOperacion.dependencias">
+              <b>{{ secuencia }}</b> · {{ nombrePredecesora(secuencia) }}
+              <button type="button" (click)="quitarPredecesora(secuencia)" title="Quitar">×</button>
+            </span>
+          </div>
+          <small>El inicio se establecerá automáticamente en la fecha de fin de la última predecesora.</small>
+        </label>
+        <label class="wide">CRITERIO DE CIERRE<textarea [(ngModel)]="nuevaOperacion.criterio_cierre" name="criterio"></textarea></label>
+        <label class="wide">DESCRIPCIÓN<textarea [(ngModel)]="nuevaOperacion.descripcion" name="descripcionNueva"></textarea></label>
+      </div>
+      <div class="impact">El peso inicial puede ser 0. La suma de pesos de la etapa nunca puede superar el 100%.</div>
+      <footer>
+        <button type="button" class="ghost" (click)="modal = null">Cancelar</button>
+        <button type="submit" [disabled]="guardando">{{ guardando ? 'Creando…' : 'Crear operación' }}</button>
+      </footer>
+    </form>
+  </div>
+  <div class="overlay" *ngIf="modal === 'editar'" (click)="modal = null">
+    <form class="modal edit-operation" (click)="$event.stopPropagation()" (ngSubmit)="guardarOperacionEditada()">
+      <h2>Editar operación</h2>
+      <p>Disponible únicamente mientras el avance permanezca en 0%.</p>
+      <div class="create-grid">
+        <label>SECUENCIA
+          <input type="number" [(ngModel)]="operacionEditada.secuencia" name="secuenciaEditada" required />
+        </label>
+        <label>DURACIÓN (HS)
+          <input type="number" min=".25" step=".25" [(ngModel)]="operacionEditada.duracion_hs" name="duracionEditada" required />
+        </label>
+        <label class="wide">NOMBRE
+          <input [(ngModel)]="operacionEditada.nombre" name="nombreEditado" maxlength="200" required />
+        </label>
+        <label class="wide">WI · INSTRUCCIONES DE TRABAJO
+          <textarea [(ngModel)]="operacionEditada.descripcion" name="wiEditada"></textarea>
+        </label>
+      </div>
+      <div class="impact">La modificación quedará auditada y recalculará las fechas reprogramadas de la cadena.</div>
+      <footer>
+        <button type="button" class="ghost" (click)="modal = null">Cancelar</button>
+        <button type="submit" [disabled]="guardando">{{ guardando ? 'Guardando…' : 'Guardar cambios' }}</button>
+      </footer>
+    </form>
+  </div>
+  <div class="overlay" *ngIf="modal && modal !== 'crear' && modal !== 'editar'" (click)="modal = null">
+    <form
+      class="modal"
+      (click)="$event.stopPropagation()"
+      (ngSubmit)="modal === 'duracion' ? guardarDuracion() : guardarNmt()"
+    >
+      <h2>{{ modal === 'duracion' ? 'Modificar duración' : 'Fecha de inicio más temprana' }}</h2>
+      <p>{{ seleccionada?.secuencia }} · {{ seleccionada?.nombre }}</p>
+      <label *ngIf="modal === 'duracion'"
+        >NUEVA DURACIÓN (HS)<input
+          type="number"
+          min=".01"
+          step=".25"
+          [(ngModel)]="nuevaDuracion"
+          name="duracion"
+          required /></label
+      ><label *ngIf="modal === 'nmt'"
+        >NO INICIAR ANTES DEL<input type="date" [(ngModel)]="fechaNmt" name="fecha" /></label
+      ><label
+        >MOTIVO OBLIGATORIO<textarea
+          [(ngModel)]="motivo"
+          name="motivo"
+          required
+          placeholder="Justificación auditable del cambio"
+        ></textarea>
+      </label>
+      <div class="impact">
+        El cronograma reprogramado se recalculará en cascada. Las fechas estimadas originales
+        permanecen inmutables.
+      </div>
+      <footer>
+        <button type="button" class="ghost" (click)="modal = null">Cancelar</button
+        ><button
+          *ngIf="modal === 'nmt' && seleccionada?.fecha_no_antes_del"
+          type="button"
+          class="danger"
+          [disabled]="!motivo.trim() || guardando"
+          (click)="guardarNmt(true)"
+        >
+          Quitar restricción</button
+        ><button type="submit" [disabled]="!motivo.trim() || guardando">
+          {{ guardando ? 'Guardando…' : 'Aplicar y recalcular' }}
+        </button>
+      </footer>
+    </form>
+  </div>
 </div>

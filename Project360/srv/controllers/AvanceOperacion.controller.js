@@ -165,7 +165,7 @@ const registrarAvance = async (req, res) => {
       .input('cantidad', sql.Decimal(18, 4), cantidad).input('fecha', sql.Date, fecha)
       .query(`UPDATE o SET pct_avance_actual=@pct,cantidad_acumulada=ISNULL(cantidad_acumulada,0)+ISNULL(@cantidad,0),
               fecha_inicio_real=COALESCE(fecha_inicio_real,@fecha),fecha_fin_real=CASE WHEN @pct=100 THEN @fecha ELSE fecha_fin_real END,
-              estado_id=COALESCE((SELECT TOP 1 estado_id FROM estado_operacion WHERE codigo=CASE WHEN @pct=100 THEN 'FINALIZADA' ELSE 'EN_CURSO' END),estado_id),
+              estado_id=COALESCE((SELECT TOP 1 estado_id FROM estado_operacion WHERE codigo=CASE WHEN @pct=100 THEN 'COMPLETA' ELSE 'EN_CURSO' END),estado_id),
               fecha_actualizacion=SYSDATETIME() FROM Operacion o WHERE operacion_id=@id`);
     await tx.commit();
     res.status(201).json({ message: 'Avance registrado' });

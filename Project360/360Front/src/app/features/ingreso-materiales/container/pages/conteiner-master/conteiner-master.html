@@ -1,3 +1,42 @@
-<div class="registro-compra-page"><div class="page-header"><div><span class="breadcrumb">OBRA360 / Proyectos / Materiales</span><h1>Stock de {{proyecto?.nombre||'proyecto'}}</h1><p>Asignaciones desde stock general y devoluciones.</p></div><button class="btn btn-ghost" (click)="volver()"><mat-icon>arrow_back</mat-icon>Volver</button></div><div class="state-message error" *ngIf="error">{{error}}</div>
-<section class="block" *ngIf="proyectoId"><div class="block-header"><h2 class="block-title">Asignar material</h2></div><div class="form-row"><label>Material disponible<select [(ngModel)]="stockId"><option [ngValue]="null">Seleccione</option><option *ngFor="let s of stock" [ngValue]="s.stock_general_id">{{s.material}} — disponible: {{s.cantidad_disponible}}</option></select></label><label>Cantidad<input type="number" min="0.01" step="0.01" [(ngModel)]="cantidad"></label><button class="btn btn-primary" [disabled]="procesando" (click)="asignar()">Asignar</button></div></section>
-<section class="block" *ngIf="proyectoId"><div class="block-header"><h2 class="block-title">Materiales asignados</h2><span class="chip c-blue">{{asignados.length}} MATERIALES</span></div><div class="table-wrap"><table><thead><tr><th>Material</th><th>Cantidad en proyecto</th><th>Acción</th></tr></thead><tbody><tr *ngFor="let item of asignados"><td><strong>{{item.material}}</strong></td><td>{{item.cantidad_disponible}}</td><td><button class="btn btn-ghost btn-sm" [disabled]="item.cantidad_disponible<=0" (click)="devolver(item)"><mat-icon>keyboard_return</mat-icon>Devolver</button></td></tr></tbody></table><div class="empty-state" *ngIf="!asignados.length">Todavía no hay materiales asignados.</div></div></section></div>
+<div class="registro-compra-page">
+  <div class="page-header">
+    <div><span class="breadcrumb">OBRA360 / PROYECTOS / BOM Y MATERIALES</span><h1>BOM de {{ proyecto?.nombre || 'proyecto' }}</h1><p>Materiales teóricos por operación y stock asignado al proyecto.</p></div>
+    <div class="header-actions">
+      <button class="btn btn-primary" type="button" (click)="abrirImportacion()"><mat-icon>upload_file</mat-icon>Importar BOM CSV</button>
+      <button class="btn btn-ghost" type="button" (click)="volver()"><mat-icon>arrow_back</mat-icon>Volver</button>
+    </div>
+  </div>
+  <div class="state-message error" *ngIf="error && !modalBom">{{ error }}</div>
+  <div class="state-message success" *ngIf="mensaje">{{ mensaje }}</div>
+
+  <section class="block" *ngIf="proyectoId">
+    <div class="block-header"><h2 class="block-title">BOM por operación</h2><span class="chip c-blue">{{ bom.length }} LÍNEAS</span></div>
+    <div class="table-wrap">
+      <table><thead><tr><th>Etapa</th><th>Operación</th><th>Línea</th><th>Material / descripción</th><th>Cantidad teórica</th><th>Unidad</th></tr></thead>
+        <tbody><tr *ngFor="let item of bom"><td class="mono">{{ item.etapa_codigo }}</td><td><strong>{{ item.secuencia }} · {{ item.operacion_nombre }}</strong></td><td class="mono">{{ item.numero_linea }}</td><td>{{ item.descripcion_libre }}</td><td>{{ item.cantidad_teorica }}</td><td>{{ item.unidad }}</td></tr></tbody>
+      </table>
+      <div class="empty-state" *ngIf="!bom.length">Todavía no hay líneas BOM. Podés cargarlas mediante el CSV.</div>
+    </div>
+  </section>
+
+  <section class="block" *ngIf="proyectoId"><div class="block-header"><h2 class="block-title">Asignar desde stock general</h2></div><div class="form-row"><label>Material disponible<select [(ngModel)]="stockId"><option [ngValue]="null">Seleccione</option><option *ngFor="let s of stock" [ngValue]="s.stock_general_id">{{ s.material }} — disponible: {{ s.cantidad_disponible }}</option></select></label><label>Cantidad<input type="number" min="0.01" step="0.01" [(ngModel)]="cantidad"></label><button class="btn btn-primary" [disabled]="procesando" (click)="asignar()">Asignar</button></div></section>
+  <section class="block" *ngIf="proyectoId"><div class="block-header"><h2 class="block-title">Materiales asignados</h2><span class="chip c-blue">{{ asignados.length }} MATERIALES</span></div><div class="table-wrap"><table><thead><tr><th>Material</th><th>Cantidad en proyecto</th><th>Acción</th></tr></thead><tbody><tr *ngFor="let item of asignados"><td><strong>{{ item.material }}</strong></td><td>{{ item.cantidad_disponible }}</td><td><button class="btn btn-ghost btn-sm" [disabled]="item.cantidad_disponible<=0" (click)="devolver(item)"><mat-icon>keyboard_return</mat-icon>Devolver</button></td></tr></tbody></table><div class="empty-state" *ngIf="!asignados.length">Todavía no hay materiales asignados.</div></div></section>
+</div>
+
+<div class="bom-backdrop" *ngIf="modalBom" (click)="cerrarImportacion()"></div>
+<section class="bom-modal" *ngIf="modalBom">
+  <header><div><span class="breadcrumb">IMPORTACIÓN EXCLUSIVA</span><h2>Importar BOM por CSV</h2><p>No modifica operaciones, etapas, responsables ni calendario.</p></div><button type="button" (click)="cerrarImportacion()" aria-label="Cerrar"><mat-icon>close</mat-icon></button></header>
+  <div class="bom-modal-body">
+    <div class="format-hint"><strong>Columnas obligatorias</strong><code>etapa, secuencia_op, nro_linea, descripcion_libre, cantidad_teorica, unidad</code></div>
+    <label class="drop-file"><input type="file" accept=".csv,text/csv" (change)="seleccionarBom($event)"><mat-icon>description</mat-icon><span><strong>{{ archivoBom?.name || 'Seleccionar BOM_Materiales.csv' }}</strong><small>Archivo CSV UTF-8 · máximo 5 MB</small></span></label>
+    <button class="btn btn-primary full" type="button" [disabled]="!archivoBom || procesando" (click)="previsualizarBom()"><mat-icon>fact_check</mat-icon>{{ procesando ? 'Procesando...' : 'Validar y previsualizar' }}</button>
+    <div class="state-message error" *ngIf="error">{{ error }}</div>
+
+    <ng-container *ngIf="previewBom">
+      <div class="preview-summary"><span><small>LÍNEAS</small><strong>{{ previewBom.datos.length }}</strong></span><span><small>ERRORES</small><strong [class.has-errors]="previewBom.errores.length">{{ previewBom.errores.length }}</strong></span><span><small>ADVERTENCIAS</small><strong>{{ previewBom.advertencias.length }}</strong></span></div>
+      <div class="validation-errors" *ngIf="previewBom.errores.length"><div *ngFor="let e of previewBom.errores"><b>Fila {{ e.fila || '—' }} · {{ e.columna }}</b><span>{{ e.mensaje }}</span></div></div>
+      <div class="preview-table" *ngIf="previewBom.datos.length"><table><thead><tr><th>Operación</th><th>Línea</th><th>Descripción</th><th>Cantidad</th><th>UoM</th></tr></thead><tbody><tr *ngFor="let f of filasPreview"><td>{{ f.etapa }}/{{ f.secuencia_op }} · {{ f.operacion_nombre }}</td><td>{{ f.nro_linea }}</td><td>{{ f.descripcion_libre }}</td><td>{{ f.cantidad_teorica }}</td><td>{{ f.unidad }}</td></tr></tbody></table></div>
+      <button class="btn btn-primary full" type="button" [disabled]="previewBom.errores.length || procesando" (click)="importarBom()"><mat-icon>cloud_upload</mat-icon>Confirmar importación BOM</button>
+    </ng-container>
+  </div>
+</section>
