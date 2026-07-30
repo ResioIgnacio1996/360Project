@@ -107,7 +107,9 @@ export class Proyectos implements OnInit {
 
   ubicacion(direccion: any): string[] {
     const partes = String(direccion || '').split(' | ').map(v => v.trim());
-    return partes.length === 4 ? partes : ['', '', '', String(direccion || '')];
+    if (partes.length === 5) return partes;
+    if (partes.length === 4) return [partes[0], partes[1], partes[2], '', partes[3]];
+    return ['', '', '', '', String(direccion || '')];
   }
 
   actualizarProvincias(): void {

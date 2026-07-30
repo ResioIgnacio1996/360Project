@@ -1,1 +1,24 @@
-<div class="registro-compra-form-page"><div class="page-header"><div><span class="breadcrumb">OBRA360 / Proyectos</span><h1>{{id?'Editar':'Nuevo'}} proyecto</h1><p>Complete los datos generales y la ubicación de la obra.</p></div></div><form [formGroup]="form" (ngSubmit)="guardar()" class="block"><div class="block-header"><h2 class="block-title">Datos del proyecto</h2></div><div class="grid"><label>Nombre *<input formControlName="nombre"></label><label>Cliente *<select formControlName="cliente_id"><option [ngValue]="null">Seleccione</option><option *ngFor="let c of clientes" [ngValue]="c.id_cliente">{{c.apellido}}, {{c.nombre}}</option></select></label><label>Fecha de creación/inicio<input type="date" formControlName="fecha_inicio"></label><label>Fecha estimada de entrega<input type="date" formControlName="fecha_fin_estimada"></label><label>Estado<select formControlName="estado"><option>ACTIVO</option><option>PAUSADO</option><option>FINALIZADO</option><option>CANCELADO</option></select></label></div><div class="block-header location-title"><h2 class="block-title">Ubicación</h2></div><div class="grid location-grid"><label>País<input formControlName="pais"></label><label>Provincia<input formControlName="provincia"></label><label>Localidad<input formControlName="localidad"></label><label>Calle y número<input formControlName="calle"></label></div><p class="error" *ngIf="error">{{error}}</p><div class="actions"><button type="button" class="btn btn-ghost" (click)="cancelar()">Cancelar</button><button class="btn btn-primary" [disabled]="guardando">{{guardando?'Guardando...':'Guardar proyecto'}}</button></div></form></div>
+<div class="registro-compra-form-page">
+  <div class="page-header"><div><span class="breadcrumb">OBRA360 / Proyectos</span><h1>{{id?'Editar':'Nuevo'}} proyecto</h1><p>Complete los datos generales y la ubicación de la obra.</p></div></div>
+  <form [formGroup]="form" (ngSubmit)="guardar()" class="block">
+    <div class="block-header"><h2 class="block-title">Datos del proyecto</h2></div>
+    <div class="grid">
+      <label>Nombre *<input formControlName="nombre"><small class="field-error" *ngIf="form.controls.nombre.touched&&form.controls.nombre.invalid">El nombre es obligatorio.</small></label>
+      <div class="client-field"><label>Cliente *<select formControlName="cliente_id"><option [ngValue]="null">Seleccione</option><option *ngFor="let c of clientes" [ngValue]="c.id_cliente">{{c.apellido}}, {{c.nombre}}</option></select></label><button *ngIf="!id" type="button" class="btn btn-ghost btn-sm" (click)="alternarAltaCliente()">{{mostrarAltaCliente?'Cancelar alta':'Crear cliente'}}</button></div>
+      <label>Fecha de creación/inicio<input type="date" formControlName="fecha_inicio"></label>
+      <label *ngIf="id">Fecha estimada de entrega<input type="date" formControlName="fecha_fin_estimada"></label>
+      <label *ngIf="id">Estado<select formControlName="estado"><option>ACTIVO</option><option>PAUSADO</option><option>FINALIZADO</option><option>CANCELADO</option></select></label>
+    </div>
+
+    <section class="quick-client" *ngIf="mostrarAltaCliente" [formGroup]="clienteRapido">
+      <div class="block-header"><h3 class="block-title">Nuevo cliente</h3></div>
+      <div class="grid quick-client-grid"><label>Nombre *<input formControlName="nombre"></label><label>Apellido *<input formControlName="apellido"></label><label>CUIL<input formControlName="cuil"></label><button type="button" class="btn btn-primary" [disabled]="creandoCliente" (click)="crearClienteRapido()">{{creandoCliente?'Creando...':'Crear y seleccionar'}}</button></div>
+      <p class="error" *ngIf="errorCliente">{{errorCliente}}</p>
+    </section>
+
+    <div class="block-header location-title"><h2 class="block-title">Ubicación</h2></div>
+    <div class="grid location-grid"><label>País<input formControlName="pais"></label><label>Provincia<input formControlName="provincia"></label><label>Localidad<input formControlName="localidad"></label><label>Código postal<input formControlName="codigo_postal"></label><label class="street-field">Calle y número<input formControlName="calle"></label></div>
+    <p class="error" *ngIf="error">{{error}}</p>
+    <div class="actions"><button type="button" class="btn btn-ghost" (click)="cancelar()">Cancelar</button><button class="btn btn-primary" [disabled]="guardando">{{guardando?'Guardando...':'Guardar proyecto'}}</button></div>
+  </form>
+</div>
