@@ -37,6 +37,15 @@ export class Programacion implements OnInit, OnDestroy {
     dependencias: [], criterio_cierre: '', descripcion: ''
   };
   busquedaPredecesora = '';
+  sugerenciasPredecesoras: OperacionProgramada[] = [];
+  private nombresOperacion = new Map<number, string>();
+  private excepcionesPorFecha = new Map<string, any>();
+  private rangoGantt = { inicio: Date.now(), dias: 14 };
+  private diasGantt: number[] = Array.from({ length: 14 }, (_, i) => i);
+  private fechasGantt: Date[] = [];
+  private mesesCalculados: Array<{ clave: string; etiqueta: string; inicio: number; dias: number }> = [];
+  private clasesDia: string[] = [];
+  private detallesDia: string[] = [];
   nuevaDuracion = 0;
   fechaNmt = '';
   motivo = '';
@@ -85,6 +94,7 @@ export class Programacion implements OnInit, OnDestroy {
         this.etapasProgramadas = d.etapas || [];
         this.calendario = d.calendario || null;
         this.excepcionesCalendario = d.excepciones_calendario || [];
+        this.precalcularVista();
         if (this.seleccionada)
           this.seleccionada =
             this.operaciones.find((o) => o.operacion_id === this.seleccionada?.operacion_id) ||
@@ -106,26 +116,28 @@ export class Programacion implements OnInit, OnDestroy {
       if (op.responsable_id && op.responsable_nombre) mapa.set(op.responsable_id, op.responsable_nombre);
     return [...mapa].map(([id, nombre]) => ({ id, nombre }));
   }
-  get sugerenciasPredecesoras(): OperacionProgramada[] {
+  actualizarSugerenciasPredecesoras(): void {
     const q = this.busquedaPredecesora.trim().toLowerCase();
     const seleccionadas = new Set<number>(this.nuevaOperacion.dependencias || []);
-    return this.operaciones
+    this.sugerenciasPredecesoras = this.operaciones
       .filter(op => !op.archivada && !seleccionadas.has(Number(op.secuencia)))
       .filter(op => !q || `${op.secuencia} ${op.nombre}`.toLowerCase().includes(q))
       .sort((a, b) => Number(a.secuencia) - Number(b.secuencia));
   }
   nombrePredecesora(secuencia: number): string {
-    return this.operaciones.find(op => Number(op.secuencia) === Number(secuencia))?.nombre || '';
+    return this.nombresOperacion.get(Number(secuencia)) || '';
   }
   agregarPredecesora(op: OperacionProgramada): void {
     const actuales = new Set<number>(this.nuevaOperacion.dependencias || []);
     actuales.add(Number(op.secuencia));
     this.nuevaOperacion.dependencias = [...actuales];
     this.busquedaPredecesora = '';
+    this.actualizarSugerenciasPredecesoras();
   }
   quitarPredecesora(secuencia: number): void {
     this.nuevaOperacion.dependencias =
       (this.nuevaOperacion.dependencias || []).filter((valor: number) => Number(valor) !== Number(secuencia));
+    this.actualizarSugerenciasPredecesoras();
   }
   get filtradas(): OperacionProgramada[] {
     const q = this.busqueda.toLowerCase().trim();
@@ -148,6 +160,13 @@ export class Programacion implements OnInit, OnDestroy {
     return this.operaciones.filter((o) => o.estado_codigo === 'ATRASADA').length;
   }
   get rango(): { inicio: number; dias: number } {
+    return this.rangoGantt;
+  }
+  private precalcularVista(): void {
+    this.nombresOperacion = new Map(this.operaciones.map(op => [Number(op.secuencia), op.nombre]));
+    this.excepcionesPorFecha = new Map(
+      this.excepcionesCalendario.map(item => [String(item.fecha).slice(0, 10), item]),
+    );
     const fs = this.operaciones
       .flatMap((o) => [
         o.fecha_inicio_estimada,
@@ -158,7 +177,24 @@ export class Programacion implements OnInit, OnDestroy {
       .filter(Boolean) as string[];
     const inicio = fs.length ? Math.min(...fs.map(Date.parse)) : Date.now();
     const fin = fs.length ? Math.max(...fs.map(Date.parse)) : inicio + 13 * 86400000;
-    return { inicio, dias: Math.max(14, Math.ceil((fin - inicio) / 86400000) + 1) };
+    this.rangoGantt = { inicio, dias: Math.max(14, Math.ceil((fin - inicio) / 86400000) + 1) };
+    this.diasGantt = Array.from({ length: this.rangoGantt.dias }, (_, i) => i);
+    this.fechasGantt = this.diasGantt.map(i => new Date(this.rangoGantt.inicio + i * 86400000 + 12 * 3600000));
+    this.mesesCalculados = [];
+    for (const dia of this.diasGantt) {
+      const fecha = this.fechasGantt[dia];
+      const clave = `${fecha.getUTCFullYear()}-${fecha.getUTCMonth()}`;
+      const actual = this.mesesCalculados.at(-1);
+      if (actual?.clave === clave) actual.dias++;
+      else this.mesesCalculados.push({
+        clave,
+        etiqueta: `${String(fecha.getUTCMonth() + 1).padStart(2, '0')}/${fecha.getUTCFullYear()}`,
+        inicio: dia,
+        dias: 1,
+      });
+    }
+    this.clasesDia = this.diasGantt.map(i => this.calcularClaseDia(i));
+    this.detallesDia = this.diasGantt.map(i => this.calcularDetalleDia(i));
   }
   get anchoGanttPx(): number {
     return 210 + this.rango.dias * 54;
@@ -167,10 +203,10 @@ export class Programacion implements OnInit, OnDestroy {
     return this.rango.dias * 54;
   }
   dias(): number[] {
-    return Array.from({ length: this.rango.dias }, (_, i) => i);
+    return this.diasGantt;
   }
   fechaDia(i: number): Date {
-    return new Date(this.rango.inicio + i * 86400000 + 12 * 3600000);
+    return this.fechasGantt[i];
   }
   nombreDiaCorto(i: number): string {
     return this.calendarioService.obtenerNombreDiaCorto(this.fechaDia(i));
@@ -179,21 +215,7 @@ export class Programacion implements OnInit, OnDestroy {
     return this.fechaDia(i).toISOString().slice(0, 10) === this.hoyISO;
   }
   mesesGantt(): Array<{ clave: string; etiqueta: string; inicio: number; dias: number }> {
-    const grupos: Array<{ clave: string; etiqueta: string; inicio: number; dias: number }> = [];
-    for (const dia of this.dias()) {
-      const fecha = this.fechaDia(dia);
-      const clave = `${fecha.getUTCFullYear()}-${fecha.getUTCMonth()}`;
-      const actual = grupos.at(-1);
-      if (actual?.clave === clave) actual.dias++;
-      else
-        grupos.push({
-          clave,
-          etiqueta: `${String(fecha.getUTCMonth() + 1).padStart(2, '0')}/${fecha.getUTCFullYear()}`,
-          inicio: dia,
-          dias: 1,
-        });
-    }
-    return grupos;
+    return this.mesesCalculados;
   }
   tipoDia(i: number): number {
     const fecha = this.fechaDia(i);
@@ -218,15 +240,21 @@ export class Programacion implements OnInit, OnDestroy {
     );
   }
   claseDia(i: number): string {
+    return this.clasesDia[i] || '';
+  }
+  private calcularClaseDia(i: number): string {
     const base = this.tipoDia(i) === 0 ? 'no-laborable' : this.tipoDia(i) === 2 ? 'parcial' : 'completa';
     const excepcion = this.excepcionDia(i);
     return excepcion ? `${base} excepcion excepcion-${String(excepcion.tipo).toLowerCase()}` : base;
   }
   excepcionDia(i: number): any | null {
     const iso = this.fechaDia(i).toISOString().slice(0, 10);
-    return this.excepcionesCalendario.find(item => String(item.fecha).slice(0, 10) === iso) || null;
+    return this.excepcionesPorFecha.get(iso) || null;
   }
   detalleDia(i: number): string {
+    return this.detallesDia[i] || '';
+  }
+  private calcularDetalleDia(i: number): string {
     const excepcion = this.excepcionDia(i);
     if (!excepcion) {
       const tipo = this.tipoDia(i);
@@ -269,8 +297,15 @@ export class Programacion implements OnInit, OnDestroy {
       dependencias: [], criterio_cierre: '', descripcion: ''
     };
     this.busquedaPredecesora = '';
+    this.actualizarSugerenciasPredecesoras();
     this.modal = 'crear';
   }
+  trackOperacion(_: number, op: OperacionProgramada): number { return op.operacion_id; }
+  trackEtapa(_: number, etapa: EtapaProgramada): number { return etapa.etapa_id; }
+  trackDia(_: number, dia: number): number { return dia; }
+  trackMes(_: number, mes: { clave: string }): string { return mes.clave; }
+  trackSecuencia(_: number, op: OperacionProgramada): number { return Number(op.secuencia); }
+  trackNumero(_: number, valor: number): number { return Number(valor); }
   abrirEditarOperacion(): void {
     if (!this.seleccionada || Number(this.seleccionada.pct_avance_actual) !== 0) return;
     this.operacionEditada = {

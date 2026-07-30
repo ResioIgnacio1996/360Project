@@ -37,7 +37,7 @@
     </div>
     <button
       class="stage-card"
-      *ngFor="let etapa of etapasProgramadas"
+      *ngFor="let etapa of etapasProgramadas; trackBy: trackEtapa"
       [class.active]="filtroEtapa === etapa.nombre"
       [title]="'Aporta ' + etapa.aporte_proyecto + '% al proyecto'"
       (click)="filtroEtapa = filtroEtapa === etapa.nombre ? 'TODAS' : etapa.nombre"
@@ -98,7 +98,7 @@
           </thead>
           <tbody>
             <tr
-              *ngFor="let op of filtradas"
+              *ngFor="let op of filtradas; trackBy: trackOperacion"
               (click)="seleccionar(op)"
               [class.selected]="seleccionada?.operacion_id === op.operacion_id"
             >
@@ -162,24 +162,24 @@
           <div class="g-head timeline-head">
             <div class="months">
               <span
-                *ngFor="let mes of mesesGantt()"
+                *ngFor="let mes of mesesGantt(); trackBy: trackMes"
                 [style.grid-column]="mes.inicio + 1 + ' / span ' + mes.dias"
               >MES {{ mes.etiqueta }}</span>
             </div>
             <div class="dates">
-              <span *ngFor="let d of dias()" [ngClass]="claseDia(d)" [class.es-hoy]="esHoy(d)" [title]="detalleDia(d)">
+              <span *ngFor="let d of dias(); trackBy: trackDia" [ngClass]="claseDia(d)" [class.es-hoy]="esHoy(d)" [title]="detalleDia(d)">
                 <em>{{ nombreDiaCorto(d) }}</em>
                 <b>{{ fechaDia(d) | date: 'dd':'UTC' }}</b>
               </span>
             </div>
           </div>
-          <ng-container *ngFor="let op of filtradas"
+          <ng-container *ngFor="let op of filtradas; trackBy: trackOperacion"
             ><button class="g-label" (click)="seleccionar(op)">
               <b>{{ op.secuencia }}</b
               ><span>{{ op.nombre }}</span>
             </button>
             <div class="track" [class.active]="seleccionada?.operacion_id === op.operacion_id">
-              <i *ngFor="let d of dias()" [ngClass]="claseDia(d)" [class.es-hoy]="esHoy(d)" [title]="detalleDia(d)"></i
+              <i *ngFor="let d of dias(); trackBy: trackDia" [ngClass]="claseDia(d)" [class.es-hoy]="esHoy(d)" [title]="detalleDia(d)"></i
               ><button
                 *ngIf="capas.estimado && op.fecha_inicio_estimada"
                 class="bar estimated"
@@ -316,12 +316,13 @@
         <label class="wide predecessor-field">OPERACIÓN PREDECESORA
           <input
             [(ngModel)]="busquedaPredecesora"
+            (ngModelChange)="actualizarSugerenciasPredecesoras()"
             name="buscarPredecesora"
             autocomplete="off"
             placeholder="Buscar por secuencia o nombre…"
           />
           <div class="predecessor-suggestions predecessor-list" *ngIf="sugerenciasPredecesoras.length">
-            <button type="button" *ngFor="let op of sugerenciasPredecesoras" (click)="agregarPredecesora(op)">
+            <button type="button" *ngFor="let op of sugerenciasPredecesoras; trackBy: trackSecuencia" (click)="agregarPredecesora(op)">
               <b>{{ op.secuencia }}</b><span>{{ op.nombre }}</span><small>{{ op.etapa_codigo }}</small>
             </button>
           </div>
@@ -329,7 +330,7 @@
             No hay operaciones disponibles que coincidan con la búsqueda.
           </div>
           <div class="selected-predecessors" *ngIf="nuevaOperacion.dependencias.length">
-            <span *ngFor="let secuencia of nuevaOperacion.dependencias">
+            <span *ngFor="let secuencia of nuevaOperacion.dependencias; trackBy: trackNumero">
               <b>{{ secuencia }}</b> · {{ nombrePredecesora(secuencia) }}
               <button type="button" (click)="quitarPredecesora(secuencia)" title="Quitar">×</button>
             </span>
