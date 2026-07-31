@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { MatIconModule } from '@angular/material/icon';
 import { AvanceOperacionesService } from '../../core/services/avance-operaciones/avance-operaciones';
+import { Auth } from '../../core/services/auth/auth';
 
 @Component({
   selector: 'app-avance-operaciones',
@@ -19,8 +20,10 @@ export class AvanceOperaciones implements OnInit {
   busqueda = ''; estado = 'TODAS'; etapa = 'TODAS'; orden = 'secuencia'; direccion: 'asc' | 'desc' = 'asc';
   porcentaje = 0; cantidadHoy: number | null = null; nota = ''; fecha = new Date().toISOString().slice(0, 10);
   consumosHoy: Record<number, number | null> = {}; fotoNombre = ''; fotoPreview = '';
+  gestionFecha: 'iniciar' | 'editar-inicio' | 'finalizar' | 'editar-fin' | null = null;
+  fechaGestion = ''; motivoGestion = '';
 
-  constructor(private route: ActivatedRoute, private router: Router, private service: AvanceOperacionesService) {
+  constructor(private route: ActivatedRoute, private router: Router, private service: AvanceOperacionesService, private auth: Auth) {
     this.proyectoId = Number(this.route.snapshot.paramMap.get('id'));
   }
   ngOnInit(): void { this.cargar(); }
@@ -41,7 +44,10 @@ export class AvanceOperaciones implements OnInit {
   get etapas(): string[] { return [...new Set(this.operaciones.map(o => o.etapa_nombre))]; }
   get estados(): string[] { return [...new Set(this.operaciones.map(o => o.estado_codigo))]; }
   get enCurso(): number { return this.operaciones.filter(o => o.estado_codigo === 'EN_CURSO').length; }
-  get finalizadas(): number { return this.operaciones.filter(o => ['FINALIZADA', 'COMPLETADA'].includes(o.estado_codigo)).length; }
+  get finalizadas(): number { return this.operaciones.filter(o => ['FINALIZADA', 'COMPLETADA', 'COMPLETA'].includes(o.estado_codigo)).length; }
+  get puedeCorregirFechas(): boolean {
+    return ['OPERARIO', 'DEMO'].includes(String(this.auth.getUsuarioActual()?.rol_nombre || '').toUpperCase());
+  }
   get pendientes(): number { return this.operaciones.filter(o => !o.fecha_inicio_real).length; }
   get avanceGeneral(): number {
     return this.operaciones.length
@@ -81,7 +87,7 @@ export class AvanceOperaciones implements OnInit {
   iniciarFila(event: Event, op: any): void {
     event.stopPropagation();
     if (op.fecha_inicio_real || this.guardando) return;
-    this.seleccionada = op; this.prepararFormulario(); this.iniciar();
+    this.seleccionada = op; this.prepararFormulario(); this.abrirGestionFecha('iniciar');
   }
   prepararFormulario(): void {
     this.porcentaje = Number(this.seleccionada?.pct_avance_actual || 0); this.cantidadHoy = null; this.nota = '';
@@ -93,7 +99,32 @@ export class AvanceOperaciones implements OnInit {
   cerrarDetalle(): void { this.seleccionada = null; }
   iniciar(): void {
     if (!this.seleccionada || this.seleccionada.fecha_inicio_real) return;
-    this.ejecutar(this.service.iniciar(this.seleccionada.operacion_id, this.fecha));
+    this.abrirGestionFecha('iniciar');
+  }
+  abrirGestionFecha(tipo: 'iniciar' | 'editar-inicio' | 'finalizar' | 'editar-fin'): void {
+    if (!this.seleccionada) return;
+    this.gestionFecha = tipo;
+    this.motivoGestion = '';
+    this.fechaGestion = tipo.includes('inicio')
+      ? (this.seleccionada.fecha_inicio_real || this.fecha)
+      : (this.seleccionada.fecha_fin_real || this.fecha);
+  }
+  cerrarGestionFecha(): void { this.gestionFecha = null; }
+  confirmarGestionFecha(): void {
+    if (!this.seleccionada || !this.gestionFecha || !this.fechaGestion) return;
+    const id = this.seleccionada.operacion_id;
+    let peticion;
+    if (this.gestionFecha === 'iniciar') peticion = this.service.iniciar(id, this.fechaGestion);
+    else if (this.gestionFecha === 'finalizar') peticion = this.service.finalizar(id, this.fechaGestion);
+    else if (this.gestionFecha === 'editar-inicio') {
+      if (!this.motivoGestion.trim()) return;
+      peticion = this.service.modificarInicio(id, { fecha_inicio_real: this.fechaGestion, motivo: this.motivoGestion });
+    } else {
+      if (!this.motivoGestion.trim()) return;
+      peticion = this.service.modificarFin(id, { fecha_fin_real: this.fechaGestion, motivo: this.motivoGestion });
+    }
+    this.gestionFecha = null;
+    this.ejecutar(peticion);
   }
   guardarAvance(): void {
     if (!this.seleccionada) return;

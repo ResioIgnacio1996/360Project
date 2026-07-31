@@ -5,10 +5,8 @@
       <div>
         <span class="eyebrow">EJECUCIÓN DE OBRA</span>
         <h1>Avance de Operaciones</h1>
-        <p>{{ proyecto?.nombre }} <span *ngIf="proyecto?.version_codigo">· Plan {{ proyecto.version_codigo }}</span></p>
-      </div>
-      <div class="header-kpi">
-        <small>AVANCE GENERAL</small><strong>{{ avanceGeneral | number:'1.0-1' }}%</strong>
+        <p>Operaciones en curso y disponibles para iniciar</p>
+        <small class="project-context">{{ proyecto?.nombre }} <span *ngIf="proyecto?.version_codigo">· Plan {{ proyecto.version_codigo }}</span></small>
       </div>
     </div>
   </header>
@@ -18,14 +16,6 @@
   <div class="loading" *ngIf="cargando">Cargando operaciones reales del proyecto...</div>
 
   <main *ngIf="!cargando">
-    <div class="summary-strip" *ngIf="operaciones.length">
-      <div class="summary-card teal"><span class="summary-icon"><mat-icon>analytics</mat-icon></span><p><small>AVANCE PROMEDIO</small><strong>{{ avanceGeneral | number:'1.0-1' }}%</strong></p></div>
-      <div class="summary-card blue"><span class="summary-icon"><mat-icon>format_list_numbered</mat-icon></span><p><small>OPERACIONES DEL PLAN</small><strong>{{ operaciones.length }}</strong></p></div>
-      <div class="summary-card orange"><span class="summary-icon"><mat-icon>construction</mat-icon></span><p><small>EN EJECUCIÓN</small><strong>{{ enCurso }}</strong></p></div>
-      <div class="summary-card green"><span class="summary-icon"><mat-icon>task_alt</mat-icon></span><p><small>FINALIZADAS</small><strong>{{ finalizadas }}</strong></p></div>
-      <div class="summary-card gray"><span class="summary-icon"><mat-icon>schedule</mat-icon></span><p><small>SIN INICIAR</small><strong>{{ pendientes }}</strong></p></div>
-    </div>
-
     <div class="toolbar" *ngIf="operaciones.length">
       <label class="search"><mat-icon>search</mat-icon><input [(ngModel)]="busqueda" placeholder="Buscar operación, etapa o responsable"></label>
       <select [(ngModel)]="etapa" aria-label="Filtrar por etapa"><option value="TODAS">Todas las etapas</option><option *ngFor="let e of etapas" [value]="e">{{ e }}</option></select>
@@ -105,8 +95,15 @@
         <div><dt>Meta</dt><dd>{{ seleccionada.cantidad_meta || '—' }}</dd></div>
         <div><dt>Dependencias</dt><dd>{{ seleccionada.dependencias_secuencia || 'Sin predecesoras' }}</dd></div>
         <div><dt>Inicio real</dt><dd>{{ (seleccionada.fecha_inicio_real | date:'dd/MM/yyyy') || 'Pendiente' }}</dd></div>
+        <div><dt>Final real</dt><dd>{{ (seleccionada.fecha_fin_real | date:'dd/MM/yyyy') || 'Pendiente' }}</dd></div>
       </dl>
       <button class="outline full" *ngIf="!seleccionada.fecha_inicio_real" type="button" (click)="iniciar()" [disabled]="guardando"><mat-icon>play_arrow</mat-icon> Iniciar operación hoy</button>
+      <div class="date-actions" *ngIf="seleccionada.fecha_inicio_real">
+        <button class="outline" *ngIf="puedeCorregirFechas" type="button" (click)="abrirGestionFecha('editar-inicio')"><mat-icon>edit_calendar</mat-icon> Modificar inicio</button>
+        <button class="primary" *ngIf="!seleccionada.fecha_fin_real" type="button" (click)="abrirGestionFecha('finalizar')"><mat-icon>flag</mat-icon> Finalizar operación</button>
+        <button class="outline" *ngIf="seleccionada.fecha_fin_real && puedeCorregirFechas" type="button" (click)="abrirGestionFecha('editar-fin')"><mat-icon>event_repeat</mat-icon> Modificar final</button>
+      </div>
+      <p class="role-note" *ngIf="seleccionada.fecha_inicio_real && !puedeCorregirFechas">Tu rol puede ejecutar la operación, pero no corregir sus fechas reales.</p>
     </section>
 
     <section class="panel advance">
@@ -150,3 +147,27 @@
     </section>
   </div>
 </aside>
+
+<div class="date-modal-backdrop" *ngIf="gestionFecha" (click)="cerrarGestionFecha()">
+  <form class="date-modal" (click)="$event.stopPropagation()" (ngSubmit)="confirmarGestionFecha()">
+    <header>
+      <span class="mono">OP {{ seleccionada?.secuencia }}</span>
+      <h2>{{ gestionFecha === 'iniciar' ? 'Confirmar inicio de operación' : gestionFecha === 'finalizar' ? 'Finalizar operación' : gestionFecha === 'editar-inicio' ? 'Fecha de Inicio Real' : 'Fecha de Finalización Real' }}</h2>
+      <p>{{ seleccionada?.nombre }}</p>
+    </header>
+    <label>{{ gestionFecha === 'iniciar' || gestionFecha === 'editar-inicio' ? 'FECHA DE INICIO REAL' : 'FECHA DE FINALIZACIÓN REAL' }}
+      <input type="date" [(ngModel)]="fechaGestion" name="fechaGestion" [max]="fecha" required>
+      <small>Máximo: hoy. No se permiten fechas futuras.</small>
+    </label>
+    <label *ngIf="gestionFecha === 'editar-inicio' || gestionFecha === 'editar-fin'">MOTIVO DE LA CORRECCIÓN
+      <textarea rows="3" [(ngModel)]="motivoGestion" name="motivoGestion" required placeholder="Justificación auditable del cambio"></textarea>
+    </label>
+    <div class="date-warning" *ngIf="gestionFecha === 'finalizar'">La operación pasará a COMPLETA con avance 100% y se registrará la fecha final real.</div>
+    <footer>
+      <button class="outline" type="button" (click)="cerrarGestionFecha()">Cancelar</button>
+      <button class="primary" type="submit" [disabled]="guardando || ((gestionFecha === 'editar-inicio' || gestionFecha === 'editar-fin') && !motivoGestion.trim())">
+        {{ gestionFecha === 'iniciar' ? 'Sí, iniciar operación' : gestionFecha === 'finalizar' ? 'Confirmar finalización' : 'Guardar fecha' }}
+      </button>
+    </footer>
+  </form>
+</div>

@@ -2,6 +2,9 @@ const { conectarDB, sql } = require('../DB/dbConection');
 
 const idValido = value => Number.isInteger(Number(value)) && Number(value) > 0;
 const fechaISO = value => value ? new Date(value).toISOString().slice(0, 10) : null;
+const hoyISO = () => new Date().toISOString().slice(0, 10);
+const puedeCorregirFechas = usuario => ['OPERARIO', 'DEMO'].includes(String(usuario?.rol_nombre || '').toUpperCase());
+const fechaValida = fecha => /^\d{4}-\d{2}-\d{2}$/.test(String(fecha || '')) && String(fecha) <= hoyISO();
 const sumarDiasLaborales = (inicio, horas, calendario, excepciones) => {
   if (!inicio) return null;
   const fecha = new Date(`${fechaISO(inicio)}T12:00:00Z`);
@@ -112,6 +115,7 @@ const obtener = async (req, res) => {
 const iniciar = async (req, res) => {
   if (!idValido(req.params.id)) return res.status(400).json({ message: 'Operación inválida' });
   const fecha = req.body.fecha_inicio_real || new Date().toISOString().slice(0, 10);
+  if (!fechaValida(fecha)) return res.status(400).json({ message: 'La fecha de inicio no puede ser futura' });
   try {
     const pool = await conectarDB();
     const tx = new sql.Transaction(pool);
@@ -132,6 +136,100 @@ const iniciar = async (req, res) => {
     res.json({ message: 'Operación iniciada' });
   } catch (error) {
     res.status(500).json({ message: 'No se pudo iniciar la operación', error: error.message });
+  }
+};
+
+const modificarFechaInicio = async (req, res) => {
+  if (!idValido(req.params.id) || !puedeCorregirFechas(req.usuario))
+    return res.status(403).json({ message: 'Tu rol no permite corregir fechas reales' });
+  const fecha = String(req.body.fecha_inicio_real || '');
+  const motivo = String(req.body.motivo || '').trim();
+  if (!fechaValida(fecha) || !motivo)
+    return res.status(400).json({ message: 'La fecha no puede ser futura y el motivo es obligatorio' });
+  let tx;
+  try {
+    const pool = await conectarDB(); tx = new sql.Transaction(pool); await tx.begin();
+    const actual = await new sql.Request(tx).input('id', sql.BigInt, req.params.id)
+      .query('SELECT fecha_inicio_real,fecha_fin_real FROM Operacion WHERE operacion_id=@id AND ISNULL(archivada,0)=0');
+    if (!actual.recordset.length || !actual.recordset[0].fecha_inicio_real) {
+      await tx.rollback(); return res.status(409).json({ message: 'Primero tenés que iniciar la operación' });
+    }
+    if (actual.recordset[0].fecha_fin_real && fecha > fechaISO(actual.recordset[0].fecha_fin_real)) {
+      await tx.rollback(); return res.status(400).json({ message: 'El inicio no puede ser posterior a la finalización' });
+    }
+    const anterior = fechaISO(actual.recordset[0].fecha_inicio_real);
+    await new sql.Request(tx).input('id', sql.BigInt, req.params.id).input('fecha', sql.Date, fecha)
+      .query('UPDATE Operacion SET fecha_inicio_real=@fecha,fecha_actualizacion=SYSDATETIME() WHERE operacion_id=@id');
+    await new sql.Request(tx).input('id', sql.BigInt, req.params.id).input('u', sql.BigInt, req.usuario.usuario_id)
+      .input('a', sql.NVarChar(20), anterior).input('n', sql.NVarChar(20), fecha).input('m', sql.NVarChar(sql.MAX), motivo)
+      .query(`INSERT INTO HistorialOperacion(operacion_id,usuario_id,campo_modificado,valor_anterior,valor_nuevo,motivo)
+              VALUES(@id,@u,'fecha_inicio_real',@a,@n,@m)`);
+    await tx.commit(); res.json({ message: 'Fecha de inicio real actualizada' });
+  } catch (error) {
+    if (tx?._aborted === false) try { await tx.rollback(); } catch {}
+    res.status(500).json({ message: 'No se pudo modificar la fecha de inicio', error: error.message });
+  }
+};
+
+const finalizar = async (req, res) => {
+  if (!idValido(req.params.id)) return res.status(400).json({ message: 'Operación inválida' });
+  const fecha = String(req.body.fecha_fin_real || hoyISO());
+  if (!fechaValida(fecha)) return res.status(400).json({ message: 'La fecha de finalización no puede ser futura' });
+  let tx;
+  try {
+    const pool = await conectarDB(); tx = new sql.Transaction(pool); await tx.begin();
+    const actual = await new sql.Request(tx).input('id', sql.BigInt, req.params.id)
+      .query('SELECT operacion_id,proyecto_id,fecha_inicio_real,fecha_fin_real,pct_avance_actual FROM Operacion WHERE operacion_id=@id AND ISNULL(archivada,0)=0');
+    if (!actual.recordset.length) { await tx.rollback(); return res.status(404).json({ message: 'Operación no encontrada' }); }
+    const op = actual.recordset[0];
+    if (!op.fecha_inicio_real) { await tx.rollback(); return res.status(409).json({ message: 'Primero tenés que iniciar la operación' }); }
+    if (op.fecha_fin_real) { await tx.rollback(); return res.status(409).json({ message: 'La operación ya está finalizada' }); }
+    if (fecha < fechaISO(op.fecha_inicio_real)) { await tx.rollback(); return res.status(400).json({ message: 'El fin no puede ser anterior al inicio' }); }
+    await new sql.Request(tx).input('id', sql.BigInt, req.params.id).input('fecha', sql.Date, fecha)
+      .query(`UPDATE Operacion SET fecha_fin_real=@fecha,pct_avance_actual=100,
+              estado_id=COALESCE((SELECT TOP 1 estado_id FROM estado_operacion WHERE codigo='COMPLETA'),estado_id),
+              fecha_actualizacion=SYSDATETIME() WHERE operacion_id=@id`);
+    await new sql.Request(tx).input('op', sql.BigInt, op.operacion_id).input('p', sql.BigInt, op.proyecto_id)
+      .input('u', sql.BigInt, req.usuario.usuario_id).input('ant', sql.Decimal(5,2), Number(op.pct_avance_actual || 0))
+      .input('f', sql.Date, fecha).query(`INSERT INTO AvanceOperacion(operacion_id,proyecto_id,registrado_por,
+        pct_avance_nuevo,pct_avance_anterior,fecha_registro,es_primer_avance,nota,es_correccion)
+        VALUES(@op,@p,@u,100,@ant,@f,0,'Finalización de operación',0)`);
+    await tx.commit(); res.json({ message: 'Operación finalizada' });
+  } catch (error) {
+    if (tx?._aborted === false) try { await tx.rollback(); } catch {}
+    res.status(500).json({ message: 'No se pudo finalizar la operación', error: error.message });
+  }
+};
+
+const modificarFechaFin = async (req, res) => {
+  if (!idValido(req.params.id) || !puedeCorregirFechas(req.usuario))
+    return res.status(403).json({ message: 'Tu rol no permite corregir fechas reales' });
+  const fecha = String(req.body.fecha_fin_real || '');
+  const motivo = String(req.body.motivo || '').trim();
+  if (!fechaValida(fecha) || !motivo)
+    return res.status(400).json({ message: 'La fecha no puede ser futura y el motivo es obligatorio' });
+  let tx;
+  try {
+    const pool = await conectarDB(); tx = new sql.Transaction(pool); await tx.begin();
+    const actual = await new sql.Request(tx).input('id', sql.BigInt, req.params.id)
+      .query('SELECT fecha_inicio_real,fecha_fin_real FROM Operacion WHERE operacion_id=@id AND ISNULL(archivada,0)=0');
+    if (!actual.recordset.length || !actual.recordset[0].fecha_fin_real) {
+      await tx.rollback(); return res.status(409).json({ message: 'Primero tenés que finalizar la operación' });
+    }
+    if (fecha < fechaISO(actual.recordset[0].fecha_inicio_real)) {
+      await tx.rollback(); return res.status(400).json({ message: 'El fin no puede ser anterior al inicio' });
+    }
+    const anterior = fechaISO(actual.recordset[0].fecha_fin_real);
+    await new sql.Request(tx).input('id', sql.BigInt, req.params.id).input('fecha', sql.Date, fecha)
+      .query('UPDATE Operacion SET fecha_fin_real=@fecha,fecha_actualizacion=SYSDATETIME() WHERE operacion_id=@id');
+    await new sql.Request(tx).input('id', sql.BigInt, req.params.id).input('u', sql.BigInt, req.usuario.usuario_id)
+      .input('a', sql.NVarChar(20), anterior).input('n', sql.NVarChar(20), fecha).input('m', sql.NVarChar(sql.MAX), motivo)
+      .query(`INSERT INTO HistorialOperacion(operacion_id,usuario_id,campo_modificado,valor_anterior,valor_nuevo,motivo)
+              VALUES(@id,@u,'fecha_fin_real',@a,@n,@m)`);
+    await tx.commit(); res.json({ message: 'Fecha de finalización actualizada' });
+  } catch (error) {
+    if (tx?._aborted === false) try { await tx.rollback(); } catch {}
+    res.status(500).json({ message: 'No se pudo modificar la fecha final', error: error.message });
   }
 };
 
@@ -200,4 +298,4 @@ const registrarConsumos = async (req, res) => {
   }
 };
 
-module.exports = { obtener, iniciar, registrarAvance, registrarConsumos };
+module.exports = { obtener, iniciar, modificarFechaInicio, finalizar, modificarFechaFin, registrarAvance, registrarConsumos };

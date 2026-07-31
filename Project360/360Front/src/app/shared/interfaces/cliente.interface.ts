@@ -3,4 +3,5 @@ export interface Cliente {
   nombre: string;
   apellido: string;
   cuil: string;
+  razon_social?: string;
 }

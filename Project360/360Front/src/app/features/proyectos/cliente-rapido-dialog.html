@@ -1,0 +1,8 @@
+<h2 mat-dialog-title>Nuevo cliente</h2>
+<mat-dialog-content [formGroup]="form">
+  <p class="dialog-description">Complete los datos mínimos para crear y seleccionar el cliente.</p>
+  <mat-form-field appearance="outline"><mat-label>Razón social</mat-label><input matInput formControlName="razon_social" autocomplete="organization"><mat-error *ngIf="form.controls.razon_social.hasError('required')">La razón social es obligatoria.</mat-error></mat-form-field>
+  <mat-form-field appearance="outline"><mat-label>CUIL / CUIT</mat-label><input matInput formControlName="cuil" autocomplete="off"></mat-form-field>
+  <p class="dialog-error" *ngIf="error">{{error}}</p>
+</mat-dialog-content>
+<mat-dialog-actions align="end"><button mat-button type="button" [mat-dialog-close]="null" [disabled]="guardando">Cancelar</button><button mat-flat-button type="button" color="primary" [disabled]="guardando" (click)="guardar()">{{guardando?'Creando...':'Crear cliente'}}</button></mat-dialog-actions>

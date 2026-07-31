@@ -73,6 +73,14 @@
   margin: 6px 0 0;
   color: #a9bbce;
 }
+.project-context {
+  display: block;
+  margin-top: 5px;
+  color: #7892ad;
+  font: 700 9px 'DM Mono', monospace;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
 .header-kpi {
   border-left: 1px solid #45617e;
   padding: 2px 20px 2px 28px;
@@ -177,7 +185,9 @@
 .toolbar {
   display: flex;
   gap: 8px;
-  padding: 16px 25px 12px;
+  padding: 14px 25px 12px;
+  background: var(--surface-card-2);
+  border-bottom: 1px solid var(--border-2);
 }
 .toolbar select,
 .search {
@@ -1222,3 +1232,13 @@
 .no-plan-project {
   border-left-color: var(--primary);
 }
+.status.estado-pendiente,.status.estado-archivada{color:var(--text-secondary);background:var(--surface-hover)}
+.status.estado-en-curso{color:var(--orange);background:color-mix(in srgb,var(--orange) 14%,transparent)}
+.status.estado-completa,.status.estado-completada,.status.estado-finalizada{color:var(--green);background:color-mix(in srgb,var(--green) 14%,transparent)}
+.status.estado-atrasada,.status.estado-bloqueada{color:var(--red);background:color-mix(in srgb,var(--red) 14%,transparent)}
+.sheet-row.estado-pendiente,.sheet-row.estado-archivada{border-left-color:var(--border-3)}
+.sheet-row.estado-en-curso{border-left-color:var(--orange)}
+.sheet-row.estado-completa,.sheet-row.estado-completada,.sheet-row.estado-finalizada{border-left-color:var(--green)}
+.sheet-row.estado-atrasada,.sheet-row.estado-bloqueada{border-left-color:var(--red)}
+.date-actions{display:flex;flex-wrap:wrap;gap:7px;margin-top:8px}.date-actions button{flex:1;min-width:145px;display:flex;align-items:center;justify-content:center;gap:6px;padding:9px;border-radius:4px;font:700 8px var(--font-tech)}.date-actions mat-icon{font-size:16px;width:16px;height:16px}.role-note{margin:8px 0 0;padding:7px 8px;border-left:2px solid var(--yellow);background:color-mix(in srgb,var(--yellow) 7%,transparent);color:var(--text-muted);font:8px/1.4 var(--font-tech)}
+.date-modal-backdrop{position:fixed;inset:0;z-index:2100;display:grid;place-items:center;padding:16px;background:color-mix(in srgb,var(--bg) 88%,transparent)}.date-modal{width:430px;max-width:94vw;padding:22px;border:1px solid var(--border-3);border-top:2px solid var(--primary);border-radius:7px;background:var(--surface-card);box-shadow:0 22px 60px #000a}.date-modal header{margin-bottom:16px}.date-modal header span{font-size:8px;color:var(--primary)}.date-modal h2{margin:4px 0;font-size:18px}.date-modal header p{margin:0;color:var(--text-muted);font-size:10px}.date-modal label{display:flex;flex-direction:column;gap:5px;margin:11px 0;color:var(--text-muted);font:700 8px var(--font-tech)}.date-modal input,.date-modal textarea{padding:9px;border:1px solid var(--border-2);border-radius:4px;background:var(--surface-card-2);color:var(--text)}.date-modal label small{font-size:7px;font-weight:400}.date-warning{padding:9px;border:1px solid var(--yellow);border-radius:4px;background:color-mix(in srgb,var(--yellow) 7%,transparent);color:var(--yellow);font:8px/1.4 var(--font-tech)}.date-modal footer{display:flex;justify-content:flex-end;gap:7px;margin-top:17px}.date-modal footer button{padding:9px 13px;border-radius:4px;font:700 8px var(--font-tech)}

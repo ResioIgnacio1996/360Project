@@ -9,7 +9,8 @@ const getClientes = async (req, res) => {
                 id_cliente,
                 nombre,
                 apellido,
-                cuil
+                cuil,
+                LTRIM(RTRIM(CONCAT(NULLIF(apellido, ''), ' ', nombre))) AS razon_social
             FROM Cliente
             ORDER BY apellido, nombre
         `);
@@ -37,7 +38,8 @@ const getClienteById = async (req, res) => {
                     id_cliente,
                     nombre,
                     apellido,
-                    cuil
+                    cuil,
+                    LTRIM(RTRIM(CONCAT(NULLIF(apellido, ''), ' ', nombre))) AS razon_social
                 FROM Cliente
                 WHERE id_cliente = @id_cliente
             `);
@@ -61,15 +63,13 @@ const getClienteById = async (req, res) => {
 const createCliente = async (req, res) => {
     try {
 
-        const {
-            nombre,
-            apellido,
-            cuil
-        } = req.body;
+        const { razon_social, cuil } = req.body;
+        const nombre = razon_social?.trim() || req.body.nombre?.trim();
+        const apellido = razon_social ? '' : req.body.apellido?.trim();
 
-        if (!nombre || !apellido) {
+        if (!nombre || (!razon_social && !apellido)) {
             return res.status(400).json({
-                message: 'Nombre y apellido son obligatorios'
+                message: razon_social !== undefined ? 'La razón social es obligatoria' : 'Nombre y apellido son obligatorios'
             });
         }
 
