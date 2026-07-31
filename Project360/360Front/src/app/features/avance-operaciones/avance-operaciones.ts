@@ -22,6 +22,7 @@ export class AvanceOperaciones implements OnInit {
   consumosHoy: Record<number, number | null> = {}; fotoNombre = ''; fotoPreview = '';
   gestionFecha: 'iniciar' | 'editar-inicio' | 'finalizar' | 'editar-fin' | null = null;
   fechaGestion = ''; motivoGestion = '';
+  confirmacionConsumo = false;
 
   constructor(private route: ActivatedRoute, private router: Router, private service: AvanceOperacionesService, private auth: Auth) {
     this.proyectoId = Number(this.route.snapshot.paramMap.get('id'));
@@ -75,6 +76,18 @@ export class AvanceOperaciones implements OnInit {
   get materialesSeleccionados(): any[] { return this.bom.filter(b => b.operacion_id === this.seleccionada?.operacion_id); }
   get historialAvances(): any[] { return this.avances.filter(a => a.operacion_id === this.seleccionada?.operacion_id); }
   get historialConsumos(): any[] { return this.consumos.filter(c => c.operacion_id === this.seleccionada?.operacion_id); }
+  get consumosPendientes(): any[] {
+    return this.materialesSeleccionados
+      .map(m => {
+        const cantidad = Number(this.consumosHoy[m.bom_id] || 0);
+        const acumulado = Number(m.cantidad_consumida || 0);
+        const teorico = Number(m.cantidad_teorica || 0);
+        const stock = Number(m.stock_disponible || 0);
+        return { ...m, cantidad, stockRestante: stock - cantidad, acumuladoProyectado: acumulado + cantidad, sobreconsumo: teorico > 0 && acumulado + cantidad > teorico, stockInsuficiente: cantidad > stock };
+      })
+      .filter(m => m.cantidad > 0);
+  }
+  get consumoConAlertas(): boolean { return this.consumosPendientes.some(m => m.sobreconsumo || m.stockInsuficiente); }
   seleccionar(op: any): void { this.seleccionada = op; this.prepararFormulario(); }
   ordenar(campo: string): void {
     if (this.orden === campo) this.direccion = this.direccion === 'asc' ? 'desc' : 'asc';
@@ -134,9 +147,22 @@ export class AvanceOperaciones implements OnInit {
   }
   guardarConsumos(): void {
     if (!this.seleccionada) return;
-    const consumos = this.materialesSeleccionados.map(m => ({ bom_id: m.bom_id, cantidad: this.consumosHoy[m.bom_id] || 0 }));
+    if (!this.consumosPendientes.length) { this.error = 'Informá al menos un consumo mayor a cero'; return; }
+    this.confirmacionConsumo = true;
+  }
+  cerrarConfirmacionConsumo(): void { this.confirmacionConsumo = false; }
+  confirmarConsumos(): void {
+    if (!this.seleccionada || !this.consumosPendientes.length) return;
+    const consumos = this.consumosPendientes.map(m => ({ bom_id: m.bom_id, cantidad: m.cantidad }));
+    this.confirmacionConsumo = false;
     this.ejecutar(this.service.registrarConsumos(this.seleccionada.operacion_id, { fecha_consumo: this.fecha, consumos }));
   }
+  porcentajeConsumo(m: any): number {
+    const teorico = Number(m.cantidad_teorica || 0);
+    return teorico > 0 ? (Number(m.cantidad_consumida || 0) / teorico) * 100 : 0;
+  }
+  esSobreconsumo(m: any): boolean { return Number(m.cantidad_teorica || 0) > 0 && Number(m.cantidad_consumida || 0) > Number(m.cantidad_teorica); }
+  esConsumoHistoricoExcedido(c: any): boolean { return Number(c.cantidad_teorica || 0) > 0 && Number(c.consumo_acumulado || 0) > Number(c.cantidad_teorica); }
   ejecutar(peticion: any): void {
     this.guardando = true; this.error = '';
     peticion.subscribe({

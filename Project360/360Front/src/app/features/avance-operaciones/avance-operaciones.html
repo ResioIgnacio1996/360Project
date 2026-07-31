@@ -136,14 +136,21 @@
 
     <section class="panel materials">
       <div class="panel-title"><span>03</span><div><strong>Consumo de materiales</strong><small>BOM de la operación</small></div></div>
-      <div class="material" *ngFor="let m of materialesSeleccionados">
-        <div><strong>{{ m.material_nombre || m.descripcion_libre }}</strong><small class="mono">LÍNEA {{ m.numero_linea }} · {{ m.uom_nombre }}</small></div>
-        <div class="material-stats"><span><small>TEÓRICO</small>{{ m.cantidad_teorica }}</span><span><small>ACUMULADO</small>{{ m.cantidad_consumida }}</span></div>
-        <label>Consumido hoy<input type="number" min="0" [(ngModel)]="consumosHoy[m.bom_id]"></label>
+      <div class="consumption-grid-wrap" *ngIf="materialesSeleccionados.length">
+        <div class="consumption-grid grid-head"><span>MATERIAL</span><span>TEÓRICO</span><span>STOCK</span><span>A CONSUMIR</span><span>TOTAL AC.</span><span>UNID.</span></div>
+        <div class="consumption-grid grid-row" *ngFor="let m of materialesSeleccionados" [class.overconsumed]="esSobreconsumo(m)" [class.low-stock]="!esSobreconsumo(m) && m.stock_disponible < (m.cantidad_teorica - m.cantidad_consumida)">
+          <span class="grid-material"><strong>{{ m.material_nombre || m.descripcion_libre }}</strong><small class="mono">MAT-{{ m.material_id || m.numero_linea }}</small></span>
+          <span class="grid-number theoretical">{{ m.cantidad_teorica }}</span>
+          <span class="grid-number stock" [class.negative]="m.stock_disponible <= 0">{{ m.stock_disponible }}</span>
+          <label class="consume-input"><input type="number" min="0" step="0.01" placeholder="0" [attr.aria-label]="'Consumo de ' + (m.material_nombre || m.descripcion_libre)" [(ngModel)]="consumosHoy[m.bom_id]"></label>
+          <span class="grid-number accumulated" [class.negative]="m.cantidad_consumida > m.cantidad_teorica">{{ m.cantidad_consumida || '—' }}</span>
+          <span class="grid-unit">{{ m.uom_nombre }}</span>
+        </div>
+        <div class="consumption-grid-note">Cargá las cantidades consumidas hoy</div>
       </div>
       <div class="empty-materials" *ngIf="!materialesSeleccionados.length"><mat-icon>inventory_2</mat-icon><p>Esta operación no tiene materiales BOM asignados.</p></div>
       <button class="primary full" type="button" (click)="guardarConsumos()" [disabled]="guardando || !materialesSeleccionados.length">Guardar consumos</button>
-      <div class="history"><h3>Últimos consumos</h3><div *ngFor="let c of historialConsumos | slice:0:5"><span>{{ c.fecha_consumo | date:'dd/MM/yyyy' }}</span><b>{{ c.cantidad_consumida }} {{ c.uom_nombre }}</b></div><p *ngIf="!historialConsumos.length">Todavía no hay consumos registrados.</p></div>
+      <div class="history consumption-history"><h3>Detalle de consumos</h3><div class="history-grid-wrap" *ngIf="historialConsumos.length"><div class="history-grid history-head"><span>FECHA</span><span>MATERIAL</span><span>CONSUMO</span></div><div class="history-grid history-row" *ngFor="let c of historialConsumos | slice:0:10" [class.history-over]="esConsumoHistoricoExcedido(c)"><span>{{ c.fecha_consumo | date:'dd/MM/yyyy' }}</span><strong>{{ c.material_nombre }}</strong><b>{{ c.cantidad_consumida }} {{ c.uom_nombre }}</b></div></div><p *ngIf="!historialConsumos.length">Todavía no hay consumos registrados.</p></div>
     </section>
   </div>
 </aside>
@@ -163,6 +170,7 @@
       <textarea rows="3" [(ngModel)]="motivoGestion" name="motivoGestion" required placeholder="Justificación auditable del cambio"></textarea>
     </label>
     <div class="date-warning" *ngIf="gestionFecha === 'finalizar'">La operación pasará a COMPLETA con avance 100% y se registrará la fecha final real.</div>
+    <div class="date-rule"><mat-icon>account_tree</mat-icon><span>La fecha debe respetar la operación anterior y no puede superar el inicio real de una operación sucesora.</span></div>
     <footer>
       <button class="outline" type="button" (click)="cerrarGestionFecha()">Cancelar</button>
       <button class="primary" type="submit" [disabled]="guardando || ((gestionFecha === 'editar-inicio' || gestionFecha === 'editar-fin') && !motivoGestion.trim())">
@@ -170,4 +178,25 @@
       </button>
     </footer>
   </form>
+</div>
+
+<div class="date-modal-backdrop" *ngIf="confirmacionConsumo" (click)="cerrarConfirmacionConsumo()">
+  <section class="date-modal consumption-confirm" (click)="$event.stopPropagation()">
+    <header>
+      <span class="mono">OP {{ seleccionada?.secuencia }}</span>
+      <h2>Confirmar consumo de materiales</h2>
+      <p>{{ seleccionada?.nombre }} · {{ fecha | date:'dd/MM/yyyy' }}</p>
+    </header>
+    <div class="consumption-warning danger" *ngIf="consumoConAlertas"><mat-icon>warning</mat-icon><div><strong>Revisá antes de confirmar</strong><p>Hay materiales con stock insuficiente o cuyo acumulado superará la cantidad teórica.</p></div></div>
+    <div class="consumption-summary" *ngFor="let m of consumosPendientes" [class.danger]="m.sobreconsumo" [class.warning]="m.stockInsuficiente && !m.sobreconsumo">
+      <div><strong>{{ m.material_nombre || m.descripcion_libre }}</strong><small>{{ m.cantidad }} {{ m.uom_nombre }} a registrar</small></div>
+      <span>Stock: {{ m.stock_disponible }} · Queda: {{ m.stockRestante }}</span>
+      <b *ngIf="m.sobreconsumo">SOBRECONSUMO</b>
+      <b *ngIf="m.stockInsuficiente">STOCK INSUFICIENTE</b>
+    </div>
+    <footer>
+      <button class="outline" type="button" (click)="cerrarConfirmacionConsumo()">Volver y revisar</button>
+      <button class="primary" type="button" (click)="confirmarConsumos()" [disabled]="guardando">{{ consumoConAlertas ? 'Confirmar de todos modos' : 'Confirmar consumo' }}</button>
+    </footer>
+  </section>
 </div>

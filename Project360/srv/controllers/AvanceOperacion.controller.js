@@ -5,6 +5,36 @@ const fechaISO = value => value ? new Date(value).toISOString().slice(0, 10) : n
 const hoyISO = () => new Date().toISOString().slice(0, 10);
 const puedeCorregirFechas = usuario => ['OPERARIO', 'DEMO'].includes(String(usuario?.rol_nombre || '').toUpperCase());
 const fechaValida = fecha => /^\d{4}-\d{2}-\d{2}$/.test(String(fecha || '')) && String(fecha) <= hoyISO();
+const validarFechaEntreDependencias = async (tx, operacionId, fecha, tipo) => {
+  const limites = await new sql.Request(tx).input('id', sql.BigInt, operacionId).query(`
+    SELECT TOP 1 p.secuencia,p.nombre,p.fecha_fin_real
+    FROM OperacionDependencia d
+    JOIN Operacion p ON p.operacion_id=d.operacion_predecesora_id
+    WHERE d.operacion_id=@id AND ISNULL(d.activo,1)=1
+    ORDER BY p.fecha_fin_real DESC,p.secuencia DESC;
+
+    SELECT TOP 1 s.secuencia,s.nombre,s.fecha_inicio_real
+    FROM OperacionDependencia d
+    JOIN Operacion s ON s.operacion_id=d.operacion_id
+    WHERE d.operacion_predecesora_id=@id AND ISNULL(d.activo,1)=1 AND s.fecha_inicio_real IS NOT NULL
+    ORDER BY s.fecha_inicio_real,s.secuencia;
+
+    SELECT COUNT(*) pendientes
+    FROM OperacionDependencia d
+    JOIN Operacion p ON p.operacion_id=d.operacion_predecesora_id
+    WHERE d.operacion_id=@id AND ISNULL(d.activo,1)=1 AND p.fecha_fin_real IS NULL;
+  `);
+  const anterior = limites.recordsets[0][0];
+  const siguiente = limites.recordsets[1][0];
+  const pendientes = Number(limites.recordsets[2][0]?.pendientes || 0);
+  if (tipo === 'inicio' && pendientes > 0)
+    return 'No se puede iniciar: todas las operaciones predecesoras deben tener fecha de fin real';
+  if (tipo === 'inicio' && anterior?.fecha_fin_real && fecha < fechaISO(anterior.fecha_fin_real))
+    return `El inicio no puede ser anterior al fin de la predecesora ${anterior.secuencia} (${fechaISO(anterior.fecha_fin_real)})`;
+  if (siguiente?.fecha_inicio_real && fecha > fechaISO(siguiente.fecha_inicio_real))
+    return `La fecha no puede ser posterior al inicio de la sucesora ${siguiente.secuencia} (${fechaISO(siguiente.fecha_inicio_real)})`;
+  return null;
+};
 const sumarDiasLaborales = (inicio, horas, calendario, excepciones) => {
   if (!inicio) return null;
   const fecha = new Date(`${fechaISO(inicio)}T12:00:00Z`);
@@ -68,17 +98,28 @@ const obtener = async (req, res) => {
       SELECT b.bom_id,b.operacion_id,b.material_id,b.numero_linea,b.descripcion_libre,
              b.cantidad_teorica,b.preaviso_dias,b.sin_codigo,u.uom_id,u.nombre uom_nombre,
              m.Nombre material_nombre,
-             ISNULL((SELECT SUM(c.cantidad_consumida) FROM ConsumoMaterialOperacion c WHERE c.bom_id=b.bom_id),0) cantidad_consumida
+             ISNULL((SELECT SUM(c.cantidad_consumida) FROM ConsumoMaterialOperacion c WHERE c.bom_id=b.bom_id),0) cantidad_consumida,
+             ISNULL((SELECT SUM(ct.cantidad_actual)
+                     FROM Container ct
+                     JOIN StockGeneral sg ON sg.stock_general_id=ct.stock_general_id
+                     WHERE ct.id_proyecto=b.proyecto_id AND sg.id_material=b.material_id AND ct.activo=1),0)
+             - ISNULL((SELECT SUM(cm.cantidad_consumida)
+                       FROM ConsumoMaterialOperacion cm
+                       JOIN BomOperacion bx ON bx.bom_id=cm.bom_id
+                       WHERE cm.proyecto_id=b.proyecto_id AND bx.material_id=b.material_id),0) stock_disponible
       FROM BomOperacion b
       JOIN UoM u ON u.uom_id=b.uom_id
       LEFT JOIN Materiales m ON m.id_material=b.material_id
       WHERE b.proyecto_id=@proyecto
       ORDER BY b.operacion_id,b.numero_linea;
 
-      SELECT c.consumo_id,c.operacion_id,c.bom_id,c.cantidad_consumida,c.fecha_consumo,c.nota,
-             u.nombre uom_nombre
+      SELECT c.consumo_id,c.operacion_id,c.bom_id,c.cantidad_consumida,c.fecha_consumo,c.fecha_creacion,c.nota,
+             u.nombre uom_nombre,COALESCE(m.Nombre,b.descripcion_libre) material_nombre,b.numero_linea,b.cantidad_teorica,
+             SUM(c.cantidad_consumida) OVER (PARTITION BY c.bom_id ORDER BY c.fecha_creacion,c.consumo_id ROWS UNBOUNDED PRECEDING) consumo_acumulado
       FROM ConsumoMaterialOperacion c
       JOIN UoM u ON u.uom_id=c.uom_id
+      JOIN BomOperacion b ON b.bom_id=c.bom_id
+      LEFT JOIN Materiales m ON m.id_material=b.material_id
       WHERE c.proyecto_id=@proyecto
       ORDER BY c.fecha_creacion DESC;
 
@@ -124,6 +165,8 @@ const iniciar = async (req, res) => {
       .query('SELECT fecha_inicio_real FROM Operacion WHERE operacion_id=@id AND ISNULL(archivada,0)=0');
     if (!actual.recordset.length) { await tx.rollback(); return res.status(404).json({ message: 'Operación no encontrada' }); }
     if (actual.recordset[0].fecha_inicio_real) { await tx.rollback(); return res.status(409).json({ message: 'La operación ya fue iniciada' }); }
+    const errorDependencia = await validarFechaEntreDependencias(tx, req.params.id, String(fecha), 'inicio');
+    if (errorDependencia) { await tx.rollback(); return res.status(400).json({ message: errorDependencia }); }
     await new sql.Request(tx).input('id', sql.BigInt, req.params.id).input('fecha', sql.Date, fecha)
       .query(`UPDATE o SET fecha_inicio_real=@fecha,fecha_actualizacion=SYSDATETIME(),
               estado_id=COALESCE((SELECT TOP 1 estado_id FROM estado_operacion WHERE codigo='EN_CURSO'),estado_id)
@@ -157,6 +200,8 @@ const modificarFechaInicio = async (req, res) => {
     if (actual.recordset[0].fecha_fin_real && fecha > fechaISO(actual.recordset[0].fecha_fin_real)) {
       await tx.rollback(); return res.status(400).json({ message: 'El inicio no puede ser posterior a la finalización' });
     }
+    const errorDependencia = await validarFechaEntreDependencias(tx, req.params.id, fecha, 'inicio');
+    if (errorDependencia) { await tx.rollback(); return res.status(400).json({ message: errorDependencia }); }
     const anterior = fechaISO(actual.recordset[0].fecha_inicio_real);
     await new sql.Request(tx).input('id', sql.BigInt, req.params.id).input('fecha', sql.Date, fecha)
       .query('UPDATE Operacion SET fecha_inicio_real=@fecha,fecha_actualizacion=SYSDATETIME() WHERE operacion_id=@id');
@@ -185,6 +230,8 @@ const finalizar = async (req, res) => {
     if (!op.fecha_inicio_real) { await tx.rollback(); return res.status(409).json({ message: 'Primero tenés que iniciar la operación' }); }
     if (op.fecha_fin_real) { await tx.rollback(); return res.status(409).json({ message: 'La operación ya está finalizada' }); }
     if (fecha < fechaISO(op.fecha_inicio_real)) { await tx.rollback(); return res.status(400).json({ message: 'El fin no puede ser anterior al inicio' }); }
+    const errorDependencia = await validarFechaEntreDependencias(tx, req.params.id, fecha, 'fin');
+    if (errorDependencia) { await tx.rollback(); return res.status(400).json({ message: errorDependencia }); }
     await new sql.Request(tx).input('id', sql.BigInt, req.params.id).input('fecha', sql.Date, fecha)
       .query(`UPDATE Operacion SET fecha_fin_real=@fecha,pct_avance_actual=100,
               estado_id=COALESCE((SELECT TOP 1 estado_id FROM estado_operacion WHERE codigo='COMPLETA'),estado_id),
@@ -219,6 +266,8 @@ const modificarFechaFin = async (req, res) => {
     if (fecha < fechaISO(actual.recordset[0].fecha_inicio_real)) {
       await tx.rollback(); return res.status(400).json({ message: 'El fin no puede ser anterior al inicio' });
     }
+    const errorDependencia = await validarFechaEntreDependencias(tx, req.params.id, fecha, 'fin');
+    if (errorDependencia) { await tx.rollback(); return res.status(400).json({ message: errorDependencia }); }
     const anterior = fechaISO(actual.recordset[0].fecha_fin_real);
     await new sql.Request(tx).input('id', sql.BigInt, req.params.id).input('fecha', sql.Date, fecha)
       .query('UPDATE Operacion SET fecha_fin_real=@fecha,fecha_actualizacion=SYSDATETIME() WHERE operacion_id=@id');
@@ -251,6 +300,15 @@ const registrarAvance = async (req, res) => {
     const op = actual.recordset[0];
     if (porcentaje < Number(op.pct_avance_actual || 0)) { await tx.rollback(); return res.status(400).json({ message: 'El avance no puede ser menor al registrado' }); }
     const fecha = req.body.fecha_registro || new Date().toISOString().slice(0, 10);
+    if (!fechaValida(fecha)) { await tx.rollback(); return res.status(400).json({ message: 'La fecha del avance no puede ser futura' }); }
+    if (!op.fecha_inicio_real) {
+      const errorInicio = await validarFechaEntreDependencias(tx, req.params.id, String(fecha), 'inicio');
+      if (errorInicio) { await tx.rollback(); return res.status(400).json({ message: errorInicio }); }
+    }
+    if (porcentaje === 100) {
+      const errorFin = await validarFechaEntreDependencias(tx, req.params.id, String(fecha), 'fin');
+      if (errorFin) { await tx.rollback(); return res.status(400).json({ message: errorFin }); }
+    }
     await new sql.Request(tx).input('op', sql.BigInt, op.operacion_id).input('proyecto', sql.BigInt, op.proyecto_id)
       .input('usuario', sql.BigInt, req.usuario.usuario_id).input('nuevo', sql.Decimal(5, 2), porcentaje)
       .input('anterior', sql.Decimal(5, 2), Number(op.pct_avance_actual || 0))
