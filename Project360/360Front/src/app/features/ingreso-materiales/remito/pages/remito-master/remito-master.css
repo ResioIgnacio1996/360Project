@@ -172,23 +172,44 @@
 
 .acciones-header {
   text-align: center;
+  min-width: 104px;
 }
 
 .acciones-cell {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 2px;
+  display: table-cell;
+  text-align: center;
+  vertical-align: middle;
+  white-space: nowrap;
+  min-width: 104px;
+  overflow: visible;
 }
 
 .acciones-cell .mat-mdc-icon-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   width: 30px;
   height: 30px;
   padding: 3px;
+  margin: 0 2px;
+  color: var(--text-secondary) !important;
+  vertical-align: middle;
 }
 
 .acciones-cell mat-icon {
   font-size: 18px;
+  width: 18px;
+  height: 18px;
+  line-height: 18px;
+}
+
+.acciones-cell .mat-mdc-icon-button:hover:not(:disabled) {
+  color: var(--primary) !important;
+  background: color-mix(in srgb, var(--primary) 12%, transparent) !important;
+}
+
+.acciones-cell .mat-mdc-icon-button:disabled {
+  opacity: .38;
 }
 
 .estado-badge {

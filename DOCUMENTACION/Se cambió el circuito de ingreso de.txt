@@ -1,4 +1,4 @@
-Se cambió el circuito de ingreso de materiales para que, al liberar un remito, los materiales queden directamente asignados al proyecto correspondiente. Si el Registro de Compra ya tiene un proyecto, el sistema utiliza ese proyecto automáticamente. Si no tiene uno, antes de liberar el remito el usuario debe seleccionar el proyecto destino. Una vez seleccionado, ese proyecto también queda asociado al Registro de Compra para mantener la trazabilidad.
+Se cambió el circuito de ingreso de materiales para que, al liberar un remito, los materiales queden directamente asignados al proyecto correspondiente. Si el Registro de Compra ya tiene un proyecto, el sistema utiliza ese proyecto automáticamente. Si no tiene uno, antes de liberar el remito el usuario debe seleccionar el proyecto destino. Una vez seleccionado, ese proyecto también queda asociado al Registro de Compra para mantener la trazabilidad. (SI LA LIBERACION ES PARA PROYECTOS SI NO TIENE UNO ASIGNADO AL PRINCIPIO, PERO UN OC O FAC PUEDE LIBERARSE A MUCHOS PROYECTOS OSEA QEU AL LIBERAR DEBERIA DER LA OPCION DE DECIR ESTA CANTIDAD DE MAT VA PARA ESTE PROYECTO, LIBERACIONES ASIGNADAS NO TODO A UN PROYECTO)
 Los materiales recibidos aumentan el stock del proyecto en la entidad Container. Al mismo tiempo, cada ingreso genera un registro independiente en CostoStock. Esto permite que un mismo material tenga distintos costos según la compra y la fecha en que ingresó. Los costos anteriores nunca se reemplazan.
 Por ejemplo, un proyecto puede tener 30 unidades de cemento en Container, pero en CostoStock pueden existir tres lotes:
 10 unidades ingresadas a $100.
@@ -7,17 +7,17 @@ Por ejemplo, un proyecto puede tener 30 unidades de cemento en Container, pero e
 Cuando el proyecto consuma cemento, deberá utilizarse primero el lote más antiguo. Cuando ese lote se termine, se continúa con el siguiente. Este criterio se conoce como FIFO: primero entra, primero sale.
 Paso a paso para el modelador
 Revisar la relación entre Registro de Compra y Proyecto.
-registroDecompra.proyecto_id debe relacionarse con Proyecto.proyecto_id. La relación debe ser opcional porque una compra puede crearse inicialmente sin proyecto.
+registroDecompra.proyecto_id debe relacionarse con Proyecto.proyecto_id. La relación debe ser opcional porque una compra puede crearse inicialmente sin proyecto.(NO ENTIENDO COMO ESTO PUEDE SERVIRME SI LA LIBERACICON DE UNA FAC U OC PUEDE SER "DIVIDIDA" EN VARIOS PROYECTOS)
 
 Revisar la relación entre Container y Proyecto.
 Container.id_proyecto debe relacionarse con Proyecto.proyecto_id. Cada registro de Container representa un material disponible dentro de un proyecto.
 
 Mantener la relación entre Container y Stock General.
-Container.stock_general_id debe relacionarse con StockGeneral.stock_general_id. Esto permite identificar qué material general corresponde al stock del proyecto.
+Container.stock_general_id debe relacionarse con StockGeneral.stock_general_id. Esto permite identificar qué material general corresponde al stock del proyecto.(PARA QUE TENGO LA DE STOCK GENERAL, SI CUANDO LIBERO YA TENGO LA CANTIDA DETERMINADA DE UN MATERIAL ASOCIADO A UN PROYECTO EN PARTICULAR, LA DE STOCK GRAL NO ME SIRVE O NO ENTIENDO PORQUE )
 
 Revisar la relación entre CostoStock y Container.
 La columna actual es CostoStock.conteiner_id, escrita de esa manera en la base. Debe relacionarse con Container.container_id.
-Si es posible corregir el modelo, convendría renombrarla a container_id, pero esto requeriría actualizar también la aplicación.
+Si es posible corregir el modelo, convendría renombrarla a container_id, pero esto requeriría actualizar también la aplicación. BIEN
 
 Definir que Container consolida cantidades.
 En Container puede existir un único registro por combinación de:
@@ -51,7 +51,7 @@ Disminuye primero la cantidad del lote más antiguo de CostoStock.
 Si ese lote no alcanza, se termina y se continúa con el siguiente.
 El costo del consumo resulta de sumar lo tomado de cada lote.
 
-Revisar dónde se guarda el costo del material comprado.
+Revisar dónde se guarda el costo del material comprado.SI ESO SE DEBE DE GUARDAR
 
    Actualmente el costo unitario está en la cabecera de registroDecompra. Esto no alcanza cuando una compra contiene varios materiales con precios diferentes.
    Lo recomendable es agregar costo_unitario en Detalle_RegistroDeCompra. De esta manera cada material comprado tendrá su propio precio.
@@ -62,14 +62,14 @@ cantidad.
 UoM.
 descripcion.
 costo_unitario.
-Opcionalmente costo_total.
+Opcionalmente costo_total. SI SE DEBE DE AGREDGAR EL ATRIBUTO COSTO A CADA MATERIAL AL REGISTRO DE COMRPA
 
 Definir el origen de cada lote.
    Sería recomendable que CostoStock tenga una referencia directa al remito o al detalle del remito, por ejemplo:
 remito_id, o
 detalle_remito_id.
    Actualmente el número de remito se conserva como observación, pero una relación formal facilitaría auditorías y reportes.
-Validar el circuito completo del modelo.
+Validar el circuito completo del modelo. SI
    El recorrido esperado debe ser:
 Registro de Compra
         ↓
