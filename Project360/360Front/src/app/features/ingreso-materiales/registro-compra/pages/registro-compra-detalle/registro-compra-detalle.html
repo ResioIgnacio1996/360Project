@@ -23,7 +23,7 @@
       <mat-tab>
         <ng-template mat-tab-label>
           <mat-icon>description</mat-icon>
-          Documento
+          Documento y stock
         </ng-template>
 
         <div class="tab-body">
@@ -126,6 +126,45 @@
                 Este registro no tiene lineas cargadas.
               </div>
             </mat-expansion-panel>
+
+            <mat-expansion-panel class="document-panel" [expanded]="true">
+              <mat-expansion-panel-header class="document-panel-header">
+                <mat-panel-title>
+                  <span class="block-title">Stock y liberaciones</span>
+                </mat-panel-title>
+                <mat-panel-description>
+                  <span class="chip chip-no-dot chip-teal">{{ stockLiberado.length }} MATERIALES</span>
+                </mat-panel-description>
+              </mat-expansion-panel-header>
+
+              <div class="state-message" *ngIf="cargandoStock">Calculando stock liberado...</div>
+
+              <div class="table-wrap" *ngIf="!cargandoStock && stockLiberado.length">
+                <table class="stock-table">
+                  <colgroup>
+                    <col class="stock-col-material" />
+                    <col class="stock-col-numero" />
+                    <col class="stock-col-numero" />
+                    <col class="stock-col-numero" />
+                    <col class="stock-col-estado" />
+                  </colgroup>
+                  <thead><tr><th>Material</th><th>Esperado</th><th>Liberado</th><th>Pendiente</th><th>Estado</th></tr></thead>
+                  <tbody>
+                    <tr *ngFor="let item of stockLiberado">
+                      <td><strong>{{ item.material }}</strong></td>
+                      <td class="tech-value">{{ item.esperado }} {{ item.unidad }}</td>
+                      <td class="tech-value">{{ item.liberado }} {{ item.unidad }}</td>
+                      <td class="tech-value">{{ item.pendiente }} {{ item.unidad }}</td>
+                      <td><span class="estado-badge" [ngClass]="item.estado.toLowerCase()">{{ item.estado }}</span></td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+
+              <div class="state-message" *ngIf="!cargandoStock && !stockLiberado.length">
+                No hay materiales para calcular stock esperado y liberado.
+              </div>
+            </mat-expansion-panel>
           </mat-accordion>
 
           <div class="state-message" *ngIf="!cargando && !registro">
@@ -195,56 +234,6 @@
         </div>
       </mat-tab>
 
-      <mat-tab>
-        <ng-template mat-tab-label>
-          <mat-icon>warehouse</mat-icon>
-          Stock y liberaciones
-        </ng-template>
-
-        <div class="tab-body">
-          <div class="state-message" *ngIf="cargandoStock">Calculando stock liberado...</div>
-
-          <div class="table-wrap" *ngIf="!cargandoStock && stockLiberado.length">
-            <table class="stock-table">
-              <colgroup>
-                <col class="stock-col-material" />
-                <col class="stock-col-numero" />
-                <col class="stock-col-numero" />
-                <col class="stock-col-numero" />
-                <col class="stock-col-estado" />
-              </colgroup>
-
-              <thead>
-                <tr>
-                  <th>Material</th>
-                  <th>Esperado</th>
-                  <th>Liberado</th>
-                  <th>Pendiente</th>
-                  <th>Estado</th>
-                </tr>
-              </thead>
-
-              <tbody>
-                <tr *ngFor="let item of stockLiberado">
-                  <td><strong>{{ item.material }}</strong></td>
-                  <td class="tech-value">{{ item.esperado }} {{ item.unidad }}</td>
-                  <td class="tech-value">{{ item.liberado }} {{ item.unidad }}</td>
-                  <td class="tech-value">{{ item.pendiente }} {{ item.unidad }}</td>
-                  <td>
-                    <span class="estado-badge" [ngClass]="item.estado.toLowerCase()">
-                      {{ item.estado }}
-                    </span>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-
-          <div class="state-message" *ngIf="!cargandoStock && !stockLiberado.length">
-            No hay materiales para calcular stock esperado y liberado.
-          </div>
-        </div>
-      </mat-tab>
     </mat-tab-group>
   </section>
 </div>

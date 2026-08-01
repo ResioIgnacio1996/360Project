@@ -366,6 +366,7 @@ const crearRegistroCompra = async (req, res) => {
             });
         }
 
+        const numeroSql = String(numero).trim();
         const fechaSql = normalizarFechaSql(fecha, 'fecha', true);
         const fechaEntregaSql = normalizarFechaSql(fecha_entrega, 'fecha_entrega');
         const tipoSql = normalizarTipoRegistroCompra(tipo);
@@ -385,6 +386,20 @@ const crearRegistroCompra = async (req, res) => {
         }
 
         const pool = await conectarDB();
+
+        const numeroDuplicado = await pool.request()
+            .input('numero', sql.NVarChar(100), numeroSql)
+            .query(`
+                SELECT TOP 1 registro_compra_id
+                FROM registroDecompra
+                WHERE UPPER(LTRIM(RTRIM(numero))) = UPPER(@numero)
+            `);
+
+        if (numeroDuplicado.recordset.length > 0) {
+            return res.status(409).json({
+                message: `Ya existe un documento con el número ${numeroSql}`
+            });
+        }
 
         const estadoCreada = await pool.request()
             .input('nombre', sql.VarChar, 'CREADA')
@@ -406,7 +421,7 @@ const crearRegistroCompra = async (req, res) => {
         const proveedorId = await obtenerProveedorId(transaction, req.body);
 
         const insertCabecera = await new sql.Request(transaction)
-            .input('numero', sql.VarChar, numero)
+            .input('numero', sql.VarChar, numeroSql)
             .input('tipo', sql.VarChar(10), tipoSql)
             .input('fecha', sql.VarChar(10), fechaSql)
             .input('fecha_entrega', sql.VarChar(10), fechaEntregaSql)
@@ -527,6 +542,7 @@ const actualizarRegistroCompra = async (req, res) => {
             });
         }
 
+        const numeroSql = String(numero).trim();
         const fechaSql = normalizarFechaSql(fecha, 'fecha', true);
         const fechaEntregaSql = normalizarFechaSql(fecha_entrega, 'fecha_entrega');
         const tipoSql = normalizarTipoRegistroCompra(tipo);
@@ -546,6 +562,22 @@ const actualizarRegistroCompra = async (req, res) => {
         }
 
         const pool = await conectarDB();
+
+        const numeroDuplicado = await pool.request()
+            .input('numero', sql.NVarChar(100), numeroSql)
+            .input('registro_compra_id', sql.BigInt, id)
+            .query(`
+                SELECT TOP 1 registro_compra_id
+                FROM registroDecompra
+                WHERE UPPER(LTRIM(RTRIM(numero))) = UPPER(@numero)
+                  AND registro_compra_id <> @registro_compra_id
+            `);
+
+        if (numeroDuplicado.recordset.length > 0) {
+            return res.status(409).json({
+                message: `Ya existe otro documento con el número ${numeroSql}`
+            });
+        }
 
         const registro = await pool.request()
             .input('registro_compra_id', sql.BigInt, id)
@@ -599,7 +631,7 @@ const actualizarRegistroCompra = async (req, res) => {
 
         await new sql.Request(transaction)
             .input('registro_compra_id', sql.BigInt, id)
-            .input('numero', sql.VarChar, numero)
+            .input('numero', sql.VarChar, numeroSql)
             .input('tipo', sql.VarChar(10), tipoSql)
             .input('fecha', sql.VarChar(10), fechaSql)
             .input('fecha_entrega', sql.VarChar(10), fechaEntregaSql)
