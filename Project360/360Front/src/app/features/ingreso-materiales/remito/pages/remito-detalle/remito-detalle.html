@@ -57,6 +57,19 @@
           <span>Estado</span>
           <strong>{{ remito.liberado ? 'LIBERADO' : 'PENDIENTE' }}</strong>
         </div>
+        <div class="summary-field" *ngIf="remito.idProyecto">
+          <span>Proyecto destino</span>
+          <strong>{{ remito.proyectoNombre || ('Proyecto #' + remito.idProyecto) }}</strong>
+        </div>
+      </div>
+      <div class="project-selector" *ngIf="!remito.liberado && !remito.idProyecto">
+        <mat-form-field appearance="outline">
+          <mat-label>Proyecto destino</mat-label>
+          <mat-select [(ngModel)]="proyectoSeleccionado" required>
+            <mat-option *ngFor="let proyecto of proyectos" [value]="proyecto.proyecto_id">{{ proyecto.nombre }}</mat-option>
+          </mat-select>
+          <mat-hint>La compra no tiene proyecto asignado. Seleccione uno antes de liberar.</mat-hint>
+        </mat-form-field>
       </div>
     </section>
 

@@ -45,6 +45,8 @@
 .table-wrap {
   overflow-x: auto;
 }
+.project-selector{margin-top:18px;padding:16px;border:1px solid var(--border);border-radius:8px;background:var(--surface-card-2)}
+.project-selector .mat-mdc-form-field{width:min(480px,100%)}
 
 .remito-detalle-table {
   table-layout: fixed;

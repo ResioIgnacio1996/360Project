@@ -6,8 +6,12 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatTableModule } from '@angular/material/table';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatSelectModule } from '@angular/material/select';
+import { FormsModule } from '@angular/forms';
 
 import { DetalleRemito, Remito, Remitos } from '../../../../../core/services/remitos';
+import { ProyectoService } from '../../../../../core/services/proyecto/proyecto';
 
 @Component({
   selector: 'app-remito-detalle',
@@ -17,7 +21,10 @@ import { DetalleRemito, Remito, Remitos } from '../../../../../core/services/rem
     MatButtonModule,
     MatIconModule,
     MatSnackBarModule,
-    MatTableModule
+    MatTableModule,
+    MatFormFieldModule,
+    MatSelectModule,
+    FormsModule
   ],
   templateUrl: './remito-detalle.html',
   styleUrl: './remito-detalle.css',
@@ -28,6 +35,8 @@ export class RemitoDetalle implements OnInit {
   displayedColumns = ['material', 'cantidad', 'unidad'];
   cargando = false;
   liberando = false;
+  proyectos: any[] = [];
+  proyectoSeleccionado: number | null = null;
 
   get detalleRemito(): DetalleRemito[] {
     return (this.remito?.detalle ?? []).filter(item =>
@@ -39,6 +48,7 @@ export class RemitoDetalle implements OnInit {
     private route: ActivatedRoute,
     private router: Router,
     private remitosService: Remitos,
+    private proyectoService: ProyectoService,
     private snackBar: MatSnackBar
   ) {}
 
@@ -51,6 +61,7 @@ export class RemitoDetalle implements OnInit {
     if (id) {
       this.cargarRemito(id);
     }
+    this.proyectoService.getProyectos().subscribe({next:r=>this.proyectos=(Array.isArray(r)?r:[]).filter(p=>p.activo!==false&&p.estado!=='CANCELADO'),error:()=>this.proyectos=[]});
   }
 
   cargarRemito(id: number): void {
@@ -60,6 +71,7 @@ export class RemitoDetalle implements OnInit {
       next: remito => {
         this.cargando = false;
         this.remito = remito;
+        this.proyectoSeleccionado = remito.idProyecto ?? null;
       },
       error: error => {
         this.cargando = false;
@@ -74,10 +86,14 @@ export class RemitoDetalle implements OnInit {
     if (!this.remito || this.remito.liberado) {
       return;
     }
+    if (!this.remito.idProyecto && !this.proyectoSeleccionado) {
+      this.snackBar.open('Seleccione el proyecto al que se liberará el stock.', 'Cerrar', {duration:3500});
+      return;
+    }
 
     const confirmado = confirm(
       `Confirmas la liberacion del Remito ${this.remito.numero}?\n\n` +
-      'Esta accion actualizara el Stock General, recalculara cantidades recibidas y puede modificar el estado del Registro de Compra.'
+      'Los materiales ingresarán al proyecto y se generarán sus lotes de costo.'
     );
 
     if (!confirmado) {
@@ -86,7 +102,7 @@ export class RemitoDetalle implements OnInit {
 
     this.liberando = true;
 
-    this.remitosService.liberarRemito(this.remito.idRemito).subscribe({
+    this.remitosService.liberarRemito(this.remito.idRemito, this.proyectoSeleccionado).subscribe({
       next: response => {
         this.liberando = false;
         this.snackBar.open(response?.message || 'Remito liberado correctamente.', 'Cerrar', {

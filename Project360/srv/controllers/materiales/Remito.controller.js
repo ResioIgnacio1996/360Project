@@ -62,6 +62,8 @@ const getRemitoById = async (req, res) => {
                 SELECT
                     r.*,
                     rc.numero AS registro_compra_numero,
+                    rc.proyecto_id,
+                    pr.nombre AS proyecto_nombre,
                     p.razon_social,
                     e.nombre AS estado_registro_compra
                 FROM Remito r
@@ -69,6 +71,8 @@ const getRemitoById = async (req, res) => {
                     ON rc.registro_compra_id = r.idRegistroDeCompra
                 INNER JOIN Proveedor p
                     ON p.proveedor_id = rc.proveedor_id
+                LEFT JOIN Proyecto pr
+                    ON pr.proyecto_id = rc.proyecto_id
                 LEFT JOIN estado_registroDecompra e
                     ON e.estado_registroDecompra_id = rc.estado_registroDecompra_id
                 WHERE r.remito_id = @remito_id
@@ -150,6 +154,10 @@ const obtenerRegistroCompra = async (request, idRegistroDeCompra) => {
                 rc.registro_compra_id,
                 rc.numero,
                 rc.fecha_entrega,
+                rc.proyecto_id,
+                rc.precio_unitario,
+                rc.monto_total,
+                rc.cantidad_pedida,
                 rc.activo,
                 e.nombre AS estado
             FROM registroDecompra rc
@@ -368,7 +376,7 @@ const crearRemito = async (req, res) => {
     }
 };
 
-const actualizarOCrearStock = async (transaction, item) => {
+const registrarIngresoEnProyecto = async (transaction, item, proyectoId, fechaIngreso, costoUnitario, remitoNumero) => {
     const stockExistente = await new sql.Request(transaction)
         .input('id_material', sql.BigInt, item.id_material)
         .query(`
@@ -385,7 +393,7 @@ const actualizarOCrearStock = async (transaction, item) => {
                 UPDATE StockGeneral
                 SET
                     cantidad_total = cantidad_total + @cantidad,
-                    cantidad_disponible = cantidad_disponible + @cantidad
+                    cantidad_asignada = cantidad_asignada + @cantidad
                 WHERE id_material = @id_material
             `);
     } else {
@@ -403,12 +411,53 @@ const actualizarOCrearStock = async (transaction, item) => {
                 VALUES (
                     @id_material,
                     @cantidad,
-                    @cantidad,
                     0,
+                    @cantidad,
                     1
                 )
             `);
     }
+
+    const stock = await new sql.Request(transaction)
+        .input('id_material', sql.BigInt, item.id_material)
+        .query('SELECT stock_general_id FROM StockGeneral WHERE id_material=@id_material');
+    const stockGeneralId = stock.recordset[0].stock_general_id;
+
+    const containerExistente = await new sql.Request(transaction)
+        .input('stock_general_id', sql.BigInt, stockGeneralId)
+        .input('id_proyecto', sql.BigInt, proyectoId)
+        .query(`SELECT container_id FROM Container WITH (UPDLOCK,HOLDLOCK)
+                WHERE stock_general_id=@stock_general_id AND id_proyecto=@id_proyecto`);
+
+    let containerId;
+    if (containerExistente.recordset.length) {
+        containerId = containerExistente.recordset[0].container_id;
+        await new sql.Request(transaction)
+            .input('container_id', sql.BigInt, containerId)
+            .input('cantidad', sql.Decimal(18,2), item.cantidad)
+            .query('UPDATE Container SET cantidad_actual=cantidad_actual+@cantidad,activo=1 WHERE container_id=@container_id');
+    } else {
+        const insertContainer = await new sql.Request(transaction)
+            .input('stock_general_id', sql.BigInt, stockGeneralId)
+            .input('id_proyecto', sql.BigInt, proyectoId)
+            .input('nombre', sql.NVarChar(200), item.material)
+            .input('unidad_medida', sql.NVarChar(50), item.UoM || null)
+            .input('cantidad', sql.Decimal(18,2), item.cantidad)
+            .query(`INSERT INTO Container(stock_general_id,id_proyecto,nombre,unidad_medida,cantidad_actual,activo)
+                    OUTPUT INSERTED.container_id
+                    VALUES(@stock_general_id,@id_proyecto,@nombre,@unidad_medida,@cantidad,1)`);
+        containerId = insertContainer.recordset[0].container_id;
+    }
+
+    await new sql.Request(transaction)
+        .input('conteiner_id', sql.BigInt, containerId)
+        .input('costo_unitario', sql.Decimal(18,4), costoUnitario)
+        .input('cantidad', sql.Decimal(18,2), item.cantidad)
+        .input('costo_total', sql.Decimal(18,4), Number(costoUnitario) * Number(item.cantidad))
+        .input('fecha', sql.DateTime2, fechaIngreso)
+        .input('observaciones', sql.NVarChar(500), `Ingreso por remito ${remitoNumero}`)
+        .query(`INSERT INTO CostoStock(conteiner_id,costo_unitario,cantidad_valorizada,costo_total,fecha_valorizacion,observaciones,activo)
+                VALUES(@conteiner_id,@costo_unitario,@cantidad,@costo_total,@fecha,@observaciones,1)`);
 };
 
 const recalcularEstadoRegistroCompra = async (transaction, idRegistroDeCompra) => {
@@ -504,6 +553,7 @@ const liberarRemito = async (req, res) => {
 
     try {
         const { id } = req.params;
+        const proyectoSolicitado = Number(req.body?.proyecto_id || 0);
         const pool = await conectarDB();
 
         transaction = new sql.Transaction(pool);
@@ -534,6 +584,22 @@ const liberarRemito = async (req, res) => {
 
         const registroCompra = await obtenerRegistroCompra(new sql.Request(transaction), remitoActual.idRegistroDeCompra);
         validarRegistroCompraParaRemito(registroCompra);
+        const proyectoId = Number(registroCompra.proyecto_id || proyectoSolicitado);
+        if (!proyectoId) {
+            throw crearHttpError('Debe seleccionar el proyecto al que se liberará el stock', 400);
+        }
+        const proyecto = await new sql.Request(transaction)
+            .input('proyecto_id', sql.BigInt, proyectoId)
+            .query('SELECT proyecto_id,nombre FROM Proyecto WHERE proyecto_id=@proyecto_id AND activo=1');
+        if (!proyecto.recordset.length) {
+            throw crearHttpError('El proyecto seleccionado no existe o está inactivo', 400);
+        }
+        if (!registroCompra.proyecto_id) {
+            await new sql.Request(transaction)
+                .input('registro_compra_id', sql.BigInt, remitoActual.idRegistroDeCompra)
+                .input('proyecto_id', sql.BigInt, proyectoId)
+                .query('UPDATE registroDecompra SET proyecto_id=@proyecto_id WHERE registro_compra_id=@registro_compra_id');
+        }
 
         const detalleRemito = await new sql.Request(transaction)
             .input('remito_id', sql.BigInt, id)
@@ -558,8 +624,9 @@ const liberarRemito = async (req, res) => {
         const cantidadesLiberadas = await obtenerCantidadesLiberadas(new sql.Request(transaction), remitoActual.idRegistroDeCompra);
         validarDetalleContraRegistroCompra(detalleRemito.recordset, detalleOc, cantidadesLiberadas);
 
+        const costoUnitario = Number(registroCompra.precio_unitario || (Number(registroCompra.cantidad_pedida) ? Number(registroCompra.monto_total || 0) / Number(registroCompra.cantidad_pedida) : 0));
         for (const item of detalleRemito.recordset) {
-            await actualizarOCrearStock(transaction, item);
+            await registrarIngresoEnProyecto(transaction, item, proyectoId, remitoActual.fecha, costoUnitario, remitoActual.numero);
         }
 
         await new sql.Request(transaction)
@@ -592,8 +659,10 @@ const liberarRemito = async (req, res) => {
                 stockActualizado: detalleRemito.recordset.map(item => ({
                     idMaterial: item.id_material,
                     nombreMaterial: item.material,
-                    cantidadIngresada: Number(item.cantidad)
-                }))
+                    cantidadIngresada: Number(item.cantidad),
+                    costoUnitario
+                })),
+                proyecto: proyecto.recordset[0]
             }
         });
 

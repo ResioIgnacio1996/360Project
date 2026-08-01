@@ -11,6 +11,8 @@ export interface Remito {
   registroCompraNumero?: string;
   proveedor?: string;
   estadoRegistroCompra?: string;
+  idProyecto?: number | null;
+  proyectoNombre?: string | null;
   cantidadItems?: number;
   detalle?: DetalleRemito[];
 }
@@ -94,8 +96,8 @@ export class Remitos {
     return this.http.post<RemitoImportResponse>(`${this.apiUrl}/documento`, formData);
   }
 
-  liberarRemito(id: number): Observable<any> {
-    return this.http.put(`${this.apiUrl}/${id}/liberar`, {});
+  liberarRemito(id: number, proyectoId?: number | null): Observable<any> {
+    return this.http.put(`${this.apiUrl}/${id}/liberar`, proyectoId ? { proyecto_id: proyectoId } : {});
   }
 
   private normalizarRemito(item: any): Remito {
@@ -108,6 +110,8 @@ export class Remitos {
       registroCompraNumero: item.registro_compra_numero ?? item.registroCompraNumero,
       proveedor: item.razon_social ?? item.proveedor,
       estadoRegistroCompra: item.estado_registro_compra ?? item.estadoRegistroCompra,
+      idProyecto: item.proyecto_id ?? item.idProyecto ?? null,
+      proyectoNombre: item.proyecto_nombre ?? item.proyectoNombre ?? null,
       cantidadItems: item.cantidad_items ?? item.cantidadItems
     };
   }
