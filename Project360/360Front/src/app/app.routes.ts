@@ -78,6 +78,11 @@ export const routes: Routes = [
     { path: 'proyectos/:id/programacion', component: Programacion },
     { path: 'proyectos/:id/programacion/importar', component: ImportacionProgramacion },
     { path: 'proyectos/:id/avances', component: AvanceOperaciones },
+    {
+      path: 'proyectos/:id/dependencias',
+      loadComponent: () => import('./features/dependencias-operaciones/dependencias-operaciones')
+        .then(m => m.DependenciasOperaciones)
+    },
     { path: 'system-tools', component: SystemTools },
 
     { path: 'configuracion', component: Configuracion },

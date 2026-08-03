@@ -17,5 +17,6 @@
 .module-badge{margin-top:auto;padding:2px 8px;border-radius:3px;font-family:var(--font-tech);font-size:8px;font-weight:700}
 .module-teal{--module-color:var(--primary)}.module-orange{--module-color:var(--orange)}.module-blue{--module-color:var(--blue-2)}.module-red{--module-color:var(--red)}.module-purple{--module-color:var(--purple)}.module-green{--module-color:var(--green)}
 .badge-teal{background:color-mix(in srgb,var(--primary) 13%,transparent);color:var(--primary)}.badge-orange{background:color-mix(in srgb,var(--orange) 13%,transparent);color:var(--orange)}.badge-blue{background:color-mix(in srgb,var(--blue-2) 13%,transparent);color:var(--blue-2)}.badge-red{background:color-mix(in srgb,var(--red) 13%,transparent);color:var(--red)}.badge-muted{background:var(--surface-card-2);color:var(--text-secondary)}
+.badge-purple{background:color-mix(in srgb,var(--purple) 13%,transparent);color:var(--purple)}
 .error{color:var(--red)}
 @media(max-width:860px){.project-hub{margin:-14px}.hub-body{padding:20px 16px}.location-kpi{width:100%}.location-kpi strong{max-width:65vw}}
