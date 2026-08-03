@@ -429,8 +429,8 @@ const registrarIngresoEnProyecto = async (transaction, item, proyectoId, fechaIn
         .input('id_proyecto', sql.BigInt, proyectoId)
         .query(`SELECT container_id FROM Container WITH (UPDLOCK,HOLDLOCK)
                 WHERE stock_general_id=@stock_general_id AND id_proyecto=@id_proyecto`);
-
-    let containerId;
+ 
+    let containerId;   
     if (containerExistente.recordset.length) {
         containerId = containerExistente.recordset[0].container_id;
         await new sql.Request(transaction)
@@ -451,13 +451,14 @@ const registrarIngresoEnProyecto = async (transaction, item, proyectoId, fechaIn
     }
 
     await new sql.Request(transaction)
-        .input('conteiner_id', sql.BigInt, containerId)
+        .input('container_id', sql.BigInt, containerId)
         .input('costo_unitario', sql.Decimal(18,4), costoUnitario)
         .input('cantidad', sql.Decimal(18,2), item.cantidad)
+        .input('costo_total', sql.Decimal(18,4), Number(costoUnitario) * Number(item.cantidad))
         .input('fecha', sql.DateTime2, fechaIngreso)
         .input('observaciones', sql.NVarChar(500), `Ingreso por remito ${remitoNumero}`)
-        .query(`INSERT INTO CostoStock(conteiner_id,costo_unitario,cantidad_valorizada,fecha_valorizacion,observaciones,activo)
-                VALUES(@conteiner_id,@costo_unitario,@cantidad,@fecha,@observaciones,1)`);
+        .query(`INSERT INTO CostoStock(container_id,costo_unitario,cantidad_valorizada,costo_total,fecha_valorizacion,observaciones,activo)
+                VALUES(@container_id,@costo_unitario,@cantidad,@costo_total,@fecha,@observaciones,1)`);
 };
 
 const recalcularEstadoRegistroCompra = async (transaction, idRegistroDeCompra) => {
