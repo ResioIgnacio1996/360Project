@@ -127,6 +127,100 @@
   margin-top: 2px;
 }
 
+.distribution-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid var(--border);
+}
+
+.distribution-actions > span {
+  color: var(--text-muted);
+  font-family: var(--font-tech);
+  font-size: 10px;
+}
+
+.release-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 2100;
+  display: grid;
+  place-items: center;
+  padding: 18px;
+  background: rgba(0, 0, 0, .75);
+}
+
+.release-modal {
+  width: min(720px, 96vw);
+  max-height: 90vh;
+  overflow: auto;
+  padding: 22px;
+  border: 1px solid var(--border);
+  border-top: 2px solid var(--primary);
+  border-radius: 8px;
+  background: var(--surface-card);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, .55);
+}
+
+.release-modal h2 {
+  margin: 5px 0;
+}
+
+.release-modal header p {
+  margin: 0 0 16px;
+  color: var(--text-muted);
+}
+
+.release-summary-head,
+.release-summary-row {
+  display: grid;
+  grid-template-columns: minmax(160px, 1fr) minmax(160px, 1fr) 120px;
+  align-items: center;
+}
+
+.release-summary-head {
+  background: var(--surface-card-2);
+  color: var(--text-muted);
+  font: 600 9px var(--font-tech);
+  text-transform: uppercase;
+}
+
+.release-summary-head span,
+.release-summary-row > * {
+  min-width: 0;
+  padding: 9px;
+  border: 1px solid var(--border);
+}
+
+.release-summary-row {
+  color: var(--text);
+  font-size: 12px;
+}
+
+.release-summary-row b {
+  color: var(--primary);
+  font-family: var(--font-tech);
+}
+
+.release-warning {
+  margin-top: 14px;
+  padding: 10px;
+  border-left: 3px solid var(--warning);
+  background: color-mix(in srgb, var(--warning) 8%, transparent);
+  color: var(--text-muted);
+  font-size: 11px;
+}
+
+.release-modal footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 18px;
+}
+
 .remito-detalle-table {
   table-layout: fixed;
   min-width: 760px;
@@ -206,6 +300,11 @@
   .destination-row {
     grid-template-columns: 1fr 1fr 40px;
   }
+
+  .distribution-actions {
+    align-items: stretch;
+    flex-direction: column;
+  }
 }
 
 @media (max-width: 560px) {
@@ -215,5 +314,14 @@
 
   .destination-row .mat-mdc-form-field:first-child {
     grid-column: 1 / -1;
+  }
+
+  .release-summary-head,
+  .release-summary-row {
+    grid-template-columns: 1fr;
+  }
+
+  .release-summary-head {
+    display: none;
   }
 }

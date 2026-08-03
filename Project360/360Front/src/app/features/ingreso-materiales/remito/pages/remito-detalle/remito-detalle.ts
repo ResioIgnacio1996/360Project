@@ -50,6 +50,7 @@ export class RemitoDetalle implements OnInit {
   displayedColumns = ['material', 'cantidad', 'unidad'];
   cargando = false;
   liberando = false;
+  resumenLiberacionVisible = false;
   proyectos: any[] = [];
   materialesLiberacion: MaterialLiberacion[] = [];
 
@@ -104,7 +105,7 @@ export class RemitoDetalle implements OnInit {
     });
   }
 
-  liberar(): void {
+  previsualizarLiberacion(): void {
     if (!this.remito || this.remito.liberado) {
       return;
     }
@@ -118,12 +119,34 @@ export class RemitoDetalle implements OnInit {
       return;
     }
 
-    const confirmado = confirm(
-      `¿Confirmás la liberación del remito ${this.remito.numero}?\n\n` +
-      'Los materiales ingresarán a los proyectos seleccionados y se generarán sus lotes de costo.'
-    );
+    this.resumenLiberacionVisible = true;
+  }
 
-    if (!confirmado) {
+  cerrarResumenLiberacion(): void {
+    if (this.liberando) {
+      return;
+    }
+    this.resumenLiberacionVisible = false;
+  }
+
+  get resumenAsignaciones(): Array<{
+    material: string;
+    proyecto: string;
+    cantidad: number;
+    unidad: string;
+  }> {
+    return this.materialesLiberacion.flatMap(material =>
+      material.destinos.map(destino => ({
+        material: material.material,
+        proyecto: this.nombreProyecto(destino.proyectoId),
+        cantidad: Number(destino.cantidad),
+        unidad: material.unidad
+      }))
+    );
+  }
+
+  liberar(): void {
+    if (!this.remito || this.remito.liberado || !this.distribucionValida()) {
       return;
     }
 
@@ -140,6 +163,7 @@ export class RemitoDetalle implements OnInit {
     this.remitosService.liberarRemito(this.remito.idRemito, asignaciones).subscribe({
       next: response => {
         this.liberando = false;
+        this.resumenLiberacionVisible = false;
         this.snackBar.open(response?.message || 'Remito liberado correctamente.', 'Cerrar', {
           duration: 3500
         });
@@ -169,6 +193,12 @@ export class RemitoDetalle implements OnInit {
 
   agregarDestino(material: MaterialLiberacion): void {
     material.destinos.push({ proyectoId: null, cantidad: 0 });
+  }
+
+  nombreProyecto(proyectoId: number | null): string {
+    return this.proyectos.find(proyecto =>
+      Number(proyecto.proyecto_id) === Number(proyectoId)
+    )?.nombre || `Proyecto #${proyectoId}`;
   }
 
   quitarDestino(material: MaterialLiberacion, index: number): void {

@@ -81,6 +81,9 @@ export class RemitoForm implements OnInit {
     this.form.get('idRegistroCompra')?.valueChanges.subscribe(id => {
       this.detalle.clear();
       this.detalleRegistroCompra = [];
+      this.registroCompraSeleccionado = id
+        ? this.registrosCompra.find(registro => Number(registro.idRegistroCompra) === Number(id)) ?? null
+        : null;
 
       if (id) {
         this.cargarDetalleRegistroCompra(Number(id));
@@ -107,6 +110,13 @@ export class RemitoForm implements OnInit {
     return this.form.get('detalle') as FormArray;
   }
 
+  get documentoAsociadoLabel(): string {
+    if (!this.registroCompraSeleccionado) return 'Cargando documento asociado...';
+    const tipo = String(this.registroCompraSeleccionado.tipo || '').trim().toUpperCase();
+    const numero = String(this.registroCompraSeleccionado.numero || '').trim();
+    return [tipo, numero].filter(Boolean).join(' ') || 'Documento sin número';
+  }
+
   get materialesDisponibles(): DetalleRegistroCompra[] {
     const idsCargados = new Set(
       this.detalle.controls
@@ -129,7 +139,7 @@ export class RemitoForm implements OnInit {
 
         if (this.idRegistroCompraFijo) {
           this.registroCompraSeleccionado =
-            registros.find(registro => registro.idRegistroCompra === this.idRegistroCompraFijo) ?? null;
+            registros.find(registro => Number(registro.idRegistroCompra) === Number(this.idRegistroCompraFijo)) ?? null;
         }
       },
       error: error => {
@@ -150,6 +160,7 @@ export class RemitoForm implements OnInit {
   cargarDetalleRegistroCompra(id: number): void {
     this.registroCompraService.getRegistroById(id).subscribe({
       next: registro => {
+        this.registroCompraSeleccionado = registro;
         this.detalleRegistroCompra = registro.detalle ?? [];
         this.detalle.clear();
         this.materialManualForm.reset({

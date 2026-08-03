@@ -68,21 +68,21 @@
         </mat-form-field>
 
         <mat-form-field appearance="outline" *ngIf="!idRegistroCompraFijo">
-          <mat-label>Registro de Compra</mat-label>
+          <mat-label>Documento asociado</mat-label>
           <mat-select formControlName="idRegistroCompra">
             <mat-option
               *ngFor="let registro of registrosCompra"
               [value]="registro.idRegistroCompra"
             >
-              {{ registro.numero }} - {{ registro.proveedor.razonSocial }} - {{ registro.estado?.nombre }}
+              {{ registro.tipo || 'OC' }} {{ registro.numero }} - {{ registro.proveedor.razonSocial }} - {{ registro.estado?.nombre }}
             </mat-option>
           </mat-select>
         </mat-form-field>
 
         <div class="oc-info" *ngIf="idRegistroCompraFijo">
-          <span>Registro de Compra</span>
+          <span>Documento asociado</span>
           <strong>
-            {{ registroCompraSeleccionado?.numero || idRegistroCompraFijo }}
+            {{ documentoAsociadoLabel }}
             <ng-container *ngIf="registroCompraSeleccionado?.proveedor?.razonSocial">
               - {{ registroCompraSeleccionado?.proveedor?.razonSocial }}
             </ng-container>

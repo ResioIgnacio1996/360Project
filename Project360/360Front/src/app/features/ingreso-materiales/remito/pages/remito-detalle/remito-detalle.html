@@ -16,10 +16,10 @@
         class="btn btn-primary"
         type="button"
         [disabled]="!remito || remito.liberado || liberando"
-        (click)="liberar()"
+        (click)="previsualizarLiberacion()"
       >
-        <mat-icon>inventory</mat-icon>
-        {{ liberando ? 'Liberando...' : 'Confirmar liberación' }}
+        <mat-icon>fact_check</mat-icon>
+        {{ liberando ? 'Liberando...' : 'Revisar liberación' }}
       </button>
     </div>
   </div>
@@ -178,6 +178,51 @@
           </button>
         </article>
       </div>
+
+      <div class="distribution-actions">
+        <span>La liberación se habilita cuando cada material queda distribuido completamente.</span>
+        <button
+          class="btn btn-primary"
+          type="button"
+          [disabled]="!distribucionValida() || liberando"
+          (click)="previsualizarLiberacion()">
+          <mat-icon>summarize</mat-icon>
+          Ver resumen y confirmar
+        </button>
+      </div>
     </section>
   </ng-container>
+</div>
+
+<div class="release-modal-backdrop" *ngIf="resumenLiberacionVisible" (click)="cerrarResumenLiberacion()">
+  <section class="release-modal" (click)="$event.stopPropagation()">
+    <header>
+      <span class="breadcrumb">LIBERACIÓN MULTIPROYECTO</span>
+      <h2>Resumen de liberación a stock</h2>
+      <p>Remito {{ remito?.numero }} · Revisá cada destino antes de confirmar.</p>
+    </header>
+
+    <div class="release-summary-head">
+      <span>Material</span><span>Proyecto</span><span>Cantidad</span>
+    </div>
+    <div class="release-summary-row" *ngFor="let asignacion of resumenAsignaciones">
+      <strong>{{ asignacion.material }}</strong>
+      <span>{{ asignacion.proyecto }}</span>
+      <b>{{ asignacion.cantidad }} {{ asignacion.unidad }}</b>
+    </div>
+
+    <div class="release-warning">
+      Esta acción es irreversible. Cada cantidad ingresará al stock del proyecto indicado.
+    </div>
+
+    <footer>
+      <button class="btn btn-ghost" type="button" (click)="cerrarResumenLiberacion()" [disabled]="liberando">
+        Volver y revisar
+      </button>
+      <button class="btn btn-primary" type="button" (click)="liberar()" [disabled]="liberando">
+        <mat-icon>inventory</mat-icon>
+        {{ liberando ? 'Liberando...' : 'Confirmar liberación' }}
+      </button>
+    </footer>
+  </section>
 </div>
