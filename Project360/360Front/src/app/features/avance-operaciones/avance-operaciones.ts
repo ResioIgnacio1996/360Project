@@ -5,6 +5,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { MatIconModule } from '@angular/material/icon';
 import { AvanceOperacionesService } from '../../core/services/avance-operaciones/avance-operaciones';
 import { Auth } from '../../core/services/auth/auth';
+import { MaterialService } from '../../core/services/material/material';
 
 @Component({
   selector: 'app-avance-operaciones',
@@ -16,18 +17,38 @@ import { Auth } from '../../core/services/auth/auth';
 export class AvanceOperaciones implements OnInit {
   readonly proyectoId: number;
   proyecto: any; operaciones: any[] = []; avances: any[] = []; bom: any[] = []; consumos: any[] = [];
+  materialesCatalogo: any[] = [];
   seleccionada: any = null; cargando = true; guardando = false; error = ''; mensaje = '';
   busqueda = ''; estado = 'TODAS'; etapa = 'TODAS'; orden = 'secuencia'; direccion: 'asc' | 'desc' = 'asc';
-  porcentaje = 0; cantidadHoy: number | null = null; nota = ''; fecha = new Date().toISOString().slice(0, 10);
+  readonly fechaMaxima = new Date().toISOString().slice(0, 10);
+  porcentaje = 0; cantidadHoy: number | null = null; nota = ''; fecha = this.fechaMaxima;
   consumosHoy: Record<number, number | null> = {}; fotoNombre = ''; fotoPreview = '';
   gestionFecha: 'iniciar' | 'editar-inicio' | 'finalizar' | 'editar-fin' | null = null;
   fechaGestion = ''; motivoGestion = '';
   confirmacionConsumo = false;
 
-  constructor(private route: ActivatedRoute, private router: Router, private service: AvanceOperacionesService, private auth: Auth) {
+  constructor(
+    private route: ActivatedRoute,
+    private router: Router,
+    private service: AvanceOperacionesService,
+    private auth: Auth,
+    private materialService: MaterialService
+  ) {
     this.proyectoId = Number(this.route.snapshot.paramMap.get('id'));
   }
-  ngOnInit(): void { this.cargar(); }
+  ngOnInit(): void { this.cargar(); this.cargarMaterialesCatalogo(); }
+  cargarMaterialesCatalogo(): void {
+    this.materialService.getMateriales().subscribe({
+      next: response => {
+        this.materialesCatalogo = (Array.isArray(response) ? response : []).map(material => ({
+          idMaterial: material.id_material ?? material.idMaterial,
+          nombre: material.nombre ?? material.nombreMaterial ?? material.descripcion ?? '',
+          uom: material.UoM ?? material.unidad ?? material.unidad_medida ?? ''
+        }));
+      },
+      error: () => this.materialesCatalogo = []
+    });
+  }
   cargar(mantener = true): void {
     const seleccionadaId = mantener ? this.seleccionada?.operacion_id : null;
     this.cargando = true; this.error = '';
@@ -47,8 +68,10 @@ export class AvanceOperaciones implements OnInit {
   get enCurso(): number { return this.operaciones.filter(o => o.estado_codigo === 'EN_CURSO').length; }
   get finalizadas(): number { return this.operaciones.filter(o => ['FINALIZADA', 'COMPLETADA', 'COMPLETA'].includes(o.estado_codigo)).length; }
   get puedeCorregirFechas(): boolean {
-    return ['OPERARIO', 'DEMO'].includes(String(this.auth.getUsuarioActual()?.rol_nombre || '').toUpperCase());
+    return ['ADMIN', 'SUPERVISOR', 'OPERARIO', 'DEMO']
+      .includes(String(this.auth.getUsuarioActual()?.rol_nombre || '').toUpperCase());
   }
+  get avanceHabilitado(): boolean { return !!this.seleccionada?.fecha_inicio_real && !this.seleccionada?.fecha_fin_real; }
   get pendientes(): number { return this.operaciones.filter(o => !o.fecha_inicio_real).length; }
   get avanceGeneral(): number {
     return this.operaciones.length
@@ -88,6 +111,7 @@ export class AvanceOperaciones implements OnInit {
       .filter(m => m.cantidad > 0);
   }
   get consumoConAlertas(): boolean { return this.consumosPendientes.some(m => m.sobreconsumo || m.stockInsuficiente); }
+  get consumoConStockInsuficiente(): boolean { return this.consumosPendientes.some(m => m.stockInsuficiente); }
   seleccionar(op: any): void { this.seleccionada = op; this.prepararFormulario(); }
   ordenar(campo: string): void {
     if (this.orden === campo) this.direccion = this.direccion === 'asc' ? 'desc' : 'asc';
@@ -152,7 +176,21 @@ export class AvanceOperaciones implements OnInit {
   }
   guardarAvance(): void {
     if (!this.seleccionada) return;
+    if (!this.seleccionada.fecha_inicio_real) {
+      this.error = 'Primero iniciá la operación indicando su fecha real de inicio';
+      return;
+    }
+    if (this.seleccionada.fecha_fin_real) {
+      this.error = 'La operación ya está finalizada. Podés corregir sus fechas desde el panel de instrucciones';
+      return;
+    }
     this.actualizarPorcentaje(this.porcentaje);
+    if (this.porcentaje === 100) {
+      this.fechaGestion = this.fecha;
+      this.motivoGestion = '';
+      this.gestionFecha = 'finalizar';
+      return;
+    }
     this.ejecutar(this.service.registrarAvance(this.seleccionada.operacion_id, {
       porcentaje: this.porcentaje, cantidad_hoy: this.cantidadHoy, fecha_registro: this.fecha, nota: this.nota
     }));
@@ -160,6 +198,10 @@ export class AvanceOperaciones implements OnInit {
   guardarConsumos(): void {
     if (!this.seleccionada) return;
     if (!this.consumosPendientes.length) { this.error = 'Informá al menos un consumo mayor a cero'; return; }
+    if (this.consumoConStockInsuficiente) {
+      this.error = 'No se puede confirmar: uno o más materiales superan el stock disponible del proyecto';
+      return;
+    }
     this.confirmacionConsumo = true;
   }
   cerrarConfirmacionConsumo(): void { this.confirmacionConsumo = false; }
@@ -175,6 +217,23 @@ export class AvanceOperaciones implements OnInit {
   }
   esSobreconsumo(m: any): boolean { return Number(m.cantidad_teorica || 0) > 0 && Number(m.cantidad_consumida || 0) > Number(m.cantidad_teorica); }
   esConsumoHistoricoExcedido(c: any): boolean { return Number(c.cantidad_teorica || 0) > 0 && Number(c.consumo_acumulado || 0) > Number(c.cantidad_teorica); }
+  materialesCompatibles(materialBom: any): any[] {
+    const uom = String(materialBom.uom_nombre || '').trim().toUpperCase();
+    return this.materialesCatalogo.filter(material =>
+      String(material.uom || '').trim().toUpperCase() === uom
+    );
+  }
+  vincularMaterial(materialBom: any): void {
+    const materialId = Number(materialBom.materialSeleccionado);
+    if (!materialId) { this.error = 'Seleccioná un material del catálogo para vincular'; return; }
+    this.ejecutar(this.service.vincularMaterialBom(materialBom.bom_id, materialId));
+  }
+  anularConsumo(consumo: any): void {
+    if (consumo.anulado || this.guardando) return;
+    const motivo = prompt(`Motivo de anulación del consumo de ${consumo.material_nombre}:`)?.trim();
+    if (!motivo) return;
+    this.ejecutar(this.service.anularConsumo(consumo.consumo_id, motivo));
+  }
   ejecutar(peticion: any): void {
     this.guardando = true; this.error = '';
     peticion.subscribe({

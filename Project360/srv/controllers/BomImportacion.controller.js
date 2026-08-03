@@ -127,22 +127,38 @@ const importar = async (req, res) => {
     await tx.begin();
     let insertadas = 0, actualizadas = 0;
     for (const fila of validacion.datos) {
+      const uomId = unidades.get(fila.unidad);
+      const material = await new sql.Request(tx)
+        .input('descripcion', sql.NVarChar(200), fila.descripcion_libre)
+        .input('uom_id', sql.BigInt, uomId)
+        .query(`
+          SELECT TOP 1 id_material
+          FROM Materiales
+          WHERE uom_id=@uom_id
+            AND UPPER(LTRIM(RTRIM(nombre))) COLLATE Latin1_General_CI_AI
+              = UPPER(LTRIM(RTRIM(@descripcion))) COLLATE Latin1_General_CI_AI
+          ORDER BY id_material
+        `);
+      const materialId = material.recordset[0]?.id_material || null;
       const existe = await new sql.Request(tx).input('operacion', sql.BigInt, fila.operacion_id)
         .input('linea', sql.SmallInt, fila.nro_linea)
         .query('SELECT bom_id FROM BomOperacion WHERE operacion_id=@operacion AND numero_linea=@linea');
       const request = new sql.Request(tx).input('operacion', sql.BigInt, fila.operacion_id)
-        .input('proyecto', sql.BigInt, req.params.id).input('uom', sql.BigInt, unidades.get(fila.unidad))
+        .input('proyecto', sql.BigInt, req.params.id).input('uom', sql.BigInt, uomId)
         .input('linea', sql.SmallInt, fila.nro_linea).input('descripcion', sql.NVarChar(200), fila.descripcion_libre)
-        .input('cantidad', sql.Decimal(12, 3), fila.cantidad_teorica);
+        .input('cantidad', sql.Decimal(12, 3), fila.cantidad_teorica)
+        .input('material_id', sql.BigInt, materialId)
+        .input('sin_codigo', sql.Bit, materialId ? 0 : 1);
       if (existe.recordset.length) {
         await request.query(`UPDATE BomOperacion SET uom_id=@uom,descripcion_libre=@descripcion,
-          cantidad_teorica=@cantidad,fecha_actualizacion=SYSDATETIME()
+          cantidad_teorica=@cantidad,material_id=@material_id,sin_codigo=@sin_codigo,
+          fecha_actualizacion=SYSDATETIME()
           WHERE operacion_id=@operacion AND numero_linea=@linea`);
         actualizadas++;
       } else {
         await request.query(`INSERT INTO BomOperacion(operacion_id,proyecto_id,uom_id,numero_linea,
-          descripcion_libre,cantidad_teorica,sin_codigo)
-          VALUES(@operacion,@proyecto,@uom,@linea,@descripcion,@cantidad,1)`);
+          material_id,descripcion_libre,cantidad_teorica,sin_codigo)
+          VALUES(@operacion,@proyecto,@uom,@linea,@material_id,@descripcion,@cantidad,@sin_codigo)`);
         insertadas++;
       }
     }

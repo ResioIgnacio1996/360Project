@@ -3,7 +3,8 @@ const { conectarDB, sql } = require('../DB/dbConection');
 const idValido = value => Number.isInteger(Number(value)) && Number(value) > 0;
 const fechaISO = value => value ? new Date(value).toISOString().slice(0, 10) : null;
 const hoyISO = () => new Date().toISOString().slice(0, 10);
-const puedeCorregirFechas = usuario => ['OPERARIO', 'DEMO'].includes(String(usuario?.rol_nombre || '').toUpperCase());
+const puedeCorregirFechas = usuario => ['ADMIN', 'SUPERVISOR', 'OPERARIO', 'DEMO']
+  .includes(String(usuario?.rol_nombre || '').toUpperCase());
 const fechaValida = fecha => /^\d{4}-\d{2}-\d{2}$/.test(String(fecha || '')) && String(fecha) <= hoyISO();
 const validarFechaEntreDependencias = async (tx, operacionId, fecha, tipo) => {
   const limites = await new sql.Request(tx).input('id', sql.BigInt, operacionId).query(`
@@ -98,7 +99,8 @@ const obtener = async (req, res) => {
       SELECT b.bom_id,b.operacion_id,b.material_id,b.numero_linea,b.descripcion_libre,
              b.cantidad_teorica,b.preaviso_dias,b.sin_codigo,u.uom_id,u.nombre uom_nombre,
              m.Nombre material_nombre,
-             ISNULL((SELECT SUM(c.cantidad_consumida) FROM ConsumoMaterialOperacion c WHERE c.bom_id=b.bom_id),0) cantidad_consumida,
+             ISNULL((SELECT SUM(CASE WHEN c.anulado=0 THEN c.cantidad_consumida ELSE 0 END)
+                     FROM ConsumoMaterialOperacion c WHERE c.bom_id=b.bom_id),0) cantidad_consumida,
              ISNULL((SELECT SUM(ct.cantidad_actual)
                      FROM Container ct
                      JOIN StockGeneral sg ON sg.stock_general_id=ct.stock_general_id
@@ -106,16 +108,21 @@ const obtener = async (req, res) => {
              - ISNULL((SELECT SUM(cm.cantidad_consumida)
                        FROM ConsumoMaterialOperacion cm
                        JOIN BomOperacion bx ON bx.bom_id=cm.bom_id
-                       WHERE cm.proyecto_id=b.proyecto_id AND bx.material_id=b.material_id),0) stock_disponible
+                       WHERE cm.proyecto_id=b.proyecto_id
+                         AND bx.material_id=b.material_id
+                         AND cm.afecta_stock=0
+                         AND cm.anulado=0),0) stock_disponible
       FROM BomOperacion b
       JOIN UoM u ON u.uom_id=b.uom_id
       LEFT JOIN Materiales m ON m.id_material=b.material_id
       WHERE b.proyecto_id=@proyecto
       ORDER BY b.operacion_id,b.numero_linea;
 
-      SELECT c.consumo_id,c.operacion_id,c.bom_id,c.cantidad_consumida,c.fecha_consumo,c.fecha_creacion,c.nota,
+      SELECT c.consumo_id,c.operacion_id,c.bom_id,c.container_id,c.cantidad_consumida,c.fecha_consumo,c.fecha_creacion,c.nota,
+             c.afecta_stock,c.anulado,c.fecha_anulacion,c.motivo_anulacion,
              u.nombre uom_nombre,COALESCE(m.Nombre,b.descripcion_libre) material_nombre,b.numero_linea,b.cantidad_teorica,
-             SUM(c.cantidad_consumida) OVER (PARTITION BY c.bom_id ORDER BY c.fecha_creacion,c.consumo_id ROWS UNBOUNDED PRECEDING) consumo_acumulado
+             SUM(CASE WHEN c.anulado=0 THEN c.cantidad_consumida ELSE 0 END)
+               OVER (PARTITION BY c.bom_id ORDER BY c.fecha_creacion,c.consumo_id ROWS UNBOUNDED PRECEDING) consumo_acumulado
       FROM ConsumoMaterialOperacion c
       JOIN UoM u ON u.uom_id=c.uom_id
       JOIN BomOperacion b ON b.bom_id=c.bom_id
@@ -157,9 +164,10 @@ const iniciar = async (req, res) => {
   if (!idValido(req.params.id)) return res.status(400).json({ message: 'Operación inválida' });
   const fecha = req.body.fecha_inicio_real || new Date().toISOString().slice(0, 10);
   if (!fechaValida(fecha)) return res.status(400).json({ message: 'La fecha de inicio no puede ser futura' });
+  let tx;
   try {
     const pool = await conectarDB();
-    const tx = new sql.Transaction(pool);
+    tx = new sql.Transaction(pool);
     await tx.begin();
     const actual = await new sql.Request(tx).input('id', sql.BigInt, req.params.id)
       .query('SELECT fecha_inicio_real FROM Operacion WHERE operacion_id=@id AND ISNULL(archivada,0)=0');
@@ -178,6 +186,7 @@ const iniciar = async (req, res) => {
     await tx.commit();
     res.json({ message: 'Operación iniciada' });
   } catch (error) {
+    if (tx) try { await tx.rollback(); } catch {}
     res.status(500).json({ message: 'No se pudo iniciar la operación', error: error.message });
   }
 };
@@ -290,42 +299,39 @@ const registrarAvance = async (req, res) => {
     return res.status(400).json({ message: 'El porcentaje debe estar entre 0 y 100' });
   if (cantidad !== null && (!Number.isFinite(cantidad) || cantidad < 0))
     return res.status(400).json({ message: 'La cantidad no puede ser negativa' });
+  let tx;
   try {
     const pool = await conectarDB();
-    const tx = new sql.Transaction(pool);
+    tx = new sql.Transaction(pool);
     await tx.begin();
     const actual = await new sql.Request(tx).input('id', sql.BigInt, req.params.id)
-      .query('SELECT operacion_id,proyecto_id,pct_avance_actual,cantidad_acumulada,fecha_inicio_real FROM Operacion WHERE operacion_id=@id AND ISNULL(archivada,0)=0');
+      .query('SELECT operacion_id,proyecto_id,pct_avance_actual,cantidad_acumulada,fecha_inicio_real,fecha_fin_real FROM Operacion WHERE operacion_id=@id AND ISNULL(archivada,0)=0');
     if (!actual.recordset.length) { await tx.rollback(); return res.status(404).json({ message: 'Operación no encontrada' }); }
     const op = actual.recordset[0];
+    if (!op.fecha_inicio_real) { await tx.rollback(); return res.status(409).json({ message: 'Primero tenés que iniciar la operación' }); }
+    if (op.fecha_fin_real) { await tx.rollback(); return res.status(409).json({ message: 'La operación ya está finalizada; solo podés corregir sus fechas' }); }
     if (porcentaje < Number(op.pct_avance_actual || 0)) { await tx.rollback(); return res.status(400).json({ message: 'El avance no puede ser menor al registrado' }); }
+    if (porcentaje === 100) { await tx.rollback(); return res.status(409).json({ message: 'Para llegar al 100% utilizá Finalizar operación' }); }
     const fecha = req.body.fecha_registro || new Date().toISOString().slice(0, 10);
     if (!fechaValida(fecha)) { await tx.rollback(); return res.status(400).json({ message: 'La fecha del avance no puede ser futura' }); }
-    if (!op.fecha_inicio_real) {
-      const errorInicio = await validarFechaEntreDependencias(tx, req.params.id, String(fecha), 'inicio');
-      if (errorInicio) { await tx.rollback(); return res.status(400).json({ message: errorInicio }); }
-    }
-    if (porcentaje === 100) {
-      const errorFin = await validarFechaEntreDependencias(tx, req.params.id, String(fecha), 'fin');
-      if (errorFin) { await tx.rollback(); return res.status(400).json({ message: errorFin }); }
-    }
+    if (String(fecha) < fechaISO(op.fecha_inicio_real)) { await tx.rollback(); return res.status(400).json({ message: 'La fecha del avance no puede ser anterior al inicio real' }); }
     await new sql.Request(tx).input('op', sql.BigInt, op.operacion_id).input('proyecto', sql.BigInt, op.proyecto_id)
       .input('usuario', sql.BigInt, req.usuario.usuario_id).input('nuevo', sql.Decimal(5, 2), porcentaje)
       .input('anterior', sql.Decimal(5, 2), Number(op.pct_avance_actual || 0))
       .input('cantidad', sql.Decimal(18, 4), cantidad).input('fecha', sql.Date, fecha)
-      .input('primero', sql.Bit, op.fecha_inicio_real ? 0 : 1).input('nota', sql.NVarChar(sql.MAX), String(req.body.nota || '').trim() || null)
+      .input('nota', sql.NVarChar(sql.MAX), String(req.body.nota || '').trim() || null)
       .query(`INSERT INTO AvanceOperacion(operacion_id,proyecto_id,registrado_por,pct_avance_nuevo,pct_avance_anterior,
                 cantidad_hoy,fecha_registro,es_primer_avance,fecha_inicio_real_declarada,nota,es_correccion)
-              VALUES(@op,@proyecto,@usuario,@nuevo,@anterior,@cantidad,@fecha,@primero,CASE WHEN @primero=1 THEN @fecha END,@nota,0)`);
+              VALUES(@op,@proyecto,@usuario,@nuevo,@anterior,@cantidad,@fecha,0,NULL,@nota,0)`);
     await new sql.Request(tx).input('id', sql.BigInt, op.operacion_id).input('pct', sql.Decimal(5, 2), porcentaje)
       .input('cantidad', sql.Decimal(18, 4), cantidad).input('fecha', sql.Date, fecha)
       .query(`UPDATE o SET pct_avance_actual=@pct,cantidad_acumulada=ISNULL(cantidad_acumulada,0)+ISNULL(@cantidad,0),
-              fecha_inicio_real=COALESCE(fecha_inicio_real,@fecha),fecha_fin_real=CASE WHEN @pct=100 THEN @fecha ELSE fecha_fin_real END,
-              estado_id=COALESCE((SELECT TOP 1 estado_id FROM estado_operacion WHERE codigo=CASE WHEN @pct=100 THEN 'COMPLETA' ELSE 'EN_CURSO' END),estado_id),
+              estado_id=COALESCE((SELECT TOP 1 estado_id FROM estado_operacion WHERE codigo='EN_CURSO'),estado_id),
               fecha_actualizacion=SYSDATETIME() FROM Operacion o WHERE operacion_id=@id`);
     await tx.commit();
     res.status(201).json({ message: 'Avance registrado' });
   } catch (error) {
+    if (tx) try { await tx.rollback(); } catch {}
     res.status(500).json({ message: 'No se pudo registrar el avance', error: error.message });
   }
 };
@@ -356,4 +362,341 @@ const registrarConsumos = async (req, res) => {
   }
 };
 
-module.exports = { obtener, iniciar, modificarFechaInicio, finalizar, modificarFechaFin, registrarAvance, registrarConsumos };
+const registrarConsumosConStock = async (req, res) => {
+  const consumos = Array.isArray(req.body.consumos)
+    ? req.body.consumos.filter(item => Number(item.cantidad) > 0)
+    : [];
+  const fecha = String(req.body.fecha_consumo || hoyISO());
+
+  if (!idValido(req.params.id) || !consumos.length)
+    return res.status(400).json({ message: 'Informá al menos un consumo mayor a cero' });
+  if (!fechaValida(fecha))
+    return res.status(400).json({ message: 'La fecha de consumo no puede ser futura' });
+
+  const bomIds = consumos.map(item => Number(item.bom_id));
+  if (bomIds.some(id => !idValido(id)) || new Set(bomIds).size !== bomIds.length)
+    return res.status(400).json({ message: 'Las líneas BOM deben ser válidas y no pueden repetirse' });
+
+  let tx;
+  try {
+    const pool = await conectarDB();
+    tx = new sql.Transaction(pool);
+    await tx.begin(sql.ISOLATION_LEVEL.SERIALIZABLE);
+
+    const operacion = await new sql.Request(tx)
+      .input('operacion_id', sql.BigInt, req.params.id)
+      .query(`
+        SELECT operacion_id, proyecto_id, fecha_inicio_real
+        FROM Operacion WITH (UPDLOCK, HOLDLOCK)
+        WHERE operacion_id=@operacion_id
+          AND ISNULL(archivada,0)=0
+      `);
+
+    if (!operacion.recordset.length) {
+      await tx.rollback();
+      return res.status(404).json({ message: 'Operación no encontrada' });
+    }
+    if (!operacion.recordset[0].fecha_inicio_real) {
+      await tx.rollback();
+      return res.status(409).json({ message: 'Primero tenés que iniciar la operación' });
+    }
+
+    const registrados = [];
+
+    for (const item of consumos) {
+      const cantidad = Number(item.cantidad);
+      if (!Number.isFinite(cantidad) || cantidad <= 0) {
+        await tx.rollback();
+        return res.status(400).json({ message: 'Las cantidades consumidas deben ser mayores a cero' });
+      }
+      if (Math.abs(cantidad * 100 - Math.round(cantidad * 100)) > 0.000001) {
+        await tx.rollback();
+        return res.status(400).json({ message: 'Las cantidades consumidas admiten hasta 2 decimales' });
+      }
+
+      const bom = await new sql.Request(tx)
+        .input('bom_id', sql.BigInt, item.bom_id)
+        .input('operacion_id', sql.BigInt, req.params.id)
+        .query(`
+          SELECT
+            b.bom_id,
+            b.proyecto_id,
+            b.uom_id,
+            b.descripcion_libre,
+            COALESCE(b.material_id, materialCoincidente.id_material) AS material_id,
+            COALESCE(m.nombre, materialCoincidente.nombre, b.descripcion_libre) AS material_nombre
+          FROM BomOperacion b WITH (UPDLOCK, HOLDLOCK)
+          LEFT JOIN Materiales m ON m.id_material=b.material_id
+          OUTER APPLY (
+            SELECT TOP 1 mx.id_material, mx.nombre
+            FROM Materiales mx
+            WHERE b.material_id IS NULL
+              AND mx.uom_id=b.uom_id
+              AND UPPER(LTRIM(RTRIM(mx.nombre))) COLLATE Latin1_General_CI_AI
+                = UPPER(LTRIM(RTRIM(b.descripcion_libre))) COLLATE Latin1_General_CI_AI
+            ORDER BY mx.id_material
+          ) materialCoincidente
+          WHERE b.bom_id=@bom_id
+            AND b.operacion_id=@operacion_id
+        `);
+
+      if (!bom.recordset.length) {
+        await tx.rollback();
+        return res.status(400).json({ message: 'Hay un material que no pertenece a la operación' });
+      }
+
+      const linea = bom.recordset[0];
+      if (!linea.material_id) {
+        await tx.rollback();
+        return res.status(409).json({
+          message: `El material BOM "${linea.descripcion_libre}" no está vinculado al catálogo de Materiales`
+        });
+      }
+
+      await new sql.Request(tx)
+        .input('bom_id', sql.BigInt, linea.bom_id)
+        .input('material_id', sql.BigInt, linea.material_id)
+        .query(`
+          UPDATE BomOperacion
+          SET material_id=@material_id, sin_codigo=0, fecha_actualizacion=SYSDATETIME()
+          WHERE bom_id=@bom_id AND material_id IS NULL
+        `);
+
+      const containers = await new sql.Request(tx)
+        .input('proyecto_id', sql.BigInt, linea.proyecto_id)
+        .input('material_id', sql.BigInt, linea.material_id)
+        .query(`
+          SELECT c.container_id, c.cantidad_actual
+          FROM Container c WITH (UPDLOCK, HOLDLOCK)
+          JOIN StockGeneral sg ON sg.stock_general_id=c.stock_general_id
+          WHERE c.id_proyecto=@proyecto_id
+            AND sg.id_material=@material_id
+            AND c.activo=1
+            AND c.cantidad_actual>0
+          ORDER BY c.container_id
+        `);
+
+      if (!containers.recordset.length) {
+        await tx.rollback();
+        return res.status(409).json({
+          message: `El proyecto no tiene stock asignado de ${linea.material_nombre}`
+        });
+      }
+
+      const consumoHistorico = await new sql.Request(tx)
+        .input('proyecto_id', sql.BigInt, linea.proyecto_id)
+        .input('material_id', sql.BigInt, linea.material_id)
+        .query(`
+          SELECT ISNULL(SUM(cm.cantidad_consumida),0) AS cantidad
+          FROM ConsumoMaterialOperacion cm WITH (UPDLOCK, HOLDLOCK)
+          JOIN BomOperacion bx ON bx.bom_id=cm.bom_id
+          WHERE cm.proyecto_id=@proyecto_id
+            AND bx.material_id=@material_id
+            AND cm.afecta_stock=0
+            AND cm.anulado=0
+        `);
+
+      const stockFisico = containers.recordset.reduce(
+        (total, container) => total + Number(container.cantidad_actual || 0),
+        0
+      );
+      const disponible = stockFisico
+        - Number(consumoHistorico.recordset[0]?.cantidad || 0);
+
+      if (cantidad > disponible + 0.000001) {
+        await tx.rollback();
+        return res.status(409).json({
+          message: `Stock insuficiente de ${linea.material_nombre}. Disponible: ${Math.max(0, disponible)}`
+        });
+      }
+
+      let restante = cantidad;
+      for (const containerActual of containers.recordset) {
+        if (restante <= 0.000001) break;
+        const cantidadContainer = Math.min(restante, Number(containerActual.cantidad_actual));
+        if (cantidadContainer <= 0) continue;
+
+        await new sql.Request(tx)
+          .input('container_id', sql.BigInt, containerActual.container_id)
+          .input('cantidad', sql.Decimal(18, 2), cantidadContainer)
+          .query(`
+            UPDATE Container
+            SET cantidad_actual=cantidad_actual-@cantidad
+            WHERE container_id=@container_id
+          `);
+
+        const consumo = await new sql.Request(tx)
+          .input('bom_id', sql.BigInt, linea.bom_id)
+          .input('operacion_id', sql.BigInt, req.params.id)
+          .input('proyecto_id', sql.BigInt, linea.proyecto_id)
+          .input('usuario_id', sql.BigInt, req.usuario.usuario_id)
+          .input('uom_id', sql.BigInt, linea.uom_id)
+          .input('container_id', sql.BigInt, containerActual.container_id)
+          .input('cantidad', sql.Decimal(18, 2), cantidadContainer)
+          .input('fecha', sql.Date, fecha)
+          .input('nota', sql.NVarChar(sql.MAX), String(item.nota || req.body.nota || '').trim() || null)
+          .query(`
+            INSERT INTO ConsumoMaterialOperacion(
+              bom_id, operacion_id, proyecto_id, registrado_por, uom_id,
+              container_id, cantidad_consumida, fecha_consumo, nota, afecta_stock, anulado
+            )
+            OUTPUT INSERTED.consumo_id
+            VALUES(
+              @bom_id, @operacion_id, @proyecto_id, @usuario_id, @uom_id,
+              @container_id, @cantidad, @fecha, @nota, 1, 0
+            )
+          `);
+
+        registrados.push({
+          consumo_id: consumo.recordset[0].consumo_id,
+          bom_id: linea.bom_id,
+          material: linea.material_nombre,
+          cantidad: cantidadContainer,
+          container_id: containerActual.container_id
+        });
+        restante = Number((restante - cantidadContainer).toFixed(2));
+      }
+    }
+
+    await tx.commit();
+    res.status(201).json({ message: 'Consumos registrados y stock actualizado', consumos: registrados });
+  } catch (error) {
+    if (tx) try { await tx.rollback(); } catch {}
+    res.status(500).json({ message: 'No se pudieron registrar los consumos', error: error.message });
+  }
+};
+
+const anularConsumo = async (req, res) => {
+  if (!idValido(req.params.id))
+    return res.status(400).json({ message: 'Consumo inválido' });
+
+  const motivo = String(req.body.motivo || '').trim();
+  if (!motivo)
+    return res.status(400).json({ message: 'El motivo de la anulación es obligatorio' });
+
+  let tx;
+  try {
+    const pool = await conectarDB();
+    tx = new sql.Transaction(pool);
+    await tx.begin(sql.ISOLATION_LEVEL.SERIALIZABLE);
+
+    const consumo = await new sql.Request(tx)
+      .input('consumo_id', sql.BigInt, req.params.id)
+      .query(`
+        SELECT consumo_id, container_id, cantidad_consumida, afecta_stock, anulado
+        FROM ConsumoMaterialOperacion WITH (UPDLOCK, HOLDLOCK)
+        WHERE consumo_id=@consumo_id
+      `);
+
+    if (!consumo.recordset.length) {
+      await tx.rollback();
+      return res.status(404).json({ message: 'Consumo no encontrado' });
+    }
+
+    const actual = consumo.recordset[0];
+    if (actual.anulado) {
+      await tx.rollback();
+      return res.status(409).json({ message: 'El consumo ya fue anulado' });
+    }
+
+    if (actual.afecta_stock) {
+      if (!actual.container_id) {
+        await tx.rollback();
+        return res.status(409).json({ message: 'El consumo no tiene un Container asociado para devolver el material' });
+      }
+
+      const container = await new sql.Request(tx)
+        .input('container_id', sql.BigInt, actual.container_id)
+        .query(`
+          SELECT container_id
+          FROM Container WITH (UPDLOCK, HOLDLOCK)
+          WHERE container_id=@container_id
+        `);
+
+      if (!container.recordset.length) {
+        await tx.rollback();
+        return res.status(409).json({ message: 'No existe el Container original del consumo' });
+      }
+
+      await new sql.Request(tx)
+        .input('container_id', sql.BigInt, actual.container_id)
+        .input('cantidad', sql.Decimal(18, 2), actual.cantidad_consumida)
+        .query(`
+          UPDATE Container
+          SET cantidad_actual=cantidad_actual+@cantidad, activo=1
+          WHERE container_id=@container_id
+        `);
+    }
+
+    await new sql.Request(tx)
+      .input('consumo_id', sql.BigInt, actual.consumo_id)
+      .input('usuario_id', sql.BigInt, req.usuario.usuario_id)
+      .input('motivo', sql.NVarChar(500), motivo)
+      .query(`
+        UPDATE ConsumoMaterialOperacion
+        SET
+          anulado=1,
+          fecha_anulacion=SYSDATETIME(),
+          anulado_por=@usuario_id,
+          motivo_anulacion=@motivo
+        WHERE consumo_id=@consumo_id
+      `);
+
+    await tx.commit();
+    res.json({ message: 'Consumo anulado y material devuelto al stock del proyecto' });
+  } catch (error) {
+    if (tx) try { await tx.rollback(); } catch {}
+    res.status(500).json({ message: 'No se pudo anular el consumo', error: error.message });
+  }
+};
+
+const vincularMaterialBom = async (req, res) => {
+  if (!idValido(req.params.id) || !idValido(req.body.material_id))
+    return res.status(400).json({ message: 'La línea BOM y el material son obligatorios' });
+
+  try {
+    const pool = await conectarDB();
+    const result = await pool.request()
+      .input('bom_id', sql.BigInt, req.params.id)
+      .input('material_id', sql.BigInt, req.body.material_id)
+      .query(`
+        SELECT b.bom_id, b.uom_id AS bom_uom_id, m.id_material, m.uom_id AS material_uom_id, m.nombre
+        FROM BomOperacion b
+        CROSS JOIN Materiales m
+        WHERE b.bom_id=@bom_id
+          AND m.id_material=@material_id
+      `);
+
+    if (!result.recordset.length)
+      return res.status(404).json({ message: 'La línea BOM o el material no existen' });
+
+    const datos = result.recordset[0];
+    if (Number(datos.bom_uom_id) !== Number(datos.material_uom_id))
+      return res.status(409).json({ message: 'La UOM del material no coincide con la UOM de la línea BOM' });
+
+    await pool.request()
+      .input('bom_id', sql.BigInt, datos.bom_id)
+      .input('material_id', sql.BigInt, datos.id_material)
+      .query(`
+        UPDATE BomOperacion
+        SET material_id=@material_id, sin_codigo=0, fecha_actualizacion=SYSDATETIME()
+        WHERE bom_id=@bom_id
+      `);
+
+    res.json({ message: `Material BOM vinculado con ${datos.nombre}` });
+  } catch (error) {
+    res.status(500).json({ message: 'No se pudo vincular el material BOM', error: error.message });
+  }
+};
+
+module.exports = {
+  obtener,
+  iniciar,
+  modificarFechaInicio,
+  finalizar,
+  modificarFechaFin,
+  registrarAvance,
+  registrarConsumos: registrarConsumosConStock,
+  anularConsumo,
+  vincularMaterialBom
+};

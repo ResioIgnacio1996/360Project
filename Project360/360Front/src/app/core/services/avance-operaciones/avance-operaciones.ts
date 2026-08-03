@@ -25,4 +25,10 @@ export class AvanceOperacionesService {
   registrarConsumos(operacionId: number, datos: any): Observable<any> {
     return this.http.post(`${this.api}/operaciones/${operacionId}/consumos`, datos);
   }
+  anularConsumo(consumoId: number, motivo: string): Observable<any> {
+    return this.http.patch(`${this.api}/consumos/${consumoId}/anular`, { motivo });
+  }
+  vincularMaterialBom(bomId: number, materialId: number): Observable<any> {
+    return this.http.patch(`${this.api}/bom/${bomId}/material`, { material_id: materialId });
+  }
 }

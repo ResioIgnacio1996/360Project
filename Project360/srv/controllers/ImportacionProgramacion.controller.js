@@ -295,9 +295,17 @@ async function importar(req,res){
     const aliases={UNID:'UN',UNIDAD:'UN',BOLSAS:'BOLSA',LT:'L',LITROS:'L'};
     for(const m of normal.materiales){
       const nombre=aliases[String(m.unidad).toUpperCase()]||String(m.unidad).toUpperCase(),uom=cats.recordsets[0].find(x=>x.nombre.toUpperCase()===nombre);
+      const material=await rq().input('descripcion',sql.NVarChar(200),m.descripcion_libre).input('uom',sql.BigInt,uom.uom_id).query(`
+        SELECT TOP 1 id_material FROM Materiales
+        WHERE uom_id=@uom
+          AND UPPER(LTRIM(RTRIM(nombre))) COLLATE Latin1_General_CI_AI
+            = UPPER(LTRIM(RTRIM(@descripcion))) COLLATE Latin1_General_CI_AI
+        ORDER BY id_material`);
+      const materialId=material.recordset[0]?.id_material||null;
       await rq().input('o',sql.BigInt,opMap.get(m.secuencia_op)).input('p',sql.BigInt,req.params.id).input('u',sql.BigInt,uom.uom_id).input('l',sql.SmallInt,m.nro_linea)
         .input('d',sql.NVarChar(200),m.descripcion_libre).input('c',sql.Decimal(12,3),m.cantidad_teorica)
-        .query('INSERT INTO BomOperacion(operacion_id,proyecto_id,uom_id,numero_linea,descripcion_libre,cantidad_teorica,sin_codigo) VALUES(@o,@p,@u,@l,@d,@c,1)');
+        .input('m',sql.BigInt,materialId).input('s',sql.Bit,materialId?0:1)
+        .query('INSERT INTO BomOperacion(operacion_id,proyecto_id,uom_id,numero_linea,material_id,descripcion_libre,cantidad_teorica,sin_codigo) VALUES(@o,@p,@u,@l,@m,@d,@c,@s)');
     }
     await tx.commit();
     res.status(201).json({message:`Versión ${codigo} importada correctamente`,resumen:{etapas:normal.etapas.length,responsables:normal.responsables.length,operaciones:normal.operaciones.length,materiales:normal.materiales.length,excepciones:normal.excepciones.length,fecha_inicio_programacion:fechaInicio}});
