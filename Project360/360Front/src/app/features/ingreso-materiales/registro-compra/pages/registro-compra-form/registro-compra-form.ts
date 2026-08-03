@@ -370,9 +370,20 @@ uoms: any[] = [];
     return String(value ?? '')
       .normalize('NFD')
       .replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^a-zA-Z0-9]+/g, ' ')
       .trim()
       .replace(/\s+/g, ' ')
       .toLowerCase();
+  }
+
+  uomsPermitidas(index: number): any[] {
+    const row = this.detalle.at(index);
+    const idMaterial = Number(row.get('idMaterial')?.value);
+    if (!idMaterial) return this.uoms;
+
+    const material = this.materiales.find(item => Number(item.idMaterial) === idMaterial);
+    const unidadMaterial = this.normalizarUnidad(material?.unidad);
+    return this.uoms.filter(uom => this.normalizarUnidad(uom.nombre) === unidadMaterial);
   }
 
   private reconocerMaterialesExistentes(): void {
@@ -711,6 +722,8 @@ guardar(): void {
   }
 
   validarMaterialesParaGuardar(): boolean {
+    this.reconocerMaterialesExistentes();
+
     const materialInvalido = this.detalle.controls.some(control => {
       const fila = control as FormGroup;
       const tieneId = !!fila.get('idMaterial')?.value;
@@ -724,6 +737,36 @@ guardar(): void {
     if (materialInvalido) {
       this.snackBar.open(
         'Para crear materiales nuevos, informa nombre, cantidad y unidad.',
+        'Cerrar',
+        { duration: 3500 }
+      );
+      return false;
+    }
+
+    const unidadInvalida = this.detalle.controls.some(control =>
+      !this.obtenerUnidadCatalogada(control.get('unidad')?.value)
+    );
+
+    if (unidadInvalida) {
+      this.snackBar.open(
+        'Selecciona una unidad de medida existente en el catálogo de UOM.',
+        'Cerrar',
+        { duration: 3500 }
+      );
+      return false;
+    }
+
+    const unidadMaterialInvalida = this.detalle.controls.some(control => {
+      const idMaterial = Number(control.get('idMaterial')?.value);
+      if (!idMaterial) return false;
+      const material = this.materiales.find(item => Number(item.idMaterial) === idMaterial);
+      return this.normalizarUnidad(control.get('unidad')?.value)
+        !== this.normalizarUnidad(material?.unidad);
+    });
+
+    if (unidadMaterialInvalida) {
+      this.snackBar.open(
+        'La unidad de un material existente debe coincidir con su UOM registrada.',
         'Cerrar',
         { duration: 3500 }
       );
@@ -893,7 +936,6 @@ guardar(): void {
       return existente.nombre;
     }
 
-    this.uoms.push({ idUom: null, nombre, nueva: true });
     return nombre;
   }
 

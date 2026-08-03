@@ -140,6 +140,18 @@ const normalizarTipoRegistroCompra = (tipo) => {
 };
 
 const normalizarUom = (uom) => (uom || '').trim().toUpperCase();
+const errorValidacionMaterial = (message) => {
+    const error = new Error(message);
+    error.statusCode = 400;
+    return error;
+};
+const normalizarNombreMaterial = (nombre) => String(nombre || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^A-Z0-9]+/gi, ' ')
+    .trim()
+    .replace(/\s+/g, ' ')
+    .toUpperCase();
 
 const obtenerUomId = async (transaction, uom) => {
     const nombreUom = normalizarUom(uom);
@@ -161,15 +173,7 @@ const obtenerUomId = async (transaction, uom) => {
         return uomResult.recordset[0].uom_id;
     }
 
-    const uomNueva = await new sql.Request(transaction)
-        .input('nombre', sql.NVarChar(50), nombreUom)
-        .query(`
-            INSERT INTO UOM (nombre)
-            OUTPUT INSERTED.uom_id
-            VALUES (@nombre)
-        `);
-
-    return uomNueva.recordset[0].uom_id;
+    throw errorValidacionMaterial(`La unidad de medida ${nombreUom} no existe en el catálogo de UOM`);
 };
 
 const obtenerMaterialId = async (transaction, item) => {
@@ -178,13 +182,19 @@ const obtenerMaterialId = async (transaction, item) => {
         const material = await new sql.Request(transaction)
             .input('id_material', sql.BigInt, item.id_material)
             .query(`
-                SELECT id_material
-                FROM Materiales
+                SELECT m.id_material, u.nombre AS uom
+                FROM Materiales m
+                JOIN UOM u ON u.uom_id=m.uom_id
                 WHERE id_material = @id_material
             `);
 
         if (material.recordset.length === 0) {
             throw new Error(`Material no encontrado: ${item.id_material}`);
+        }
+
+        const uomMaterial = normalizarUom(material.recordset[0].uom);
+        if (normalizarUom(item.UoM) !== uomMaterial) {
+            throw errorValidacionMaterial(`La UOM del material debe ser ${uomMaterial}`);
         }
 
         return item.id_material;
@@ -198,17 +208,22 @@ const obtenerMaterialId = async (transaction, item) => {
         throw new Error('El material debe tener id_material, nombre o descripcion');
     }
 
-    const materialExistente = await new sql.Request(transaction)
-        .input('nombre', sql.VarChar, nombreMaterial)
+    const materialesCatalogo = await new sql.Request(transaction)
         .query(`
-            SELECT id_material
-            FROM Materiales
-            WHERE UPPER(LTRIM(RTRIM(nombre))) COLLATE Latin1_General_CI_AI
-                = UPPER(LTRIM(RTRIM(@nombre))) COLLATE Latin1_General_CI_AI
+            SELECT m.id_material, m.nombre, u.nombre AS uom
+            FROM Materiales m WITH (UPDLOCK, HOLDLOCK)
+            JOIN UOM u ON u.uom_id=m.uom_id
         `);
+    const materialExistente = materialesCatalogo.recordset.find(material =>
+        normalizarNombreMaterial(material.nombre) === normalizarNombreMaterial(nombreMaterial)
+    );
 
-    if (materialExistente.recordset.length > 0) {
-        return materialExistente.recordset[0].id_material;
+    if (materialExistente) {
+        const uomMaterial = normalizarUom(materialExistente.uom);
+        if (normalizarUom(item.UoM) !== uomMaterial) {
+            throw errorValidacionMaterial(`El material ${materialExistente.nombre} ya existe y su UOM es ${uomMaterial}`);
+        }
+        return materialExistente.id_material;
     }
 
     const uomId = await obtenerUomId(transaction, item.UoM);

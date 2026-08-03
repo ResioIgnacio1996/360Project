@@ -247,7 +247,7 @@
             <mat-form-field appearance="outline">
               <mat-label>UOM</mat-label>
               <mat-select formControlName="unidad">
-                <mat-option *ngFor="let uom of uoms" [value]="uom.nombre">
+                <mat-option *ngFor="let uom of uomsPermitidas(i)" [value]="uom.nombre">
                   {{ uom.nombre }}
                 </mat-option>
               </mat-select>
