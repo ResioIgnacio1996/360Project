@@ -10,19 +10,19 @@ const validarFechaEntreDependencias = async (tx, operacionId, fecha, tipo) => {
     SELECT TOP 1 p.secuencia,p.nombre,p.fecha_fin_real
     FROM OperacionDependencia d
     JOIN Operacion p ON p.operacion_id=d.operacion_predecesora_id
-    WHERE d.operacion_id=@id AND ISNULL(d.activo,1)=1
+    WHERE d.operacion_id=@id
     ORDER BY p.fecha_fin_real DESC,p.secuencia DESC;
 
     SELECT TOP 1 s.secuencia,s.nombre,s.fecha_inicio_real
     FROM OperacionDependencia d
     JOIN Operacion s ON s.operacion_id=d.operacion_id
-    WHERE d.operacion_predecesora_id=@id AND ISNULL(d.activo,1)=1 AND s.fecha_inicio_real IS NOT NULL
+    WHERE d.operacion_predecesora_id=@id AND s.fecha_inicio_real IS NOT NULL
     ORDER BY s.fecha_inicio_real,s.secuencia;
 
     SELECT COUNT(*) pendientes
     FROM OperacionDependencia d
     JOIN Operacion p ON p.operacion_id=d.operacion_predecesora_id
-    WHERE d.operacion_id=@id AND ISNULL(d.activo,1)=1 AND p.fecha_fin_real IS NULL;
+    WHERE d.operacion_id=@id AND p.fecha_fin_real IS NULL;
   `);
   const anterior = limites.recordsets[0][0];
   const siguiente = limites.recordsets[1][0];

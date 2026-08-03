@@ -310,11 +310,11 @@ uoms: any[] = [];
   }
 
   filtrarMateriales(value: string): any[] {
-    const filtro = value.toLowerCase();
+    const filtro = this.normalizarNombreMaterial(value);
 
     return this.materiales.filter(material =>
-      material.nombreMaterial.toLowerCase().includes(filtro) ||
-      material.unidad?.toLowerCase().includes(filtro)
+      this.normalizarNombreMaterial(material.nombreMaterial).includes(filtro) ||
+      this.normalizarNombreMaterial(material.unidad).includes(filtro)
     );
   }
 
@@ -337,10 +337,49 @@ uoms: any[] = [];
     });
   }
 
-  limpiarMaterialSiEditaManual(index: number): void {
+  reconocerMaterialIngresado(index: number, nombreIngresado?: string): void {
     const row = this.detalle.at(index);
+    const materialExistente = this.buscarMaterialExistente(nombreIngresado);
+
+    if (materialExistente) {
+      row.patchValue({
+        idMaterial: materialExistente.idMaterial,
+        existe: true,
+        unidad: this.obtenerUnidadCatalogada(materialExistente.unidad) ?? row.get('unidad')?.value
+      }, { emitEvent: false });
+      return;
+    }
+
     row.get('idMaterial')?.setValue(null);
     row.get('existe')?.setValue(false);
+  }
+
+  private buscarMaterialExistente(nombre: unknown): any | undefined {
+    const nombreNormalizado = this.normalizarNombreMaterial(nombre);
+
+    if (!nombreNormalizado) {
+      return undefined;
+    }
+
+    return this.materiales.find(material =>
+      this.normalizarNombreMaterial(material.nombreMaterial) === nombreNormalizado
+    );
+  }
+
+  private normalizarNombreMaterial(value: unknown): string {
+    return String(value ?? '')
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .trim()
+      .replace(/\s+/g, ' ')
+      .toLowerCase();
+  }
+
+  private reconocerMaterialesExistentes(): void {
+    this.detalle.controls.forEach((control, index) => {
+      const nombre = control.get('nombreMaterial')?.value;
+      this.reconocerMaterialIngresado(index, nombre);
+    });
   }
 
   materialNuevoPendiente(index: number): boolean {
@@ -349,7 +388,10 @@ uoms: any[] = [];
     const nombreMaterial = row.get('nombreMaterial')?.value;
     const unidad = row.get('unidad')?.value;
 
-    return !idMaterial && !!nombreMaterial?.trim() && !!unidad;
+    return !idMaterial
+      && !this.buscarMaterialExistente(nombreMaterial)
+      && !!nombreMaterial?.trim()
+      && !!unidad;
   }
 
   quitarMaterial(index: number): void {
@@ -565,15 +607,10 @@ uoms: any[] = [];
     this.detalle.clear();
     this.materialesFiltrados$ = [];
 
-    const advertenciasUnidad: string[] = [];
-
     if (data.detalle?.length) {
       data.detalle.forEach((item, index) => {
-        const unidadCatalogada = this.obtenerUnidadCatalogada(item.unidad);
-
-        if (this.uoms.length && item.unidad && !unidadCatalogada) {
-          advertenciasUnidad.push(`La unidad ${item.unidad} no existe en UOM. Selecciona una unidad valida para ${item.nombreMaterial}.`);
-        }
+        const unidadCatalogada = this.obtenerUnidadCatalogada(item.unidad)
+          ?? this.registrarUnidadTemporal(item.unidad);
 
         this.detalle.push(this.crearDetalleItem({
           ...item,
@@ -585,10 +622,9 @@ uoms: any[] = [];
       this.agregarMaterial(false);
     }
 
-    this.advertencias = [
-      ...(data.advertencias ?? []),
-      ...advertenciasUnidad
-    ];
+    this.reconocerMaterialesExistentes();
+
+    this.advertencias = data.advertencias ?? [];
   }
 
 guardar(): void {
@@ -729,8 +765,13 @@ guardar(): void {
       UoM: this.obtenerUnidadCatalogada(item.unidad) ?? item.unidad
     };
 
-    if (item.idMaterial) {
-      detalle.id_material = item.idMaterial;
+    const materialExistente = item.idMaterial
+      ? undefined
+      : this.buscarMaterialExistente(item.nombreMaterial);
+    const idMaterial = item.idMaterial ?? materialExistente?.idMaterial;
+
+    if (idMaterial) {
+      detalle.id_material = idMaterial;
     } else {
       const nombreMaterial = item.nombreMaterial?.trim();
       detalle.nombre = nombreMaterial;
@@ -796,6 +837,7 @@ guardar(): void {
         this.detalle.controls.forEach((_, index) => {
           this.configurarAutocompleteMaterial(index);
         });
+        this.reconocerMaterialesExistentes();
       },
       error: () => {
         this.snackBar.open('Error al cargar materiales.', 'Cerrar', { duration: 3000 });
@@ -808,7 +850,7 @@ guardar(): void {
       next: (resp: any) => {
         this.uoms = (Array.isArray(resp) ? resp : resp.data ?? []).map((uom: any) => ({
           idUom: uom.uom_id ?? uom.idUom,
-          nombre: uom.nombre ?? ''
+          nombre: this.normalizarUnidad(uom.nombre)
         }));
 
         this.normalizarUnidadesDetalleConCatalogo();
@@ -828,9 +870,31 @@ guardar(): void {
       if (unidadActual && unidadCatalogada) {
         row.get('unidad')?.setValue(unidadCatalogada, { emitEvent: false });
       } else if (unidadActual && this.uoms.length) {
-        row.get('unidad')?.setValue('', { emitEvent: false });
+        row.get('unidad')?.setValue(
+          this.registrarUnidadTemporal(unidadActual),
+          { emitEvent: false }
+        );
       }
     });
+  }
+
+  private registrarUnidadTemporal(unidad?: string | null): string | null {
+    const nombre = this.normalizarUnidad(unidad);
+
+    if (!nombre) {
+      return null;
+    }
+
+    const existente = this.uoms.find(uom =>
+      this.normalizarUnidad(uom.nombre) === nombre
+    );
+
+    if (existente) {
+      return existente.nombre;
+    }
+
+    this.uoms.push({ idUom: null, nombre, nueva: true });
+    return nombre;
   }
 
   private obtenerUnidadCatalogada(unidad?: string | null): string | null {

@@ -62,6 +62,7 @@ const getRemitoById = async (req, res) => {
                 SELECT
                     r.*,
                     rc.numero AS registro_compra_numero,
+                    rc.tipo AS registro_compra_tipo,
                     rc.proyecto_id,
                     pr.nombre AS proyecto_nombre,
                     p.razon_social,
@@ -548,12 +549,108 @@ const recalcularEstadoRegistroCompra = async (transaction, idRegistroDeCompra) =
     };
 };
 
+const construirDistribucionPorProyecto = (asignaciones, detalleRemito) => {
+    if (!Array.isArray(asignaciones) || asignaciones.length === 0) {
+        throw crearHttpError('Debe informar la distribución de materiales por proyecto', 400);
+    }
+
+    const detallePorMaterial = new Map(
+        detalleRemito.map(item => [Number(item.id_material), item])
+    );
+    const materialesInformados = new Set();
+    const distribucion = [];
+
+    for (const asignacion of asignaciones) {
+        const idMaterial = Number(asignacion?.id_material);
+        const itemRemito = detallePorMaterial.get(idMaterial);
+
+        if (!itemRemito) {
+            throw crearHttpError(`El material ${idMaterial} no pertenece al Remito`, 409);
+        }
+
+        if (materialesInformados.has(idMaterial)) {
+            throw crearHttpError(`El material ${itemRemito.material} está repetido en la distribución`, 400);
+        }
+
+        materialesInformados.add(idMaterial);
+
+        if (!Array.isArray(asignacion.destinos) || asignacion.destinos.length === 0) {
+            throw crearHttpError(`Debe asignar al menos un proyecto para ${itemRemito.material}`, 400);
+        }
+
+        const proyectosDelMaterial = new Set();
+        let cantidadAsignada = 0;
+
+        for (const destino of asignacion.destinos) {
+            const proyectoId = Number(destino?.proyecto_id);
+            const cantidad = Number(destino?.cantidad);
+
+            if (!Number.isInteger(proyectoId) || proyectoId <= 0) {
+                throw crearHttpError(`Proyecto inválido para ${itemRemito.material}`, 400);
+            }
+
+            if (!Number.isFinite(cantidad) || cantidad <= 0) {
+                throw crearHttpError(`La cantidad asignada para ${itemRemito.material} debe ser mayor a cero`, 400);
+            }
+
+            if (proyectosDelMaterial.has(proyectoId)) {
+                throw crearHttpError(`No puede repetir un proyecto para ${itemRemito.material}`, 400);
+            }
+
+            proyectosDelMaterial.add(proyectoId);
+            cantidadAsignada += cantidad;
+            distribucion.push({ itemRemito, proyectoId, cantidad });
+        }
+
+        if (Math.abs(cantidadAsignada - Number(itemRemito.cantidad)) >= 0.005) {
+            throw crearHttpError(
+                `La distribución de ${itemRemito.material} debe sumar ${Number(itemRemito.cantidad)} ${itemRemito.UoM || ''}`.trim(),
+                409
+            );
+        }
+    }
+
+    if (materialesInformados.size !== detallePorMaterial.size) {
+        const faltante = detalleRemito.find(item => !materialesInformados.has(Number(item.id_material)));
+        throw crearHttpError(`Falta distribuir el material ${faltante?.material || ''}`.trim(), 400);
+    }
+
+    return distribucion;
+};
+
+const obtenerProyectosActivos = async (transaction, proyectoIds) => {
+    const proyectos = new Map();
+
+    for (const proyectoId of [...new Set(proyectoIds)]) {
+        const result = await new sql.Request(transaction)
+            .input('proyecto_id', sql.BigInt, proyectoId)
+            .query(`
+                SELECT proyecto_id, nombre
+                FROM Proyecto
+                WHERE proyecto_id = @proyecto_id
+                  AND activo = 1
+            `);
+
+        if (!result.recordset.length) {
+            throw crearHttpError(`El proyecto ${proyectoId} no existe o está inactivo`, 400);
+        }
+
+        proyectos.set(Number(proyectoId), result.recordset[0]);
+    }
+
+    return proyectos;
+};
+
 const liberarRemito = async (req, res) => {
     let transaction;
 
     try {
         const { id } = req.params;
-        const proyectoSolicitado = Number(req.body?.proyecto_id || 0);
+        const asignacionesSolicitadas = Array.isArray(req.body?.asignaciones)
+            ? req.body.asignaciones
+            : null;
+        const primerProyectoDistribuido = asignacionesSolicitadas?.[0]?.destinos?.[0]?.proyecto_id;
+        const proyectoSolicitado = Number(req.body?.proyecto_id || primerProyectoDistribuido || 0);
         const pool = await conectarDB();
 
         transaction = new sql.Transaction(pool);
@@ -584,7 +681,11 @@ const liberarRemito = async (req, res) => {
 
         const registroCompra = await obtenerRegistroCompra(new sql.Request(transaction), remitoActual.idRegistroDeCompra);
         validarRegistroCompraParaRemito(registroCompra);
-        const proyectoId = Number(registroCompra.proyecto_id || proyectoSolicitado);
+        const proyectoId = Number(
+            asignacionesSolicitadas
+                ? proyectoSolicitado
+                : (registroCompra.proyecto_id || proyectoSolicitado)
+        );
         if (!proyectoId) {
             throw crearHttpError('Debe seleccionar el proyecto al que se liberará el stock', 400);
         }
@@ -594,7 +695,7 @@ const liberarRemito = async (req, res) => {
         if (!proyecto.recordset.length) {
             throw crearHttpError('El proyecto seleccionado no existe o está inactivo', 400);
         }
-        if (!registroCompra.proyecto_id) {
+        if (!asignacionesSolicitadas && !registroCompra.proyecto_id) {
             await new sql.Request(transaction)
                 .input('registro_compra_id', sql.BigInt, remitoActual.idRegistroDeCompra)
                 .input('proyecto_id', sql.BigInt, proyectoId)
@@ -624,9 +725,29 @@ const liberarRemito = async (req, res) => {
         const cantidadesLiberadas = await obtenerCantidadesLiberadas(new sql.Request(transaction), remitoActual.idRegistroDeCompra);
         validarDetalleContraRegistroCompra(detalleRemito.recordset, detalleOc, cantidadesLiberadas);
 
+        const distribucion = asignacionesSolicitadas
+            ? construirDistribucionPorProyecto(asignacionesSolicitadas, detalleRemito.recordset)
+            : detalleRemito.recordset.map(itemRemito => ({
+                itemRemito,
+                proyectoId,
+                cantidad: Number(itemRemito.cantidad)
+            }));
+
+        const proyectosDistribucion = await obtenerProyectosActivos(
+            transaction,
+            distribucion.map(item => item.proyectoId)
+        );
+
         const costoUnitario = Number(registroCompra.precio_unitario || (Number(registroCompra.cantidad_pedida) ? Number(registroCompra.monto_total || 0) / Number(registroCompra.cantidad_pedida) : 0));
-        for (const item of detalleRemito.recordset) {
-            await registrarIngresoEnProyecto(transaction, item, proyectoId, remitoActual.fecha, costoUnitario, remitoActual.numero);
+        for (const destino of distribucion) {
+            await registrarIngresoEnProyecto(
+                transaction,
+                { ...destino.itemRemito, cantidad: destino.cantidad },
+                destino.proyectoId,
+                remitoActual.fecha,
+                costoUnitario,
+                remitoActual.numero
+            );
         }
 
         await new sql.Request(transaction)
@@ -656,13 +777,14 @@ const liberarRemito = async (req, res) => {
                     estadoAnterior: estado.estadoAnterior,
                     estadoActual: estado.estadoActual
                 },
-                stockActualizado: detalleRemito.recordset.map(item => ({
-                    idMaterial: item.id_material,
-                    nombreMaterial: item.material,
-                    cantidadIngresada: Number(item.cantidad),
-                    costoUnitario
+                stockActualizado: distribucion.map(destino => ({
+                    idMaterial: destino.itemRemito.id_material,
+                    nombreMaterial: destino.itemRemito.material,
+                    cantidadIngresada: Number(destino.cantidad),
+                    costoUnitario,
+                    proyecto: proyectosDistribucion.get(Number(destino.proyectoId))
                 })),
-                proyecto: proyecto.recordset[0]
+                proyectos: [...proyectosDistribucion.values()]
             }
         });
 

@@ -152,15 +152,24 @@ const obtenerUomId = async (transaction, uom) => {
         .input('nombre', sql.NVarChar(50), nombreUom)
         .query(`
             SELECT uom_id
-            FROM UOM
-            WHERE UPPER(LTRIM(RTRIM(nombre))) = @nombre
+            FROM UOM WITH (UPDLOCK, HOLDLOCK)
+            WHERE UPPER(LTRIM(RTRIM(nombre))) COLLATE Latin1_General_CI_AI
+                = @nombre COLLATE Latin1_General_CI_AI
         `);
 
-    if (uomResult.recordset.length === 0) {
-        throw new Error(`Unidad de medida no encontrada en UOM: ${uom}`);
+    if (uomResult.recordset.length > 0) {
+        return uomResult.recordset[0].uom_id;
     }
 
-    return uomResult.recordset[0].uom_id;
+    const uomNueva = await new sql.Request(transaction)
+        .input('nombre', sql.NVarChar(50), nombreUom)
+        .query(`
+            INSERT INTO UOM (nombre)
+            OUTPUT INSERTED.uom_id
+            VALUES (@nombre)
+        `);
+
+    return uomNueva.recordset[0].uom_id;
 };
 
 const obtenerMaterialId = async (transaction, item) => {
@@ -181,7 +190,9 @@ const obtenerMaterialId = async (transaction, item) => {
         return item.id_material;
     }
 
-    const nombreMaterial = item.nombre || item.descripcion;
+    const nombreMaterial = String(item.nombre || item.descripcion || '')
+        .trim()
+        .replace(/\s+/g, ' ');
 
     if (!nombreMaterial) {
         throw new Error('El material debe tener id_material, nombre o descripcion');
@@ -192,7 +203,8 @@ const obtenerMaterialId = async (transaction, item) => {
         .query(`
             SELECT id_material
             FROM Materiales
-            WHERE nombre = @nombre
+            WHERE UPPER(LTRIM(RTRIM(nombre))) COLLATE Latin1_General_CI_AI
+                = UPPER(LTRIM(RTRIM(@nombre))) COLLATE Latin1_General_CI_AI
         `);
 
     if (materialExistente.recordset.length > 0) {

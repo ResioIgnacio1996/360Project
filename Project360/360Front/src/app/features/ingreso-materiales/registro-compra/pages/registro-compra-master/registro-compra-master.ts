@@ -7,6 +7,7 @@ import { Observable, map, startWith } from 'rxjs';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatTableDataSource, MatTableModule } from '@angular/material/table';
+import { MatSort, MatSortModule } from '@angular/material/sort';
 import { MatInputModule } from '@angular/material/input';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatChipsModule } from '@angular/material/chips';
@@ -55,6 +56,7 @@ interface FiltrosRegistroCompra {
     MatButtonModule,
     MatIconModule,
     MatTableModule,
+    MatSortModule,
     MatInputModule,
     MatFormFieldModule,
     MatChipsModule,
@@ -121,6 +123,13 @@ export class RegistroCompraMaster implements OnInit {
   });
 
   @ViewChild(MatPaginator) paginator!: MatPaginator;
+  private sort?: MatSort;
+
+  @ViewChild(MatSort)
+  set matSort(sort: MatSort | undefined) {
+    this.sort = sort;
+    this.configurarOrdenamiento();
+  }
 
   constructor(
     private registroCompraService: RegistroCompraService,
@@ -163,6 +172,7 @@ export class RegistroCompraMaster implements OnInit {
         this.registros = data;
         this.dataSource = new MatTableDataSource<RegistroCompra>([]);
         this.dataSource.paginator = this.paginator;
+        this.configurarOrdenamiento();
         this.aplicarFiltros(false);
       },
       error: () => {
@@ -464,6 +474,41 @@ export class RegistroCompraMaster implements OnInit {
     }
 
     return Number(anyRegistro.cantidadRemitos ?? 0);
+  }
+
+  private configurarOrdenamiento(): void {
+    this.dataSource.sortingDataAccessor = (registro: RegistroCompra, columna: string): string | number => {
+      switch (columna) {
+        case 'tipo':
+          return this.getTipoDocumento(registro);
+        case 'numero':
+          return this.normalizarTexto(registro.numero);
+        case 'proveedor':
+          return this.normalizarTexto(registro.proveedor?.razonSocial);
+        case 'fecha':
+          return this.obtenerValorFecha(registro.fecha);
+        case 'fechaEntrega':
+          return this.obtenerValorFecha(registro.fechaEntrega);
+        case 'proyecto':
+          return this.normalizarTexto(registro.proyecto?.nombre);
+        case 'estado':
+          return this.normalizarTexto(this.getEstadoNombre(registro));
+        case 'avance':
+          return this.getPorcentajeRecibido(registro);
+        case 'remitos':
+          return this.getCantidadRemitos(registro);
+        default:
+          return '';
+      }
+    };
+
+    if (this.sort) {
+      this.dataSource.sort = this.sort;
+    }
+  }
+
+  private obtenerValorFecha(fecha?: string | null): number {
+    return this.crearFechaLocal(fecha)?.getTime() ?? 0;
   }
 
   private normalizarTexto(value?: string | null): string {

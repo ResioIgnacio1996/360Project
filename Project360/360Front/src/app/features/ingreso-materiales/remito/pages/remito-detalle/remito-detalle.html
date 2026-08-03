@@ -19,7 +19,7 @@
         (click)="liberar()"
       >
         <mat-icon>inventory</mat-icon>
-        {{ liberando ? 'Liberando...' : 'Liberar remito' }}
+        {{ liberando ? 'Liberando...' : 'Confirmar liberación' }}
       </button>
     </div>
   </div>
@@ -49,8 +49,10 @@
         </div>
 
         <div class="summary-field">
-          <span>Registro Compra</span>
-          <strong>{{ remito.registroCompraNumero || remito.idRegistroCompra }}</strong>
+          <span>Documento asociado</span>
+          <strong>
+            {{ remito.registroCompraTipo ? remito.registroCompraTipo + ' ' : '' }}{{ remito.registroCompraNumero || 'Sin número' }}
+          </strong>
         </div>
 
         <div class="summary-field">
@@ -58,18 +60,9 @@
           <strong>{{ remito.liberado ? 'LIBERADO' : 'PENDIENTE' }}</strong>
         </div>
         <div class="summary-field" *ngIf="remito.idProyecto">
-          <span>Proyecto destino</span>
+          <span>Proyecto asociado a la OC</span>
           <strong>{{ remito.proyectoNombre || ('Proyecto #' + remito.idProyecto) }}</strong>
         </div>
-      </div>
-      <div class="project-selector" *ngIf="!remito.liberado && !remito.idProyecto">
-        <mat-form-field appearance="outline">
-          <mat-label>Proyecto destino</mat-label>
-          <mat-select [(ngModel)]="proyectoSeleccionado" required>
-            <mat-option *ngFor="let proyecto of proyectos" [value]="proyecto.proyecto_id">{{ proyecto.nombre }}</mat-option>
-          </mat-select>
-          <mat-hint>La compra no tiene proyecto asignado. Seleccione uno antes de liberar.</mat-hint>
-        </mat-form-field>
       </div>
     </section>
 
@@ -105,6 +98,85 @@
 
       <div class="state-message" *ngIf="detalleRemito.length === 0">
         Este remito no tiene materiales cargados.
+      </div>
+    </section>
+
+    <section class="block distribution-block" *ngIf="!remito.liberado">
+      <div class="block-header distribution-header">
+        <div>
+          <h2 class="block-title">Asignación de cantidades por proyecto</h2>
+          <p>Distribuí cada material entre uno o más proyectos. El total asignado debe coincidir con la cantidad recibida.</p>
+        </div>
+        <span
+          class="chip chip-no-dot"
+          [class.chip-green]="distribucionValida()"
+          [class.chip-yellow]="!distribucionValida()">
+          {{ distribucionValida() ? 'DISTRIBUCIÓN COMPLETA' : 'PENDIENTE' }}
+        </span>
+      </div>
+
+      <div class="distribution-list">
+        <article class="material-distribution" *ngFor="let material of materialesLiberacion">
+          <div class="material-distribution-header">
+            <div>
+              <strong>{{ material.material }}</strong>
+              <span>Total recibido: {{ material.cantidadTotal }} {{ material.unidad }}</span>
+            </div>
+            <span
+              class="distribution-balance"
+              [class.complete]="distribucionMaterialValida(material)"
+              [class.exceeded]="cantidadRestante(material) < 0">
+              <ng-container *ngIf="cantidadRestante(material) > 0">
+                Faltan {{ cantidadRestante(material) }} {{ material.unidad }}
+              </ng-container>
+              <ng-container *ngIf="cantidadRestante(material) < 0">
+                Excede {{ -cantidadRestante(material) }} {{ material.unidad }}
+              </ng-container>
+              <ng-container *ngIf="cantidadRestante(material) === 0">
+                {{ distribucionMaterialValida(material) ? 'Distribuido completamente' : 'Revisar destinos' }}
+              </ng-container>
+            </span>
+          </div>
+
+          <div class="destination-row" *ngFor="let destino of material.destinos; let i = index">
+            <mat-form-field appearance="outline">
+              <mat-label>Proyecto destino</mat-label>
+              <mat-select [(ngModel)]="destino.proyectoId" required>
+                <mat-option
+                  *ngFor="let proyecto of proyectos"
+                  [value]="proyecto.proyecto_id"
+                  [disabled]="proyectoUsadoEnOtroDestino(material, proyecto.proyecto_id, destino)">
+                  {{ proyecto.nombre }}
+                </mat-option>
+              </mat-select>
+            </mat-form-field>
+
+            <mat-form-field appearance="outline">
+              <mat-label>Cantidad</mat-label>
+              <input
+                matInput
+                type="number"
+                min="0.01"
+                step="0.01"
+                [(ngModel)]="destino.cantidad" />
+              <span matTextSuffix>{{ material.unidad }}</span>
+            </mat-form-field>
+
+            <button
+              mat-icon-button
+              type="button"
+              class="remove-destination"
+              title="Quitar proyecto"
+              (click)="quitarDestino(material, i)">
+              <mat-icon>delete</mat-icon>
+            </button>
+          </div>
+
+          <button class="btn btn-secondary btn-sm add-destination" type="button" (click)="agregarDestino(material)">
+            <mat-icon>add</mat-icon>
+            Agregar proyecto
+          </button>
+        </article>
       </div>
     </section>
   </ng-container>

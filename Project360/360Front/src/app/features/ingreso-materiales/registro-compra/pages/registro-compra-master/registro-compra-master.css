@@ -50,6 +50,18 @@
   text-transform: uppercase;
 }
 
+.registro-table .mat-sort-header-container {
+  gap: 4px;
+}
+
+.registro-table .mat-sort-header-arrow {
+  color: var(--primary) !important;
+}
+
+.registro-table .mat-sort-header-sorted .mat-sort-header-content {
+  color: var(--primary);
+}
+
 .registro-table .mat-mdc-cell {
   color: var(--text) !important;
   font-size: 12px;

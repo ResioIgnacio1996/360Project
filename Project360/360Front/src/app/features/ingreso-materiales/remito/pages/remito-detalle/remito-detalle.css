@@ -45,8 +45,87 @@
 .table-wrap {
   overflow-x: auto;
 }
-.project-selector{margin-top:18px;padding:16px;border:1px solid var(--border);border-radius:8px;background:var(--surface-card-2)}
-.project-selector .mat-mdc-form-field{width:min(480px,100%)}
+.distribution-header {
+  align-items: flex-start;
+}
+
+.distribution-header p {
+  margin: 6px 0 0;
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+.distribution-list {
+  display: grid;
+  gap: 12px;
+}
+
+.material-distribution {
+  padding: 14px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface-card-2);
+}
+
+.material-distribution-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 12px;
+}
+
+.material-distribution-header > div {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.material-distribution-header strong {
+  color: var(--text);
+  font-size: 13px;
+}
+
+.material-distribution-header > div > span {
+  color: var(--text-muted);
+  font-family: var(--font-tech);
+  font-size: 10px;
+}
+
+.distribution-balance {
+  color: var(--warning);
+  font-family: var(--font-tech);
+  font-size: 10px;
+  white-space: nowrap;
+}
+
+.distribution-balance.complete {
+  color: var(--success);
+}
+
+.distribution-balance.exceeded {
+  color: var(--danger);
+}
+
+.destination-row {
+  display: grid;
+  grid-template-columns: minmax(220px, 1fr) minmax(150px, 220px) 40px;
+  align-items: start;
+  gap: 10px;
+}
+
+.destination-row .mat-mdc-form-field {
+  width: 100%;
+}
+
+.remove-destination {
+  margin-top: 4px;
+  color: var(--danger) !important;
+}
+
+.add-destination {
+  margin-top: 2px;
+}
 
 .remito-detalle-table {
   table-layout: fixed;
@@ -118,5 +197,23 @@
 @media (max-width: 760px) {
   .summary-grid {
     grid-template-columns: 1fr;
+  }
+
+  .material-distribution-header {
+    flex-direction: column;
+  }
+
+  .destination-row {
+    grid-template-columns: 1fr 1fr 40px;
+  }
+}
+
+@media (max-width: 560px) {
+  .destination-row {
+    grid-template-columns: 1fr 40px;
+  }
+
+  .destination-row .mat-mdc-form-field:first-child {
+    grid-column: 1 / -1;
   }
 }

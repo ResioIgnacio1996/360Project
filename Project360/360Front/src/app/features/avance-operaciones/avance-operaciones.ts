@@ -106,6 +106,17 @@ export class AvanceOperaciones implements OnInit {
     this.porcentaje = Number(this.seleccionada?.pct_avance_actual || 0); this.cantidadHoy = null; this.nota = '';
     this.consumosHoy = {}; this.fotoNombre = ''; this.fotoPreview = '';
   }
+  actualizarPorcentaje(value: number | string): void {
+    const avanceActual = Number(this.seleccionada?.pct_avance_actual || 0);
+    const nuevoValor = Number(value);
+
+    if (!Number.isFinite(nuevoValor)) {
+      this.porcentaje = avanceActual;
+      return;
+    }
+
+    this.porcentaje = Math.max(avanceActual, Math.min(100, Math.round(nuevoValor)));
+  }
   volver(): void { this.router.navigate(['/proyectos', this.proyectoId]); }
   importarPlan(): void { this.router.navigate(['/proyectos', this.proyectoId, 'programacion', 'importar']); }
   verProgramacion(): void { this.router.navigate(['/proyectos', this.proyectoId, 'programacion']); }
@@ -141,6 +152,7 @@ export class AvanceOperaciones implements OnInit {
   }
   guardarAvance(): void {
     if (!this.seleccionada) return;
+    this.actualizarPorcentaje(this.porcentaje);
     this.ejecutar(this.service.registrarAvance(this.seleccionada.operacion_id, {
       porcentaje: this.porcentaje, cantidad_hoy: this.cantidadHoy, fecha_registro: this.fecha, nota: this.nota
     }));

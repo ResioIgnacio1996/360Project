@@ -630,6 +630,31 @@
   padding: 0 !important;
   accent-color: #17a7a0;
 }
+.advance-preview {
+  display: grid;
+  grid-template-columns: 1fr 48px;
+  align-items: center;
+  gap: 10px;
+  margin: 8px 0 14px;
+}
+.advance-preview > div {
+  height: 9px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: #e4eaee;
+}
+.advance-preview span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #087f7a, #28beb4);
+  transition: width 80ms linear;
+}
+.advance-preview strong {
+  color: #087e79;
+  font: 700 11px 'DM Mono', monospace;
+  text-align: right;
+}
 .current {
   background: #edf8f7;
   border-left: 3px solid #17a7a0;

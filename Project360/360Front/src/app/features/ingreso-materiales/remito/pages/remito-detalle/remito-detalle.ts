@@ -1,30 +1,45 @@
 import { CommonModule } from '@angular/common';
 import { Component, OnInit } from '@angular/core';
+import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 
 import { MatButtonModule } from '@angular/material/button';
+import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
+import { MatInputModule } from '@angular/material/input';
+import { MatSelectModule } from '@angular/material/select';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatTableModule } from '@angular/material/table';
-import { MatFormFieldModule } from '@angular/material/form-field';
-import { MatSelectModule } from '@angular/material/select';
-import { FormsModule } from '@angular/forms';
 
 import { DetalleRemito, Remito, Remitos } from '../../../../../core/services/remitos';
 import { ProyectoService } from '../../../../../core/services/proyecto/proyecto';
+
+interface DestinoLiberacion {
+  proyectoId: number | null;
+  cantidad: number;
+}
+
+interface MaterialLiberacion {
+  idMaterial: number;
+  material: string;
+  unidad: string;
+  cantidadTotal: number;
+  destinos: DestinoLiberacion[];
+}
 
 @Component({
   selector: 'app-remito-detalle',
   standalone: true,
   imports: [
     CommonModule,
+    FormsModule,
     MatButtonModule,
-    MatIconModule,
-    MatSnackBarModule,
-    MatTableModule,
     MatFormFieldModule,
+    MatIconModule,
+    MatInputModule,
     MatSelectModule,
-    FormsModule
+    MatSnackBarModule,
+    MatTableModule
   ],
   templateUrl: './remito-detalle.html',
   styleUrl: './remito-detalle.css',
@@ -36,7 +51,7 @@ export class RemitoDetalle implements OnInit {
   cargando = false;
   liberando = false;
   proyectos: any[] = [];
-  proyectoSeleccionado: number | null = null;
+  materialesLiberacion: MaterialLiberacion[] = [];
 
   get detalleRemito(): DetalleRemito[] {
     return (this.remito?.detalle ?? []).filter(item =>
@@ -61,7 +76,14 @@ export class RemitoDetalle implements OnInit {
     if (id) {
       this.cargarRemito(id);
     }
-    this.proyectoService.getProyectos().subscribe({next:r=>this.proyectos=(Array.isArray(r)?r:[]).filter(p=>p.activo!==false&&p.estado!=='CANCELADO'),error:()=>this.proyectos=[]});
+
+    this.proyectoService.getProyectos().subscribe({
+      next: response => {
+        this.proyectos = (Array.isArray(response) ? response : [])
+          .filter(proyecto => proyecto.activo !== false && proyecto.estado !== 'CANCELADO');
+      },
+      error: () => this.proyectos = []
+    });
   }
 
   cargarRemito(id: number): void {
@@ -71,7 +93,7 @@ export class RemitoDetalle implements OnInit {
       next: remito => {
         this.cargando = false;
         this.remito = remito;
-        this.proyectoSeleccionado = remito.idProyecto ?? null;
+        this.inicializarDistribucion(remito);
       },
       error: error => {
         this.cargando = false;
@@ -86,23 +108,36 @@ export class RemitoDetalle implements OnInit {
     if (!this.remito || this.remito.liberado) {
       return;
     }
-    if (!this.remito.idProyecto && !this.proyectoSeleccionado) {
-      this.snackBar.open('Seleccione el proyecto al que se liberará el stock.', 'Cerrar', {duration:3500});
+
+    if (!this.distribucionValida()) {
+      this.snackBar.open(
+        'Distribuí completamente cada material entre proyectos, sin faltantes ni excesos.',
+        'Cerrar',
+        { duration: 4000 }
+      );
       return;
     }
 
     const confirmado = confirm(
-      `Confirmas la liberacion del Remito ${this.remito.numero}?\n\n` +
-      'Los materiales ingresarán al proyecto y se generarán sus lotes de costo.'
+      `¿Confirmás la liberación del remito ${this.remito.numero}?\n\n` +
+      'Los materiales ingresarán a los proyectos seleccionados y se generarán sus lotes de costo.'
     );
 
     if (!confirmado) {
       return;
     }
 
+    const asignaciones = this.materialesLiberacion.map(material => ({
+      id_material: material.idMaterial,
+      destinos: material.destinos.map(destino => ({
+        proyecto_id: Number(destino.proyectoId),
+        cantidad: Number(destino.cantidad)
+      }))
+    }));
+
     this.liberando = true;
 
-    this.remitosService.liberarRemito(this.remito.idRemito, this.proyectoSeleccionado).subscribe({
+    this.remitosService.liberarRemito(this.remito.idRemito, asignaciones).subscribe({
       next: response => {
         this.liberando = false;
         this.snackBar.open(response?.message || 'Remito liberado correctamente.', 'Cerrar', {
@@ -119,6 +154,72 @@ export class RemitoDetalle implements OnInit {
     });
   }
 
+  inicializarDistribucion(remito: Remito): void {
+    this.materialesLiberacion = (remito.detalle ?? []).map(item => ({
+      idMaterial: item.idMaterial,
+      material: item.material,
+      unidad: item.unidad,
+      cantidadTotal: Number(item.cantidad),
+      destinos: [{
+        proyectoId: remito.idProyecto ?? null,
+        cantidad: Number(item.cantidad)
+      }]
+    }));
+  }
+
+  agregarDestino(material: MaterialLiberacion): void {
+    material.destinos.push({ proyectoId: null, cantidad: 0 });
+  }
+
+  quitarDestino(material: MaterialLiberacion, index: number): void {
+    if (material.destinos.length === 1) {
+      this.snackBar.open('Cada material debe conservar al menos un proyecto destino.', 'Cerrar', {
+        duration: 3000
+      });
+      return;
+    }
+
+    material.destinos.splice(index, 1);
+  }
+
+  cantidadAsignada(material: MaterialLiberacion): number {
+    return this.redondearCantidad(material.destinos.reduce(
+      (total, destino) => total + Number(destino.cantidad || 0),
+      0
+    ));
+  }
+
+  cantidadRestante(material: MaterialLiberacion): number {
+    return this.redondearCantidad(material.cantidadTotal - this.cantidadAsignada(material));
+  }
+
+  proyectoUsadoEnOtroDestino(
+    material: MaterialLiberacion,
+    proyectoId: number,
+    destinoActual: DestinoLiberacion
+  ): boolean {
+    return material.destinos.some(destino =>
+      destino !== destinoActual && Number(destino.proyectoId) === Number(proyectoId)
+    );
+  }
+
+  distribucionMaterialValida(material: MaterialLiberacion): boolean {
+    const proyectos = material.destinos.map(destino => Number(destino.proyectoId));
+    const proyectosValidos = proyectos.every(id => id > 0);
+    const proyectosUnicos = new Set(proyectos).size === proyectos.length;
+    const cantidadesValidas = material.destinos.every(destino => Number(destino.cantidad) > 0);
+
+    return proyectosValidos
+      && proyectosUnicos
+      && cantidadesValidas
+      && Math.abs(this.cantidadRestante(material)) < 0.005;
+  }
+
+  distribucionValida(): boolean {
+    return this.materialesLiberacion.length > 0
+      && this.materialesLiberacion.every(material => this.distribucionMaterialValida(material));
+  }
+
   volver(): void {
     if (this.idRegistroCompra) {
       this.router.navigate(['/ingreso-materiales/registros', this.idRegistroCompra, 'remitos']);
@@ -130,5 +231,9 @@ export class RemitoDetalle implements OnInit {
 
   formatearFecha(fecha?: string | null): string {
     return fecha ? fecha.substring(0, 10) : '-';
+  }
+
+  private redondearCantidad(value: number): number {
+    return Math.round((value + Number.EPSILON) * 100) / 100;
   }
 }

@@ -118,7 +118,21 @@
         </div>
       </ng-container>
       <ng-template #avanceMedible>
-        <label>Nuevo porcentaje <b>{{ porcentaje }}%</b><input class="range" type="range" min="0" max="100" step="1" [(ngModel)]="porcentaje"></label>
+        <label>
+          Nuevo porcentaje <b>{{ porcentaje }}%</b>
+          <input
+            class="range"
+            type="range"
+            [min]="seleccionada.pct_avance_actual"
+            max="100"
+            step="1"
+            [ngModel]="porcentaje"
+            (ngModelChange)="actualizarPorcentaje($event)">
+        </label>
+        <div class="advance-preview" aria-live="polite">
+          <div><span [style.width.%]="porcentaje"></span></div>
+          <strong>{{ porcentaje }}%</strong>
+        </div>
         <label *ngIf="esCantidad()">Cantidad ejecutada hoy<input type="number" min="0" [(ngModel)]="cantidadHoy"></label>
       </ng-template>
       <label>Observaciones<textarea rows="3" [(ngModel)]="nota" placeholder="Detalle del avance, frentes o incidencias..."></textarea></label>

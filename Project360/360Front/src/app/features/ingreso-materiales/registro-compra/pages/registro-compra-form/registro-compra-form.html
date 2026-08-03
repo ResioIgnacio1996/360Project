@@ -209,7 +209,7 @@
             <div class="material-cell">
               <mat-form-field appearance="outline">
                 <mat-label>Material</mat-label>
-                <input matInput formControlName="nombreMaterial" [matAutocomplete]="autoMaterial" (input)="limpiarMaterialSiEditaManual(i)" />
+                <input matInput formControlName="nombreMaterial" [matAutocomplete]="autoMaterial" (input)="reconocerMaterialIngresado(i, $any($event.target).value)" />
 
                 <mat-autocomplete #autoMaterial="matAutocomplete" (optionSelected)="seleccionarMaterial(i, $event.option.value)">
                   <ng-container *ngIf="materialesFiltrados$[i] | async as materialesFiltrados">
