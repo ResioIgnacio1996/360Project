@@ -456,7 +456,7 @@ const registrarIngresoEnProyecto = async (transaction, item, proyectoId, fechaIn
         .input('cantidad', sql.Decimal(18,2), item.cantidad)
         .input('fecha', sql.DateTime2, fechaIngreso)
         .input('observaciones', sql.NVarChar(500), `Ingreso por remito ${remitoNumero}`)
-        .query(`INSERT INTO CostoStock(conteiner_id,costo_unitario,cantidad_valorizada,fecha_valorizacion,observaciones,activo)
+        .query(`INSERT INTO CostoStock(container_id,costo_unitario,cantidad_valorizada,fecha_valorizacion,observaciones,activo)
                 VALUES(@container_id,@costo_unitario,@cantidad,@fecha,@observaciones,1)`);
 };
 
