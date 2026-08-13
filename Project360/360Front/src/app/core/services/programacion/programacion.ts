@@ -33,4 +33,7 @@ export class ProgramacionService {
   guardarExcepcion(proyectoId: number, data: any): Observable<any> {
     return this.http.post(`${this.api}/proyectos/${proyectoId}/excepciones`, data);
   }
+  eliminarExcepcion(proyectoId: number, excepcionId: number): Observable<any> {
+    return this.http.delete(`${this.api}/proyectos/${proyectoId}/excepciones/${excepcionId}`);
+  }
 }

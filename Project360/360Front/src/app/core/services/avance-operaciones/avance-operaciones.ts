@@ -28,7 +28,4 @@ export class AvanceOperacionesService {
   anularConsumo(consumoId: number, motivo: string): Observable<any> {
     return this.http.patch(`${this.api}/consumos/${consumoId}/anular`, { motivo });
   }
-  vincularMaterialBom(bomId: number, materialId: number): Observable<any> {
-    return this.http.patch(`${this.api}/bom/${bomId}/material`, { material_id: materialId });
-  }
 }

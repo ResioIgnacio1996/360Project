@@ -10,6 +10,9 @@ export class StockGeneral {
   constructor(private http:HttpClient){}
   listar():Observable<any[]>{return this.http.get<any[]>(this.apiUrl);}
   porProyecto(id:number):Observable<any[]>{return this.http.get<any[]>(`${this.apiUrl}/proyecto/${id}`);}
+  movimientos(proyectoId:number,materialId:number):Observable<any>{
+    return this.http.get<any>(`${this.apiUrl}/proyecto/${proyectoId}/material/${materialId}/movimientos`);
+  }
   asignar(data:any):Observable<any>{return this.http.post(`${this.apiUrl}/asignar-proyecto`,data);}
   devolver(data:any):Observable<any>{return this.http.post(`${this.apiUrl}/devolver-proyecto`,data);}
 }

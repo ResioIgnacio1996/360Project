@@ -736,7 +736,7 @@ guardar(): void {
 
     if (materialInvalido) {
       this.snackBar.open(
-        'Para crear materiales nuevos, informa nombre, cantidad y unidad.',
+        'InformÃ¡ nombre, cantidad y unidad para cada material del documento.',
         'Cerrar',
         { duration: 3500 }
       );
@@ -803,9 +803,12 @@ guardar(): void {
   }
 
   mapearDetalleParaBackend(item: any): any {
+    const nombreMaterial = item.nombreMaterial?.trim();
     const detalle: any = {
       cantidad: Number(item.cantidad),
-      UoM: this.obtenerUnidadCatalogada(item.unidad) ?? item.unidad
+      UoM: this.obtenerUnidadCatalogada(item.unidad) ?? item.unidad,
+      nombre: nombreMaterial,
+      descripcion: item.descripcionOriginal?.trim() || nombreMaterial
     };
 
     const materialExistente = item.idMaterial
@@ -815,10 +818,6 @@ guardar(): void {
 
     if (idMaterial) {
       detalle.id_material = idMaterial;
-    } else {
-      const nombreMaterial = item.nombreMaterial?.trim();
-      detalle.nombre = nombreMaterial;
-      detalle.descripcion = item.descripcionOriginal?.trim() || nombreMaterial;
     }
 
     return detalle;

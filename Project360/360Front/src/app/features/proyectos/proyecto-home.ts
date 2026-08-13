@@ -47,7 +47,7 @@ export class ProyectoHome implements OnInit {
     this.router.navigate(['/proyectos', this.proyectoId, 'programacion']);
   }
 
-  abrirMateriales(): void {
+  abrirContainer(): void {
     this.router.navigate(['/proyectos', this.proyectoId, 'stock']);
   }
 

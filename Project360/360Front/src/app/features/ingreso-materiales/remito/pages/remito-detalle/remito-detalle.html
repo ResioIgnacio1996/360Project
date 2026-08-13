@@ -15,11 +15,11 @@
       <button
         class="btn btn-primary"
         type="button"
-        [disabled]="!remito || remito.liberado || liberando"
+        [disabled]="!remito || remito.liberado || liberando || cargandoCoincidenciasBom"
         (click)="previsualizarLiberacion()"
       >
         <mat-icon>fact_check</mat-icon>
-        {{ liberando ? 'Liberando...' : 'Revisar liberación' }}
+        {{ cargandoCoincidenciasBom ? 'Verificando BOM...' : liberando ? 'Liberando...' : 'Revisar liberación' }}
       </button>
     </div>
   </div>
@@ -33,7 +33,7 @@
       <div class="block-header">
         <h2 class="block-title">Datos generales</h2>
         <span class="chip chip-no-dot" [class.chip-green]="remito.liberado" [class.chip-yellow]="!remito.liberado">
-          {{ remito.liberado ? 'LIBERADO' : 'PENDIENTE' }}
+          {{ remito.estadoLiberacion || (remito.liberado ? 'LIBERADO' : 'PENDIENTE') }}
         </span>
       </div>
 
@@ -57,7 +57,7 @@
 
         <div class="summary-field">
           <span>Estado</span>
-          <strong>{{ remito.liberado ? 'LIBERADO' : 'PENDIENTE' }}</strong>
+          <strong>{{ remito.estadoLiberacion || (remito.liberado ? 'LIBERADO' : 'PENDIENTE') }}</strong>
         </div>
         <div class="summary-field" *ngIf="remito.idProyecto">
           <span>Proyecto asociado a la OC</span>
@@ -105,13 +105,13 @@
       <div class="block-header distribution-header">
         <div>
           <h2 class="block-title">Asignación de cantidades por proyecto</h2>
-          <p>Distribuí cada material entre uno o más proyectos. El total asignado debe coincidir con la cantidad recibida.</p>
+          <p>Podés liberar una parte, distribuirla entre proyectos y volver luego por el saldo pendiente.</p>
         </div>
         <span
           class="chip chip-no-dot"
           [class.chip-green]="distribucionValida()"
           [class.chip-yellow]="!distribucionValida()">
-          {{ distribucionValida() ? 'DISTRIBUCIÓN COMPLETA' : 'PENDIENTE' }}
+          {{ distribucionValida() ? 'LIBERACIÓN VÁLIDA' : 'PENDIENTE' }}
         </span>
       </div>
 
@@ -127,13 +127,13 @@
               [class.complete]="distribucionMaterialValida(material)"
               [class.exceeded]="cantidadRestante(material) < 0">
               <ng-container *ngIf="cantidadRestante(material) > 0">
-                Faltan {{ cantidadRestante(material) }} {{ material.unidad }}
+                QuedarÃ¡n pendientes {{ cantidadRestante(material) }} {{ material.unidad }}
               </ng-container>
               <ng-container *ngIf="cantidadRestante(material) < 0">
                 Excede {{ -cantidadRestante(material) }} {{ material.unidad }}
               </ng-container>
               <ng-container *ngIf="cantidadRestante(material) === 0">
-                {{ distribucionMaterialValida(material) ? 'Distribuido completamente' : 'Revisar destinos' }}
+                Sin saldo pendiente en esta liberación
               </ng-container>
             </span>
           </div>
@@ -180,14 +180,14 @@
       </div>
 
       <div class="distribution-actions">
-        <span>La liberación se habilita cuando cada material queda distribuido completamente.</span>
+        <span>Podés dejar materiales o cantidades pendientes para una próxima liberación.</span>
         <button
           class="btn btn-primary"
           type="button"
-          [disabled]="!distribucionValida() || liberando"
+          [disabled]="!distribucionValida() || liberando || cargandoCoincidenciasBom"
           (click)="previsualizarLiberacion()">
           <mat-icon>summarize</mat-icon>
-          Ver resumen y confirmar
+          {{ cargandoCoincidenciasBom ? 'Verificando BOM...' : 'Ver resumen y confirmar' }}
         </button>
       </div>
     </section>
@@ -202,24 +202,78 @@
       <p>Remito {{ remito?.numero }} · Revisá cada destino antes de confirmar.</p>
     </header>
 
-    <div class="release-summary-head">
-      <span>Material</span><span>Proyecto</span><span>Cantidad</span>
-    </div>
-    <div class="release-summary-row" *ngFor="let asignacion of resumenAsignaciones">
-      <strong>{{ asignacion.material }}</strong>
-      <span>{{ asignacion.proyecto }}</span>
-      <b>{{ asignacion.cantidad }} {{ asignacion.unidad }}</b>
+    <div class="release-bom-loading" *ngIf="cargandoCoincidenciasBom">
+      <mat-icon>sync</mat-icon>
+      <div><strong>Buscando coincidencias BOM</strong><small>Comparando materiales y unidades de medida de los proyectos…</small></div>
     </div>
 
-    <div class="release-warning">
-      Esta acción es irreversible. Cada cantidad ingresará al stock del proyecto indicado.
+    <div class="release-api-error" *ngIf="!cargandoCoincidenciasBom && errorCoincidenciasBom">
+      <mat-icon>warning_amber</mat-icon>{{ errorCoincidenciasBom }}
+    </div>
+
+    <ng-container *ngIf="!cargandoCoincidenciasBom">
+      <div class="release-summary-head">
+        <span>Material</span><span>Proyecto</span><span>Material BOM del proyecto</span><span>Cantidad</span>
+      </div>
+      <div class="release-summary-row" *ngFor="let asignacion of resumenAsignaciones">
+        <strong>{{ asignacion.material }}</strong>
+        <span>{{ asignacion.proyecto }}</span>
+        <span class="bom-match" [class.unmatched]="!asignacion.coincideBom">
+          <mat-form-field appearance="outline" class="bom-selector">
+            <mat-label>Seleccionar material BOM</mat-label>
+            <mat-select
+              [(ngModel)]="asignacion.bomSeleccionadaId"
+              (ngModelChange)="actualizarSeleccionBom(asignacion)"
+              [attr.aria-label]="'Material BOM para ' + asignacion.material">
+              <mat-option *ngFor="let sugerencia of asignacion.sugerencias" [value]="sugerencia.material_id">
+                {{ sugerencia.material_bom }} · {{ sugerencia.uom_nombre }}
+              </mat-option>
+            </mat-select>
+          </mat-form-field>
+          <small>ID MAT-{{ asignacion.bomSeleccionadaId || 'PENDIENTE' }}</small>
+          <button class="bom-manual-toggle" type="button" (click)="alternarBusquedaBom(asignacion)">
+            <mat-icon>{{ asignacion.busquedaManualVisible ? 'close' : 'edit' }}</mat-icon>
+            {{ asignacion.busquedaManualVisible ? 'Cancelar búsqueda' : 'Buscar manualmente' }}
+          </button>
+          <div class="bom-manual-search" *ngIf="asignacion.busquedaManualVisible">
+            <input
+              type="search"
+              [(ngModel)]="asignacion.busquedaBom"
+              (ngModelChange)="buscarBomManual(asignacion)"
+              placeholder="Escribí el material de la BOM"
+              [attr.aria-label]="'Buscar material BOM para ' + asignacion.material">
+            <div class="bom-manual-results" *ngIf="asignacion.resultadosBusqueda.length">
+              <button
+                type="button"
+                *ngFor="let resultado of asignacion.resultadosBusqueda"
+                (click)="seleccionarBomManual(asignacion, resultado)">
+                <strong>{{ resultado.material_bom }}</strong>
+                <small>{{ resultado.uom_nombre }} · MAT-{{ resultado.material_id }}</small>
+              </button>
+            </div>
+            <small class="bom-no-results" *ngIf="asignacion.busquedaBom.length >= 2 && !asignacion.resultadosBusqueda.length">
+              No se encontró ese material en la BOM del proyecto.
+            </small>
+          </div>
+        </span>
+        <b>{{ asignacion.cantidad }} {{ asignacion.unidad }}</b>
+      </div>
+    </ng-container>
+
+    <div class="release-warning" *ngIf="!cargandoCoincidenciasBom" [class.bom-warning]="resumenConFaltantesBom">
+      <ng-container *ngIf="resumenConFaltantesBom; else liberacionVerificada">
+        Hay materiales sin coincidencia en la BOM del proyecto. Revisá el material y la UOM antes de confirmar.
+      </ng-container>
+      <ng-template #liberacionVerificada>
+        Esta acción es irreversible. Cada material coincide con la BOM y se incorporará al stock del proyecto indicado.
+      </ng-template>
     </div>
 
     <footer>
       <button class="btn btn-ghost" type="button" (click)="cerrarResumenLiberacion()" [disabled]="liberando">
         Volver y revisar
       </button>
-      <button class="btn btn-primary" type="button" (click)="liberar()" [disabled]="liberando">
+      <button class="btn btn-primary" type="button" (click)="liberar()" [disabled]="liberando || cargandoCoincidenciasBom || !resumenAsignaciones.length || resumenConFaltantesBom">
         <mat-icon>inventory</mat-icon>
         {{ liberando ? 'Liberando...' : 'Confirmar liberación' }}
       </button>

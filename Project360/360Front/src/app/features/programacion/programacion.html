@@ -428,6 +428,13 @@
         </label>
       </div>
       <div class="impact">Si ya existe una excepción en esa fecha, se actualizará. La línea estimada original no se modifica.</div>
+      <section class="exception-list" *ngIf="excepcionesOrdenadas.length">
+        <small>EXCEPCIONES CARGADAS</small>
+        <div *ngFor="let ex of excepcionesOrdenadas">
+          <span><b>{{ ex.fecha | date:'dd/MM/yyyy':'UTC' }}</b>{{ ex.tipo.replaceAll('_', ' ') }} · {{ ex.motivo }}</span>
+          <button type="button" title="Quitar excepción" aria-label="Quitar excepción" (click)="eliminarExcepcion(ex)" [disabled]="guardando">×</button>
+        </div>
+      </section>
       <footer>
         <button type="button" class="ghost" (click)="modal = null">Cancelar</button>
         <button type="submit" [disabled]="guardando">{{ guardando ? 'Guardando…' : 'Guardar excepción' }}</button>

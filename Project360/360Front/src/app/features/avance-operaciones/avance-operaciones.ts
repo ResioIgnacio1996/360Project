@@ -5,7 +5,12 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { MatIconModule } from '@angular/material/icon';
 import { AvanceOperacionesService } from '../../core/services/avance-operaciones/avance-operaciones';
 import { Auth } from '../../core/services/auth/auth';
-import { MaterialService } from '../../core/services/material/material';
+
+const hoyLocalISO = (): string => {
+  const fecha = new Date();
+  const parte = (valor: number) => String(valor).padStart(2, '0');
+  return `${fecha.getFullYear()}-${parte(fecha.getMonth() + 1)}-${parte(fecha.getDate())}`;
+};
 
 @Component({
   selector: 'app-avance-operaciones',
@@ -17,10 +22,10 @@ import { MaterialService } from '../../core/services/material/material';
 export class AvanceOperaciones implements OnInit {
   readonly proyectoId: number;
   proyecto: any; operaciones: any[] = []; avances: any[] = []; bom: any[] = []; consumos: any[] = [];
-  materialesCatalogo: any[] = [];
   seleccionada: any = null; cargando = true; guardando = false; error = ''; mensaje = '';
+  errorConsumo = '';
   busqueda = ''; estado = 'TODAS'; etapa = 'TODAS'; orden = 'secuencia'; direccion: 'asc' | 'desc' = 'asc';
-  readonly fechaMaxima = new Date().toISOString().slice(0, 10);
+  readonly fechaMaxima = hoyLocalISO();
   porcentaje = 0; cantidadHoy: number | null = null; nota = ''; fecha = this.fechaMaxima;
   consumosHoy: Record<number, number | null> = {}; fotoNombre = ''; fotoPreview = '';
   gestionFecha: 'iniciar' | 'editar-inicio' | 'finalizar' | 'editar-fin' | null = null;
@@ -31,24 +36,11 @@ export class AvanceOperaciones implements OnInit {
     private route: ActivatedRoute,
     private router: Router,
     private service: AvanceOperacionesService,
-    private auth: Auth,
-    private materialService: MaterialService
+    private auth: Auth
   ) {
     this.proyectoId = Number(this.route.snapshot.paramMap.get('id'));
   }
-  ngOnInit(): void { this.cargar(); this.cargarMaterialesCatalogo(); }
-  cargarMaterialesCatalogo(): void {
-    this.materialService.getMateriales().subscribe({
-      next: response => {
-        this.materialesCatalogo = (Array.isArray(response) ? response : []).map(material => ({
-          idMaterial: material.id_material ?? material.idMaterial,
-          nombre: material.nombre ?? material.nombreMaterial ?? material.descripcion ?? '',
-          uom: material.UoM ?? material.unidad ?? material.unidad_medida ?? ''
-        }));
-      },
-      error: () => this.materialesCatalogo = []
-    });
-  }
+  ngOnInit(): void { this.cargar(); }
   cargar(mantener = true): void {
     const seleccionadaId = mantener ? this.seleccionada?.operacion_id : null;
     this.cargando = true; this.error = '';
@@ -197,19 +189,44 @@ export class AvanceOperaciones implements OnInit {
   }
   guardarConsumos(): void {
     if (!this.seleccionada) return;
-    if (!this.consumosPendientes.length) { this.error = 'Informá al menos un consumo mayor a cero'; return; }
+    this.errorConsumo = '';
+    if (!this.consumosPendientes.length) {
+      this.errorConsumo = 'Informá al menos un consumo mayor a cero';
+      return;
+    }
     if (this.consumoConStockInsuficiente) {
-      this.error = 'No se puede confirmar: uno o más materiales superan el stock disponible del proyecto';
+      this.errorConsumo = 'No se puede confirmar: uno o más materiales superan el stock disponible del proyecto';
       return;
     }
     this.confirmacionConsumo = true;
   }
-  cerrarConfirmacionConsumo(): void { this.confirmacionConsumo = false; }
-  confirmarConsumos(): void {
-    if (!this.seleccionada || !this.consumosPendientes.length) return;
-    const consumos = this.consumosPendientes.map(m => ({ bom_id: m.bom_id, cantidad: m.cantidad }));
+  cerrarConfirmacionConsumo(): void {
+    if (this.guardando) return;
     this.confirmacionConsumo = false;
-    this.ejecutar(this.service.registrarConsumos(this.seleccionada.operacion_id, { fecha_consumo: this.fecha, consumos }));
+    this.errorConsumo = '';
+  }
+  confirmarConsumos(): void {
+    if (!this.seleccionada || !this.consumosPendientes.length || this.guardando) return;
+    const consumos = this.consumosPendientes.map(m => ({ bom_id: m.bom_id, cantidad: m.cantidad }));
+    this.guardando = true;
+    this.errorConsumo = '';
+    this.service.registrarConsumos(this.seleccionada.operacion_id, {
+      fecha_consumo: this.fecha,
+      consumos
+    }).subscribe({
+      next: (respuesta: any) => {
+        this.guardando = false;
+        this.confirmacionConsumo = false;
+        this.mensaje = respuesta?.message || 'Consumo guardado correctamente';
+        this.prepararFormulario();
+        this.cargar();
+        setTimeout(() => this.mensaje = '', 3500);
+      },
+      error: (error: any) => {
+        this.guardando = false;
+        this.errorConsumo = error?.error?.message || error?.error?.error || 'No se pudo guardar el consumo';
+      }
+    });
   }
   porcentajeConsumo(m: any): number {
     const teorico = Number(m.cantidad_teorica || 0);
@@ -217,16 +234,9 @@ export class AvanceOperaciones implements OnInit {
   }
   esSobreconsumo(m: any): boolean { return Number(m.cantidad_teorica || 0) > 0 && Number(m.cantidad_consumida || 0) > Number(m.cantidad_teorica); }
   esConsumoHistoricoExcedido(c: any): boolean { return Number(c.cantidad_teorica || 0) > 0 && Number(c.consumo_acumulado || 0) > Number(c.cantidad_teorica); }
-  materialesCompatibles(materialBom: any): any[] {
-    const uom = String(materialBom.uom_nombre || '').trim().toUpperCase();
-    return this.materialesCatalogo.filter(material =>
-      String(material.uom || '').trim().toUpperCase() === uom
-    );
-  }
-  vincularMaterial(materialBom: any): void {
-    const materialId = Number(materialBom.materialSeleccionado);
-    if (!materialId) { this.error = 'Seleccioná un material del catálogo para vincular'; return; }
-    this.ejecutar(this.service.vincularMaterialBom(materialBom.bom_id, materialId));
+  formatearFechaCalendario(valor: unknown): string {
+    const coincidencia = String(valor || '').match(/^(\d{4})-(\d{2})-(\d{2})/);
+    return coincidencia ? `${coincidencia[3]}/${coincidencia[2]}/${coincidencia[1]}` : '';
   }
   anularConsumo(consumo: any): void {
     if (consumo.anulado || this.guardando) return;

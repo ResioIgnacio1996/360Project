@@ -16,6 +16,12 @@ const sumarDiasLaborales = (inicio, horas, calendario, excepciones) => {
   }
   return fechaISO(fecha);
 };
+const sumarDesfaseLaboral = (finPredecesora, horas, calendario, excepciones) => {
+  if (!(Number(horas) > 0)) return fechaISO(finPredecesora);
+  const siguiente = new Date(`${fechaISO(finPredecesora)}T12:00:00Z`);
+  siguiente.setUTCDate(siguiente.getUTCDate() + 1);
+  return sumarDiasLaborales(fechaISO(siguiente), horas, calendario, excepciones);
+};
 
 const construirProgramacion = (filas, calendario, excepciones) => {
   const mapa = new Map(filas.map(f => [Number(f.operacion_id), {
@@ -33,22 +39,30 @@ const construirProgramacion = (filas, calendario, excepciones) => {
       const op = mapa.get(id);
       const preds = op.dependencias.map(dep => mapa.get(dep)).filter(Boolean);
       if (preds.some(pred => pendientes.has(pred.operacion_id))) continue;
-
-      if (op.fecha_fin_real) {
+      const tieneFechaReal = Boolean(op.fecha_inicio_real || op.fecha_fin_real);
+      const afectadaPorCadenaReal = preds.some(pred => pred.reprogramacion_activa);
+      op.reprogramacion_activa = tieneFechaReal || Boolean(op.fecha_no_antes_del) || afectadaPorCadenaReal;
+      if (!op.reprogramacion_activa) {
+        op.fecha_inicio_reprog = fechaISO(op.fecha_inicio_estimada);
+        op.fecha_fin_reprog = fechaISO(op.fecha_fin_estimada);
+      } else if (op.fecha_fin_real) {
         op.fecha_inicio_reprog = fechaISO(op.fecha_inicio_real);
         op.fecha_fin_reprog = fechaISO(op.fecha_fin_real);
       } else if (op.fecha_inicio_real) {
         op.fecha_inicio_reprog = fechaISO(op.fecha_inicio_real);
         op.fecha_fin_reprog = sumarDiasLaborales(op.fecha_inicio_real, op.duracion_hs, calendario, excepciones);
       } else {
-        const finPred = preds.map(p => p.fecha_fin_reprog || fechaISO(p.fecha_fin_estimada)).filter(Boolean).sort().at(-1);
+      const finPred = preds.map(p => p.fecha_fin_reprog || fechaISO(p.fecha_fin_estimada)).filter(Boolean).sort().at(-1);
+      const inicioPorDependencia = finPred
+        ? sumarDesfaseLaboral(finPred, op.desfase_inicio_hs, calendario, excepciones)
+        : null;
         /*
          * Con predecesoras, el pronóstico nace de su finalización vigente. La línea
          * base no puede actuar como piso porque impediría reflejar adelantos reales.
          * Para operaciones raíz sí se conserva el inicio estimado original.
          */
         const candidatosInicio = preds.length
-          ? [finPred, fechaISO(op.fecha_no_antes_del)]
+          ? [inicioPorDependencia, fechaISO(op.fecha_no_antes_del)]
           : [fechaISO(op.fecha_no_antes_del), fechaISO(op.fecha_inicio_estimada)];
         op.fecha_inicio_reprog = candidatosInicio.filter(Boolean).sort().at(-1) || null;
         op.fecha_fin_reprog = sumarDiasLaborales(op.fecha_inicio_reprog, op.duracion_hs, calendario, excepciones);
@@ -70,7 +84,7 @@ const construirProgramacion = (filas, calendario, excepciones) => {
     op.fecha_inicio_reprog = fechaISO(op.fecha_inicio_estimada);
     op.fecha_fin_reprog = fechaISO(op.fecha_fin_estimada);
   }
-  return [...mapa.values()].sort((a, b) => a.secuencia - b.secuencia);
+  return [...mapa.values()].map(({ reprogramacion_activa, ...op }) => op).sort((a, b) => a.secuencia - b.secuencia);
 };
 
 const aplicarEstadosDerivados = (operaciones) => {
@@ -109,7 +123,7 @@ const getProgramacion = async (req, res) => {
       WHERE p.proyecto_id=@proyecto_id;
 
       SELECT o.operacion_id,o.proyecto_id,o.secuencia,o.nombre,o.descripcion,o.criterio_cierre,
-             o.duracion_hs,o.pct_avance_actual,o.cantidad_meta,o.cantidad_acumulada,
+             o.duracion_hs,o.desfase_inicio_hs,o.pct_avance_actual,o.cantidad_meta,o.cantidad_acumulada,
              o.fecha_inicio_estimada,o.fecha_fin_estimada,o.fecha_inicio_real,o.fecha_fin_real,
              o.fecha_no_antes_del,o.archivada,e.codigo etapa_codigo,e.nombre etapa_nombre,
              r.responsable_id,r.nombre responsable_nombre,eo.codigo estado_codigo,eo.label_es estado_label,
@@ -127,7 +141,7 @@ const getProgramacion = async (req, res) => {
         AND (o.version_id=(SELECT TOP 1 version_id FROM VersionPlan WHERE proyecto_id=@proyecto_id AND es_activa=1)
              OR o.archivada=1)
       GROUP BY o.operacion_id,o.proyecto_id,o.secuencia,o.nombre,o.descripcion,o.criterio_cierre,
-               o.duracion_hs,o.pct_avance_actual,o.cantidad_meta,o.cantidad_acumulada,
+               o.duracion_hs,o.desfase_inicio_hs,o.pct_avance_actual,o.cantidad_meta,o.cantidad_acumulada,
                o.fecha_inicio_estimada,o.fecha_fin_estimada,o.fecha_inicio_real,o.fecha_fin_real,
                o.fecha_no_antes_del,o.archivada,e.codigo,e.nombre,r.responsable_id,r.nombre,eo.codigo,eo.label_es,ua.codigo
       ORDER BY o.secuencia;
@@ -464,7 +478,30 @@ const guardarExcepcionCalendario = async (req, res) => {
   }
 };
 
+const eliminarExcepcionCalendario = async (req, res) => {
+  const proyectoId = Number(req.params.id);
+  const excepcionId = Number(req.params.excepcionId);
+  if (!Number.isInteger(proyectoId) || !Number.isInteger(excepcionId))
+    return res.status(400).json({ message: 'Proyecto o excepción inválidos' });
+  try {
+    const pool = await conectarDB();
+    const resultado = await pool.request().input('p', sql.BigInt, proyectoId)
+      .input('e', sql.BigInt, excepcionId).query(`
+        DELETE ex
+        FROM ExcepcionCalendario ex
+        JOIN CalendarioProyecto cp ON cp.calendario_id=ex.calendario_id
+        WHERE ex.excepcion_id=@e AND cp.proyecto_id=@p;
+        SELECT @@ROWCOUNT eliminadas;
+      `);
+    if (!Number(resultado.recordset[0]?.eliminadas))
+      return res.status(404).json({ message: 'La excepción no pertenece al calendario del proyecto' });
+    res.json({ message: 'Excepción eliminada; la programación fue recalculada' });
+  } catch (error) {
+    res.status(500).json({ message: 'No se pudo eliminar la excepción', error: error.message });
+  }
+};
+
 module.exports = {
   getProgramacion, actualizarDuracion, actualizarNmt, actualizarOperacion,
-  crearOperacion, guardarExcepcionCalendario
+  crearOperacion, guardarExcepcionCalendario, eliminarExcepcionCalendario
 };

@@ -2,6 +2,8 @@ const { conectarDB, sql } = require('../DB/dbConection');
 
 const headersRequeridos = ['etapa', 'secuencia_op', 'nro_linea', 'descripcion_libre', 'cantidad_teorica', 'unidad'];
 const aliases = { UNID: 'UN', UNIDAD: 'UN', BOLSAS: 'BOLSA', LT: 'L', LITRO: 'L', LITROS: 'L' };
+const normalizarClave = value => String(value ?? '').normalize('NFD')
+  .replace(/[\u0300-\u036f]/g, '').trim().replace(/\s+/g, ' ').toUpperCase();
 
 function parseCsv(buffer) {
   const text = buffer.toString('utf8').replace(/^\uFEFF/, '');
@@ -79,17 +81,45 @@ function validar(parsed, operaciones, unidades) {
   return { datos, errores, advertencias };
 }
 
+async function obtenerOCrearMaterialBom(transaction, descripcion, uomId) {
+  const existente = await new sql.Request(transaction)
+    .input('descripcion', sql.NVarChar(200), descripcion)
+    .query(`
+      SELECT TOP 1 id_material,uom_id,nombre
+      FROM Materiales WITH (UPDLOCK,HOLDLOCK)
+      WHERE nombre_normalizado=dbo.fn_NormalizarClave(@descripcion)
+    `);
+  if (existente.recordset.length) {
+    const material = existente.recordset[0];
+    if (Number(material.uom_id) !== Number(uomId)) {
+      throw new Error(`El material "${material.nombre}" ya existe con otra unidad de medida`);
+    }
+    return { id: material.id_material, creado: false };
+  }
+  const insertado = await new sql.Request(transaction)
+    .input('nombre', sql.NVarChar(200), descripcion.trim().replace(/\s+/g, ' '))
+    .input('descripcion', sql.NVarChar(500), descripcion.trim().replace(/\s+/g, ' '))
+    .input('uom_id', sql.BigInt, uomId)
+    .query(`
+      INSERT INTO Materiales(nombre,descripcion,uom_id)
+      OUTPUT INSERTED.id_material
+      VALUES(@nombre,@descripcion,@uom_id)
+    `);
+  return { id: insertado.recordset[0].id_material, creado: true };
+}
+
 const listar = async (req, res) => {
   try {
     const pool = await conectarDB();
     const result = await pool.request().input('proyecto', sql.BigInt, req.params.id).query(`
-      SELECT b.bom_id,b.numero_linea,b.descripcion_libre,b.cantidad_teorica,u.nombre unidad,
+      SELECT b.bom_id,b.material_id,b.numero_linea,COALESCE(m.nombre,b.descripcion_libre) descripcion_libre,b.cantidad_teorica,u.nombre unidad,
              o.operacion_id,o.secuencia,o.nombre operacion_nombre,e.codigo etapa_codigo
       FROM BomOperacion b
       JOIN Operacion o ON o.operacion_id=b.operacion_id
       JOIN VersionPlan v ON v.version_id=o.version_id AND v.es_activa=1
       JOIN EtapaOperacion e ON e.etapa_id=o.etapa_id
       JOIN UoM u ON u.uom_id=b.uom_id
+      LEFT JOIN Materiales m ON m.id_material=b.material_id
       WHERE b.proyecto_id=@proyecto AND ISNULL(o.archivada,0)=0
       ORDER BY o.secuencia,b.numero_linea`);
     res.json(result.recordset);
@@ -106,6 +136,24 @@ const previsualizar = async (req, res) => {
     if (!contexto.recordsets[0].length) return res.status(404).json({ message: 'Proyecto no encontrado' });
     if (!contexto.recordsets[0][0].version_id) return res.status(409).json({ message: 'El proyecto no tiene una programación activa' });
     const resultado = validar(parseCsv(req.file.buffer), contexto.recordsets[1], contexto.recordsets[2]);
+    const catalogo = await pool.request().query('SELECT id_material,nombre,uom_id FROM Materiales');
+    const porNombre = new Map(catalogo.recordset.map(m => [normalizarClave(m.nombre), m]));
+    resultado.datos = resultado.datos.map(fila => {
+      const existente = porNombre.get(normalizarClave(fila.descripcion_libre));
+      const uom = contexto.recordsets[2].find(u => normalizarClave(u.nombre) === normalizarClave(fila.unidad));
+      return {
+        ...fila,
+        material_id: existente?.id_material || null,
+        material_nuevo: !existente,
+        conflicto_uom: !!existente && Number(existente.uom_id) !== Number(uom?.uom_id)
+      };
+    });
+    for (const fila of resultado.datos.filter(f => f.conflicto_uom)) {
+      resultado.errores.push({ fila: fila.fila, columna: 'unidad', mensaje: `El material ${fila.descripcion_libre} ya existe con otra unidad de medida` });
+    }
+    for (const fila of resultado.datos.filter(f => f.material_nuevo)) {
+      resultado.advertencias.push({ fila: fila.fila, columna: 'descripcion_libre', mensaje: `Se crearÃ¡ el material ${fila.descripcion_libre} en el maestro global` });
+    }
     res.json({ proyecto: contexto.recordsets[0][0], ...resultado });
   } catch (error) {
     res.status(400).json({ message: 'No se pudo interpretar el CSV', error: error.message });
@@ -128,18 +176,8 @@ const importar = async (req, res) => {
     let insertadas = 0, actualizadas = 0;
     for (const fila of validacion.datos) {
       const uomId = unidades.get(fila.unidad);
-      const material = await new sql.Request(tx)
-        .input('descripcion', sql.NVarChar(200), fila.descripcion_libre)
-        .input('uom_id', sql.BigInt, uomId)
-        .query(`
-          SELECT TOP 1 id_material
-          FROM Materiales
-          WHERE uom_id=@uom_id
-            AND UPPER(LTRIM(RTRIM(nombre))) COLLATE Latin1_General_CI_AI
-              = UPPER(LTRIM(RTRIM(@descripcion))) COLLATE Latin1_General_CI_AI
-          ORDER BY id_material
-        `);
-      const materialId = material.recordset[0]?.id_material || null;
+      const material = await obtenerOCrearMaterialBom(tx, fila.descripcion_libre, uomId);
+      const materialId = material.id;
       const existe = await new sql.Request(tx).input('operacion', sql.BigInt, fila.operacion_id)
         .input('linea', sql.SmallInt, fila.nro_linea)
         .query('SELECT bom_id FROM BomOperacion WHERE operacion_id=@operacion AND numero_linea=@linea');
@@ -148,7 +186,7 @@ const importar = async (req, res) => {
         .input('linea', sql.SmallInt, fila.nro_linea).input('descripcion', sql.NVarChar(200), fila.descripcion_libre)
         .input('cantidad', sql.Decimal(12, 3), fila.cantidad_teorica)
         .input('material_id', sql.BigInt, materialId)
-        .input('sin_codigo', sql.Bit, materialId ? 0 : 1);
+        .input('sin_codigo', sql.Bit, 0);
       if (existe.recordset.length) {
         await request.query(`UPDATE BomOperacion SET uom_id=@uom,descripcion_libre=@descripcion,
           cantidad_teorica=@cantidad,material_id=@material_id,sin_codigo=@sin_codigo,

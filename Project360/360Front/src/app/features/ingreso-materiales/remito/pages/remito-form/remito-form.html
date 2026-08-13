@@ -100,10 +100,10 @@
       <div class="add-material-row" [formGroup]="materialManualForm" *ngIf="form.getRawValue().idRegistroCompra">
         <mat-form-field appearance="outline">
           <mat-label>Material del Registro de Compra</mat-label>
-          <mat-select formControlName="idMaterial" (selectionChange)="onMaterialManualChange($event.value)">
+          <mat-select formControlName="idDetalle" (selectionChange)="onMaterialManualChange($event.value)">
             <mat-option
               *ngFor="let material of materialesDisponibles"
-              [value]="material.idMaterial"
+              [value]="material.idDetalle"
             >
               {{ material.nombreMaterial }} - Pendiente OC: {{ material.cantidadSolicitada || material.cantidad }} {{ material.unidad }}
             </mat-option>

@@ -100,7 +100,7 @@ export class RemitoForm implements OnInit {
     });
 
     this.materialManualForm = this.fb.group({
-      idMaterial: [null, Validators.required],
+      idDetalle: [null, Validators.required],
       cantidad: [null, [Validators.required, Validators.min(0.01)]],
       unidad: ['', Validators.required]
     });
@@ -120,12 +120,12 @@ export class RemitoForm implements OnInit {
   get materialesDisponibles(): DetalleRegistroCompra[] {
     const idsCargados = new Set(
       this.detalle.controls
-        .map(control => Number(control.get('idMaterial')?.value))
+        .map(control => Number(control.get('idDetalle')?.value))
         .filter(id => !!id)
     );
 
     return this.detalleRegistroCompra.filter(item =>
-      !!item.idMaterial && !idsCargados.has(Number(item.idMaterial))
+      !!item.idDetalle && !idsCargados.has(Number(item.idDetalle))
     );
   }
 
@@ -164,7 +164,7 @@ export class RemitoForm implements OnInit {
         this.detalleRegistroCompra = registro.detalle ?? [];
         this.detalle.clear();
         this.materialManualForm.reset({
-          idMaterial: null,
+          idDetalle: null,
           cantidad: null,
           unidad: ''
         });
@@ -177,8 +177,8 @@ export class RemitoForm implements OnInit {
     });
   }
 
-  onMaterialManualChange(idMaterial: number): void {
-    const material = this.buscarMaterialPorId(idMaterial);
+  onMaterialManualChange(idDetalle: number): void {
+    const material = this.buscarMaterialPorId(idDetalle);
 
     this.materialManualForm.patchValue({
       unidad: material?.unidad ?? ''
@@ -202,7 +202,7 @@ export class RemitoForm implements OnInit {
     }
 
     const value = this.materialManualForm.getRawValue();
-    const material = this.buscarMaterialPorId(Number(value.idMaterial));
+    const material = this.buscarMaterialPorId(Number(value.idDetalle));
 
     if (!material) {
       this.snackBar.open('El material seleccionado no pertenece al Registro de Compra.', 'Cerrar', {
@@ -213,7 +213,7 @@ export class RemitoForm implements OnInit {
 
     this.detalle.push(this.crearDetalleItem(material, Number(value.cantidad), value.unidad));
     this.materialManualForm.reset({
-      idMaterial: null,
+      idDetalle: null,
       cantidad: null,
       unidad: ''
     });
@@ -341,8 +341,8 @@ export class RemitoForm implements OnInit {
     }
   }
 
-  buscarMaterialPorId(idMaterial: number): DetalleRegistroCompra | null {
-    return this.detalleRegistroCompra.find(item => Number(item.idMaterial) === Number(idMaterial)) ?? null;
+  buscarMaterialPorId(idDetalle: number): DetalleRegistroCompra | null {
+    return this.detalleRegistroCompra.find(item => Number(item.idDetalle) === Number(idDetalle)) ?? null;
   }
 
   buscarMaterialEnRegistroCompra(nombreMaterial: string): DetalleRegistroCompra | null {
@@ -360,8 +360,8 @@ export class RemitoForm implements OnInit {
 
   buscarIndiceMaterialEnDetalle(material: DetalleRegistroCompra): number {
     return this.detalle.controls.findIndex(control => {
-      const idControl = Number(control.get('idMaterial')?.value);
-      const idMaterial = Number(material.idMaterial);
+      const idControl = Number(control.get('idDetalle')?.value);
+      const idMaterial = Number(material.idDetalle);
       const nombreControl = this.normalizarTexto(control.get('material')?.value);
       const nombreMaterial = this.normalizarTexto(material.nombreMaterial);
 
@@ -375,7 +375,7 @@ export class RemitoForm implements OnInit {
 
   crearDetalleItem(item: DetalleRegistroCompra, cantidad: number | null = null, unidad?: string): FormGroup {
     return this.fb.group({
-      idMaterial: [item.idMaterial],
+      idDetalle: [item.idDetalle],
       material: [item.nombreMaterial],
       cantidadSolicitada: [item.cantidadSolicitada ?? item.cantidad],
       cantidad: [cantidad, [Validators.required, Validators.min(0.01)]],
@@ -405,7 +405,8 @@ export class RemitoForm implements OnInit {
       fecha: rawValue.fecha,
       registro_compra_id: rawValue.idRegistroCompra,
       detalle: detalle.map((item: any) => ({
-        id_material: item.idMaterial,
+        id_material: null,
+        descripcion: item.material,
         cantidad: Number(item.cantidad),
         UoM: item.unidad
       }))

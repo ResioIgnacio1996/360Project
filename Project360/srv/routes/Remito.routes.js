@@ -8,6 +8,7 @@ const {
 
 const {
     getRemitos,
+    getMaterialesBomProyecto,
     getRemitoById,
     getRemitosByRegistroCompra,
     crearRemito,
@@ -41,6 +42,8 @@ const upload = multer({
 router.get('/', verificarToken, getRemitos);
 
 router.get('/registro-compra/:id',verificarToken,getRemitosByRegistroCompra);
+
+router.get('/proyecto/:proyectoId/materiales-bom', verificarToken, getMaterialesBomProyecto);
 
 router.post(
     '/documento',

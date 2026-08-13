@@ -1,3 +1,110 @@
-<div class="registro-compra-page"><div class="page-header"><div><span class="breadcrumb">OBRA360 / Proyectos / Materiales</span><h1>Stock de {{proyecto?.nombre||'proyecto'}}</h1><p>Asignaciones desde stock general y devoluciones.</p></div><button class="btn btn-ghost" (click)="volver()"><mat-icon>arrow_back</mat-icon>Volver</button></div><div class="state-message error" *ngIf="error">{{error}}</div>
-<section class="block" *ngIf="proyectoId"><div class="block-header"><h2 class="block-title">Asignar material</h2></div><div class="form-row"><label>Material disponible<select [(ngModel)]="stockId"><option [ngValue]="null">Seleccione</option><option *ngFor="let s of stock" [ngValue]="s.stock_general_id">{{s.material}} — disponible: {{s.cantidad_disponible}}</option></select></label><label>Cantidad<input type="number" min="0.01" step="0.01" [(ngModel)]="cantidad"></label><button class="btn btn-primary" [disabled]="procesando" (click)="asignar()">Asignar</button></div></section>
-<section class="block" *ngIf="proyectoId"><div class="block-header"><h2 class="block-title">Materiales asignados</h2><span class="chip c-blue">{{asignados.length}} MATERIALES</span></div><div class="table-wrap"><table><thead><tr><th>Material</th><th>Cantidad en proyecto</th><th>Acción</th></tr></thead><tbody><tr *ngFor="let item of asignados"><td><strong>{{item.material}}</strong></td><td>{{item.cantidad_disponible}}</td><td><button class="btn btn-ghost btn-sm" [disabled]="item.cantidad_disponible<=0" (click)="devolver(item)"><mat-icon>keyboard_return</mat-icon>Devolver</button></td></tr></tbody></table><div class="empty-state" *ngIf="!asignados.length">Todavía no hay materiales asignados.</div></div></section></div>
+<div class="project-stock-page">
+  <header class="page-header">
+    <div>
+      <span class="breadcrumb">OBRA360 / PROYECTOS / CONTAINER</span>
+      <h1>Stock actual del proyecto</h1>
+      <p>{{ proyecto?.nombre || ('Proyecto #' + proyectoId) }} · Materiales liberados y disponibles para consumo.</p>
+    </div>
+    <div class="header-actions">
+      <button class="btn btn-ghost" type="button" (click)="cargarStock()" [disabled]="cargando">
+        <mat-icon>refresh</mat-icon>Actualizar
+      </button>
+      <button class="btn btn-ghost" type="button" (click)="volver()">
+        <mat-icon>arrow_back</mat-icon>Volver
+      </button>
+    </div>
+  </header>
+
+  <div class="state-message error" *ngIf="error">{{ error }}</div>
+
+  <section class="stock-summary" *ngIf="!cargando">
+    <article class="summary-card">
+      <span class="summary-icon"><mat-icon>inventory_2</mat-icon></span>
+      <div><small>MATERIALES REGISTRADOS</small><strong>{{ materiales.length }}</strong></div>
+    </article>
+    <article class="summary-card available">
+      <span class="summary-icon"><mat-icon>check_circle</mat-icon></span>
+      <div><small>CON STOCK DISPONIBLE</small><strong>{{ materialesConStock }}</strong></div>
+    </article>
+    <article class="summary-card empty">
+      <span class="summary-icon"><mat-icon>remove_circle_outline</mat-icon></span>
+      <div><small>SIN EXISTENCIAS</small><strong>{{ materialesSinStock }}</strong></div>
+    </article>
+  </section>
+
+  <section class="block stock-master">
+    <div class="block-header">
+      <div>
+        <h2 class="block-title">Container del proyecto</h2>
+        <p>Existencias disponibles después de liberaciones y consumos registrados.</p>
+      </div>
+      <span class="chip c-blue">{{ materialesFiltrados.length }} MATERIALES</span>
+    </div>
+
+    <div class="stock-toolbar">
+      <label class="search-field">
+        <mat-icon>search</mat-icon>
+        <input type="search" [(ngModel)]="busqueda" placeholder="Buscar por material, código o unidad" aria-label="Buscar materiales del proyecto">
+      </label>
+      <span class="read-only-note"><mat-icon>info</mat-icon>Vista informativa del stock vigente</span>
+    </div>
+
+    <div class="loading-box" *ngIf="cargando">
+      <mat-icon>sync</mat-icon>
+      Cargando stock del proyecto…
+    </div>
+
+    <div class="table-wrap" *ngIf="!cargando && materialesFiltrados.length">
+      <table>
+        <thead>
+          <tr>
+            <th>Material</th>
+            <th>Código</th>
+            <th>Unidad</th>
+            <th class="numeric">Cantidad actual</th>
+            <th>Estado</th>
+            <th aria-label="Movimientos"></th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr class="stock-row" *ngFor="let item of materialesFiltrados" tabindex="0"
+              (click)="verMovimientos(item)" (keydown.enter)="verMovimientos(item)"
+              title="Ver movimientos del material">
+            <td>
+              <div class="material-cell">
+                <span class="material-avatar"><mat-icon>inventory</mat-icon></span>
+                <div>
+                  <strong>{{ item.material }}</strong>
+                  <small>{{ item.cantidad_lotes || 1 }} {{ (item.cantidad_lotes || 1) === 1 ? 'ingreso acumulado' : 'ingresos acumulados' }}</small>
+                </div>
+              </div>
+            </td>
+            <td><span class="material-code">MAT-{{ item.id_material }}</span></td>
+            <td><span class="unit-chip">{{ item.uom_nombre || item.unidad_medida || '—' }}</span></td>
+            <td class="numeric quantity" [class.zero]="item.cantidad_disponible <= 0">
+              {{ item.cantidad_disponible | number:'1.0-2' }}
+            </td>
+            <td>
+              <span class="chip" [ngClass]="item.cantidad_disponible > 0 ? 'c-green' : 'c-gray'">
+                {{ item.cantidad_disponible > 0 ? 'Disponible' : 'Sin stock' }}
+              </span>
+            </td>
+            <td class="movement-link"><mat-icon>arrow_forward</mat-icon></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="empty-state" *ngIf="!cargando && !materiales.length">
+      <mat-icon>inventory_2</mat-icon>
+      <strong>El proyecto todavía no tiene materiales liberados</strong>
+      <p>Los materiales aparecerán aquí cuando se libere el stock de un remito hacia este proyecto.</p>
+    </div>
+
+    <div class="empty-state" *ngIf="!cargando && materiales.length && !materialesFiltrados.length">
+      <mat-icon>search_off</mat-icon>
+      <strong>No encontramos materiales</strong>
+      <p>Probá con otro nombre, código o unidad de medida.</p>
+    </div>
+  </section>
+</div>

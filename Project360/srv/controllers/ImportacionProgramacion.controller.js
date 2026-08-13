@@ -34,6 +34,37 @@ function parseCsv(buffer) {
 const numero = value => value === '' || value == null ? null : Number(value);
 const limpiarFilas = rows => rows.map(({ _fila, ...row }) => row);
 
+function normalizarDatosEditados(datos) {
+  const filas = key => Array.isArray(datos?.[key]) ? datos[key] : [];
+  return {
+    etapas: filas('etapas').map((r, i) => ({
+      ...r, codigo:String(r.codigo || '').trim(), nombre:String(r.nombre || '').trim(),
+      orden:numero(r.orden), peso_pct:numero(r.peso_pct), _fila:i + 2
+    })),
+    responsables: filas('responsables').map((r, i) => ({
+      ...r, codigo:String(r.codigo || '').trim(), nombre:String(r.nombre || '').trim(),
+      tipo:String(r.tipo || '').trim().toUpperCase(), _fila:i + 2
+    })),
+    operaciones: filas('operaciones').map((r, i) => ({
+      ...r, etapa:String(r.etapa || '').trim(), secuencia:numero(r.secuencia),
+      desfase_inicio_hs:numero(r.desfase_inicio_hs) || 0,
+      responsable:String(r.responsable || '').trim(), duracion_hs:numero(r.duracion_hs),
+      unidad_avance:String(r.unidad_avance || '').trim().toUpperCase(),
+      cantidad_meta:numero(r.cantidad_meta), peso_pct:numero(r.peso_pct),
+      cant_materiales:numero(r.cant_materiales) || 0, _fila:i + 2
+    })),
+    materiales: filas('materiales').map((r, i) => ({
+      ...r, etapa:String(r.etapa || '').trim(), secuencia_op:numero(r.secuencia_op),
+      nro_linea:numero(r.nro_linea), descripcion_libre:String(r.descripcion_libre || '').trim(),
+      cantidad_teorica:numero(r.cantidad_teorica), unidad:String(r.unidad || '').trim(), _fila:i + 2
+    })),
+    calendario: filas('calendario').map((r, i) => ({ ...r, _fila:i + 2 })),
+    excepciones: filas('excepciones').map((r, i) => ({
+      ...r, hs_disponibles:numero(r.hs_disponibles), _fila:i + 2
+    }))
+  };
+}
+
 function normalizar(files) {
   const parsed = {};
   for (const key of Object.keys(requeridos)) {
@@ -103,7 +134,16 @@ function validar(datos, parsed, unidadesDb = []) {
   }
   const aliases = { UNID:'UN',UNIDAD:'UN',BOLSAS:'BOLSA',LT:'L,LITRO',LITROS:'L',KG:'KG',TN:'TN',M2:'M2',M3:'M3',ML:'ML' };
   const unidades = new Set(unidadesDb.map(u=>u.nombre.toUpperCase()));
+  const lineasMateriales = new Set();
   for (const m of datos.materiales) {
+    if (!Number.isInteger(m.nro_linea) || m.nro_linea <= 0) {
+      error('materiales.csv',m._fila,'nro_linea','Debe ser un entero mayor a cero');
+    } else {
+      const claveLinea = `${m.secuencia_op}:${m.nro_linea}`;
+      if (lineasMateriales.has(claveLinea))
+        error('materiales.csv',m._fila,'nro_linea',`La linea ${m.nro_linea} esta repetida en la operacion ${m.secuencia_op}`);
+      lineasMateriales.add(claveLinea);
+    }
     if (!secuencias.has(m.secuencia_op)) error('materiales.csv',m._fila,'secuencia_op',`La operación ${m.secuencia_op} no existe`);
     if (!(m.cantidad_teorica>0)) error('materiales.csv',m._fila,'cantidad_teorica','Debe ser mayor a cero');
     const u = (aliases[String(m.unidad).toUpperCase()] || String(m.unidad).toUpperCase()).split(',')[0];
@@ -181,6 +221,12 @@ function sumarLaboral(inicio,horas,cal,excepciones){
   if(guard<=0)throw new Error('El calendario no ofrece horas laborables suficientes');
   return fechaISO(d);
 }
+function sumarDesfaseLaboral(finPredecesora,horas,cal,excepciones){
+  if(!(Number(horas)>0))return finPredecesora;
+  const siguiente=new Date(`${finPredecesora}T12:00:00Z`);
+  siguiente.setUTCDate(siguiente.getUTCDate()+1);
+  return sumarLaboral(fechaISO(siguiente),horas,cal,excepciones);
+}
 function calcularFechas(ops,inicio,cal,excepciones){
   const mapa=new Map(ops.map(o=>[o.secuencia,o])), pendientes=new Set(mapa.keys());
   while(pendientes.size){
@@ -190,7 +236,7 @@ function calcularFechas(ops,inicio,cal,excepciones){
       if(deps.some(d=>pendientes.has(d)))continue;
       let ini=inicio;
       if(deps.length)ini=deps.map(d=>mapa.get(d).fecha_fin_estimada).sort().at(-1);
-      if(o.desfase_inicio_hs)ini=sumarLaboral(ini,o.desfase_inicio_hs,cal,excepciones);
+      if(o.desfase_inicio_hs)ini=sumarDesfaseLaboral(ini,o.desfase_inicio_hs,cal,excepciones);
       o.fecha_inicio_estimada=ini;o.fecha_fin_estimada=sumarLaboral(ini,o.duracion_hs,cal,excepciones);
       pendientes.delete(s);avance=true;
     }
@@ -206,7 +252,7 @@ async function importar(req,res){
   try{
     const cats=await pool.request().query('SELECT * FROM UoM; SELECT * FROM unidad_avance; SELECT * FROM estado_operacion; SELECT * FROM estado_etapa; SELECT * FROM tipo_restriccion');
     const fake=Object.fromEntries(Object.keys(requeridos).map(k=>[k,{headers:requeridos[k]}]));
-    const normal=Object.fromEntries(Object.keys(requeridos).map(k=>[k,(datos[k]||[]).map((x,i)=>({...x,_fila:i+2}))]));
+    const normal=normalizarDatosEditados(datos);
     const valid=validar(normal,fake,cats.recordsets[0]);
     if(valid.errores.length)return res.status(422).json({message:'Hay errores de validación',...valid});
     const proyecto=await pool.request().input('id',sql.BigInt,req.params.id).query('SELECT * FROM Proyecto WHERE proyecto_id=@id');
@@ -295,16 +341,20 @@ async function importar(req,res){
     const aliases={UNID:'UN',UNIDAD:'UN',BOLSAS:'BOLSA',LT:'L',LITROS:'L'};
     for(const m of normal.materiales){
       const nombre=aliases[String(m.unidad).toUpperCase()]||String(m.unidad).toUpperCase(),uom=cats.recordsets[0].find(x=>x.nombre.toUpperCase()===nombre);
-      const material=await rq().input('descripcion',sql.NVarChar(200),m.descripcion_libre).input('uom',sql.BigInt,uom.uom_id).query(`
-        SELECT TOP 1 id_material FROM Materiales
-        WHERE uom_id=@uom
-          AND UPPER(LTRIM(RTRIM(nombre))) COLLATE Latin1_General_CI_AI
-            = UPPER(LTRIM(RTRIM(@descripcion))) COLLATE Latin1_General_CI_AI
-        ORDER BY id_material`);
-      const materialId=material.recordset[0]?.id_material||null;
+      const material=await rq().input('descripcion',sql.NVarChar(200),m.descripcion_libre).query(`
+        SELECT TOP 1 id_material,uom_id,nombre FROM Materiales WITH (UPDLOCK,HOLDLOCK)
+        WHERE nombre_normalizado=dbo.fn_NormalizarClave(@descripcion)`);
+      let materialId=material.recordset[0]?.id_material||null;
+      if(materialId && Number(material.recordset[0].uom_id)!==Number(uom.uom_id))
+        throw new Error(`El material ${material.recordset[0].nombre} ya existe con otra unidad de medida`);
+      if(!materialId){
+        const creado=await rq().input('nombre_material',sql.NVarChar(200),String(m.descripcion_libre).trim().replace(/\s+/g,' ')).input('uom_material',sql.BigInt,uom.uom_id)
+          .query('INSERT INTO Materiales(nombre,descripcion,uom_id) OUTPUT INSERTED.id_material VALUES(@nombre_material,@nombre_material,@uom_material)');
+        materialId=creado.recordset[0].id_material;
+      }
       await rq().input('o',sql.BigInt,opMap.get(m.secuencia_op)).input('p',sql.BigInt,req.params.id).input('u',sql.BigInt,uom.uom_id).input('l',sql.SmallInt,m.nro_linea)
         .input('d',sql.NVarChar(200),m.descripcion_libre).input('c',sql.Decimal(12,3),m.cantidad_teorica)
-        .input('m',sql.BigInt,materialId).input('s',sql.Bit,materialId?0:1)
+        .input('m',sql.BigInt,materialId).input('s',sql.Bit,0)
         .query('INSERT INTO BomOperacion(operacion_id,proyecto_id,uom_id,numero_linea,material_id,descripcion_libre,cantidad_teorica,sin_codigo) VALUES(@o,@p,@u,@l,@m,@d,@c,@s)');
     }
     await tx.commit();

@@ -1,0 +1,70 @@
+<section class="movement-page">
+  <header class="page-header">
+    <div>
+      <span class="breadcrumb">OBRA360 / PROYECTOS / CONTAINER / MOVIMIENTOS</span>
+      <h1>Movimientos del material</h1>
+      <p>{{ detalle?.proyecto_nombre || ('Proyecto #' + proyectoId) }} · Trazabilidad de ingresos y consumos.</p>
+    </div>
+    <div class="header-actions">
+      <button class="btn btn-ghost" type="button" (click)="cargar()" [disabled]="cargando">
+        <mat-icon>refresh</mat-icon>Actualizar
+      </button>
+      <button class="btn btn-ghost" type="button" (click)="volver()">
+        <mat-icon>arrow_back</mat-icon>Volver al Container
+      </button>
+    </div>
+  </header>
+
+  <div class="state-message error" *ngIf="error">{{ error }}</div>
+  <div class="loading-box" *ngIf="cargando"><mat-icon>sync</mat-icon>Cargando movimientos…</div>
+
+  <ng-container *ngIf="!cargando && detalle">
+    <section class="material-identity">
+      <span class="material-icon"><mat-icon>inventory_2</mat-icon></span>
+      <div><small>MATERIAL DEL CATÁLOGO</small><h2>{{ detalle.material }}</h2><span>MAT-{{ detalle.id_material }} · {{ detalle.uom_nombre || 'Sin UOM' }}</span></div>
+    </section>
+
+    <section class="movement-summary">
+      <article><small>STOCK ACTUAL</small><strong>{{ detalle.stock_actual | number:'1.0-2' }} {{ detalle.uom_nombre }}</strong></article>
+      <article class="income"><small>TOTAL INGRESADO</small><strong>+{{ totalIngresado | number:'1.0-2' }}</strong></article>
+      <article class="consumption"><small>TOTAL CONSUMIDO</small><strong>-{{ totalConsumido | number:'1.0-2' }}</strong></article>
+      <article><small>LOTES REGISTRADOS</small><strong>{{ detalle.cantidad_lotes }}</strong></article>
+    </section>
+
+    <section class="block movement-master">
+      <div class="block-header">
+        <div><h2 class="block-title">Historial de movimientos</h2><p>Los ingresos suman al Container y los consumos registrados en operaciones lo descuentan.</p></div>
+        <span class="chip c-blue">{{ movimientos.length }} MOVIMIENTOS</span>
+      </div>
+
+      <div class="table-wrap" *ngIf="movimientos.length">
+        <table>
+          <thead><tr><th>Fecha</th><th>Movimiento</th><th>Origen / destino</th><th>Detalle</th><th class="numeric">Cantidad</th></tr></thead>
+          <tbody>
+            <tr *ngFor="let movimiento of movimientos" [class.consumed]="movimiento.tipo === 'CONSUMO' && !movimiento.anulado" [class.annulled]="movimiento.anulado">
+              <td>{{ movimiento.fecha | date:'dd/MM/yyyy' }}</td>
+              <td>
+                <span class="movement-type" [class.out]="movimiento.tipo === 'CONSUMO'" [class.cancelled]="movimiento.anulado">
+                  <mat-icon>{{ movimiento.anulado ? 'undo' : movimiento.tipo === 'INGRESO' ? 'add_box' : 'remove_circle' }}</mat-icon>
+                  {{ movimiento.anulado ? 'Consumo anulado' : movimiento.tipo === 'INGRESO' ? 'Ingreso por liberación' : 'Consumo' }}
+                </span>
+              </td>
+              <td>
+                <strong *ngIf="movimiento.tipo === 'INGRESO'">Remito {{ movimiento.remito_numero || 'sin número' }}</strong>
+                <strong *ngIf="movimiento.tipo === 'CONSUMO'">OP {{ movimiento.operacion_secuencia }} · {{ movimiento.operacion_nombre }}</strong>
+              </td>
+              <td>{{ movimiento.detalle || '—' }}</td>
+              <td class="numeric movement-quantity" [class.out]="movimiento.tipo === 'CONSUMO' && !movimiento.anulado">
+                {{ movimiento.tipo === 'CONSUMO' && !movimiento.anulado ? '−' : movimiento.tipo === 'INGRESO' ? '+' : '' }}{{ movimiento.cantidad | number:'1.0-2' }} {{ detalle.uom_nombre }}
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="empty-state" *ngIf="!movimientos.length">
+        <mat-icon>history</mat-icon><strong>No hay movimientos registrados</strong><p>Los ingresos y consumos de este material aparecerán en esta pantalla.</p>
+      </div>
+    </section>
+  </ng-container>
+</section>

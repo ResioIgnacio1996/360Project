@@ -176,82 +176,6 @@ const obtenerUomId = async (transaction, uom) => {
     throw errorValidacionMaterial(`La unidad de medida ${nombreUom} no existe en el catálogo de UOM`);
 };
 
-const obtenerMaterialId = async (transaction, item) => {
-
-    if (item.id_material) {
-        const material = await new sql.Request(transaction)
-            .input('id_material', sql.BigInt, item.id_material)
-            .query(`
-                SELECT m.id_material, u.nombre AS uom
-                FROM Materiales m
-                JOIN UOM u ON u.uom_id=m.uom_id
-                WHERE id_material = @id_material
-            `);
-
-        if (material.recordset.length === 0) {
-            throw new Error(`Material no encontrado: ${item.id_material}`);
-        }
-
-        const uomMaterial = normalizarUom(material.recordset[0].uom);
-        if (normalizarUom(item.UoM) !== uomMaterial) {
-            throw errorValidacionMaterial(`La UOM del material debe ser ${uomMaterial}`);
-        }
-
-        return item.id_material;
-    }
-
-    const nombreMaterial = String(item.nombre || item.descripcion || '')
-        .trim()
-        .replace(/\s+/g, ' ');
-
-    if (!nombreMaterial) {
-        throw new Error('El material debe tener id_material, nombre o descripcion');
-    }
-
-    const materialesCatalogo = await new sql.Request(transaction)
-        .query(`
-            SELECT m.id_material, m.nombre, u.nombre AS uom
-            FROM Materiales m WITH (UPDLOCK, HOLDLOCK)
-            JOIN UOM u ON u.uom_id=m.uom_id
-        `);
-    const materialExistente = materialesCatalogo.recordset.find(material =>
-        normalizarNombreMaterial(material.nombre) === normalizarNombreMaterial(nombreMaterial)
-    );
-
-    if (materialExistente) {
-        const uomMaterial = normalizarUom(materialExistente.uom);
-        if (normalizarUom(item.UoM) !== uomMaterial) {
-            throw errorValidacionMaterial(`El material ${materialExistente.nombre} ya existe y su UOM es ${uomMaterial}`);
-        }
-        return materialExistente.id_material;
-    }
-
-    const uomId = await obtenerUomId(transaction, item.UoM);
-
-    const materialNuevo = await new sql.Request(transaction)
-        .input('nombre', sql.VarChar, nombreMaterial)
-        .input('descripcion', sql.VarChar, item.descripcion || nombreMaterial)
-        .input('uom_id', sql.BigInt, uomId)
-        .query(`
-            INSERT INTO Materiales (
-                nombre,
-                descripcion,
-                uom_id
-                
-            )
-            OUTPUT INSERTED.id_material
-            VALUES (
-                @nombre,
-                @descripcion,
-                @uom_id
-                
-            )
-        `);
-
-    return materialNuevo.recordset[0].id_material;
-};
-
-
 // ======================================================
 // GET - LISTAR REGISTROS DE COMPRA
 // ======================================================
@@ -337,11 +261,11 @@ const getRegistroCompraById = async (req, res) => {
             drc.id_detalle_oc,
             drc.id_oc,
             drc.id_material,
-            m.nombre AS material,
+            COALESCE(drc.Descripcion,m.nombre) AS material,
             drc.cantidad,
             drc.UoM
         FROM Detalle_RegistroDeCompra drc
-        INNER JOIN Materiales m
+        LEFT JOIN Materiales m
             ON m.id_material = drc.id_material
         WHERE drc.id_oc = @id_oc
        
@@ -491,23 +415,28 @@ const crearRegistroCompra = async (req, res) => {
         
 
         for (const item of detalle) {
-            const idMaterial = await obtenerMaterialId(transaction, item);
+            await obtenerUomId(transaction, item.UoM);
+            const descripcion = String(item.nombre || item.descripcion || item.nombreMaterial || '').trim().replace(/\s+/g, ' ');
+            if (!descripcion) throw errorValidacionMaterial('La descripciÃ³n del material es obligatoria');
 
             await new sql.Request(transaction)
                 .input('id_oc', sql.BigInt, registroCompraId)
-                .input('id_material', sql.BigInt, idMaterial)
+                .input('id_material', sql.BigInt, null)
+                .input('descripcion', sql.NVarChar(255), descripcion)
                 .input('cantidad', sql.Decimal(18, 2), item.cantidad)
                 .input('UoM', sql.VarChar, item.UoM || null)
                 .query(`
         INSERT INTO Detalle_RegistroDeCompra (
             id_oc,
             id_material,
+            Descripcion,
             cantidad,
             UoM
         )
         VALUES (
             @id_oc,
             @id_material,
+            @descripcion,
             @cantidad,
             @UoM
         )
@@ -686,23 +615,28 @@ const actualizarRegistroCompra = async (req, res) => {
             `);
 
         for (const item of detalle) {
-            const idMaterial = await obtenerMaterialId(transaction, item);
+            await obtenerUomId(transaction, item.UoM);
+            const descripcion = String(item.nombre || item.descripcion || item.nombreMaterial || '').trim().replace(/\s+/g, ' ');
+            if (!descripcion) throw errorValidacionMaterial('La descripciÃ³n del material es obligatoria');
 
             await new sql.Request(transaction)
                 .input('id_oc', sql.BigInt, id)
-                .input('id_material', sql.BigInt, idMaterial)
+                .input('id_material', sql.BigInt, null)
+                .input('descripcion', sql.NVarChar(255), descripcion)
                 .input('cantidad', sql.Decimal(18, 2), item.cantidad)
                 .input('UoM', sql.VarChar, item.UoM || null)
                 .query(`
                     INSERT INTO Detalle_RegistroDeCompra (
                         id_oc,
                         id_material,
+                        Descripcion,
                         cantidad,
                         UoM
                     )
                     VALUES (
                         @id_oc,
                         @id_material,
+                        @descripcion,
                         @cantidad,
                         @UoM
                     )

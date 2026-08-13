@@ -45,8 +45,8 @@
         <span class="mono op-code">{{ op.secuencia }}</span>
         <span class="op-name"><strong>{{ op.nombre }}</strong><small>{{ op.etapa_codigo }} · {{ op.etapa_nombre }}</small></span>
         <span>{{ op.responsable_nombre || 'Sin asignar' }}</span>
-        <span class="date-main"><small>PLAN</small><strong>{{ (op.fecha_fin_estimada | date:'dd/MM/yyyy') || '—' }}</strong></span>
-        <span class="date-main reprog"><small>REPROG.</small><strong>{{ (op.fecha_fin_reprog | date:'dd/MM/yyyy') || '—' }}</strong></span>
+        <span class="date-main"><small>PLAN</small><strong>{{ formatearFechaCalendario(op.fecha_fin_estimada) || '—' }}</strong></span>
+        <span class="date-main reprog"><small>REPROG.</small><strong>{{ formatearFechaCalendario(op.fecha_fin_reprog) || '—' }}</strong></span>
         <span><b class="status" [ngClass]="claseEstado(op)">{{ op.estado_label || op.estado_codigo }}</b></span>
         <span class="progress-cell"><span class="bar"><i [style.width.%]="op.pct_avance_actual"></i></span><b>{{ op.pct_avance_actual | number:'1.0-1' }}%</b></span>
         <span class="action-cell"><button type="button" (click)="$event.stopPropagation(); seleccionar(op)">AVANZAR <mat-icon>arrow_forward</mat-icon></button></span>
@@ -80,8 +80,8 @@
   </header>
   <div class="detail-progress">
     <div><small>ETAPA</small><strong>{{ seleccionada.etapa_nombre }}</strong></div>
-    <div><small>FIN PLANIFICADO</small><strong>{{ (seleccionada.fecha_fin_estimada | date:'dd/MM/yyyy') || '—' }}</strong></div>
-    <div><small>FIN REPROGRAMADO</small><strong>{{ (seleccionada.fecha_fin_reprog | date:'dd/MM/yyyy') || '—' }}</strong></div>
+    <div><small>FIN PLANIFICADO</small><strong>{{ formatearFechaCalendario(seleccionada.fecha_fin_estimada) || '—' }}</strong></div>
+    <div><small>FIN REPROGRAMADO</small><strong>{{ formatearFechaCalendario(seleccionada.fecha_fin_reprog) || '—' }}</strong></div>
     <div class="detail-progress-value"><small>AVANCE ACTUAL</small><strong>{{ seleccionada.pct_avance_actual | number:'1.0-1' }}%</strong></div>
   </div>
 
@@ -94,8 +94,8 @@
         <div><dt>Unidad de avance</dt><dd>{{ seleccionada.unidad_avance }}</dd></div>
         <div><dt>Meta</dt><dd>{{ seleccionada.cantidad_meta || '—' }}</dd></div>
         <div><dt>Dependencias</dt><dd>{{ seleccionada.dependencias_secuencia || 'Sin predecesoras' }}</dd></div>
-        <div><dt>Inicio real</dt><dd>{{ (seleccionada.fecha_inicio_real | date:'dd/MM/yyyy') || 'Pendiente' }}</dd></div>
-        <div><dt>Final real</dt><dd>{{ (seleccionada.fecha_fin_real | date:'dd/MM/yyyy') || 'Pendiente' }}</dd></div>
+        <div><dt>Inicio real</dt><dd>{{ formatearFechaCalendario(seleccionada.fecha_inicio_real) || 'Pendiente' }}</dd></div>
+        <div><dt>Final real</dt><dd>{{ formatearFechaCalendario(seleccionada.fecha_fin_real) || 'Pendiente' }}</dd></div>
       </dl>
       <button class="outline full" *ngIf="!seleccionada.fecha_inicio_real" type="button" (click)="iniciar()" [disabled]="guardando"><mat-icon>play_arrow</mat-icon> Iniciar operación hoy</button>
       <div class="date-actions" *ngIf="seleccionada.fecha_inicio_real">
@@ -150,7 +150,7 @@
         {{ porcentaje === 100 ? 'Continuar a finalización' : 'Confirmar avance' }}
       </button>
 
-      <div class="history"><h3>Historial de avances</h3><div *ngFor="let a of historialAvances | slice:0:5"><span>{{ a.fecha_registro | date:'dd/MM/yyyy' }}</span><b>{{ a.pct_avance_nuevo }}%</b><small>{{ a.nota || a.registrado_por_nombre }}</small></div><p *ngIf="!historialAvances.length">Todavía no hay avances registrados.</p></div>
+      <div class="history"><h3>Historial de avances</h3><div *ngFor="let a of historialAvances | slice:0:5"><span>{{ formatearFechaCalendario(a.fecha_registro) }}</span><b>{{ a.pct_avance_nuevo }}%</b><small>{{ a.nota || a.registrado_por_nombre }}</small></div><p *ngIf="!historialAvances.length">Todavía no hay avances registrados.</p></div>
     </section>
 
     <section class="panel materials">
@@ -159,22 +159,13 @@
         <div class="consumption-grid grid-head"><span>MATERIAL</span><span>TEÓRICO</span><span>STOCK</span><span>A CONSUMIR</span><span>TOTAL AC.</span><span>UNID.</span></div>
         <div class="consumption-grid grid-row" *ngFor="let m of materialesSeleccionados" [class.overconsumed]="esSobreconsumo(m)" [class.low-stock]="!esSobreconsumo(m) && m.stock_disponible < (m.cantidad_teorica - m.cantidad_consumida)">
           <span class="grid-material">
-            <strong>{{ m.material_nombre || m.descripcion_libre }}</strong>
+            <strong>{{ m.descripcion_libre }}</strong>
             <small class="mono" *ngIf="m.material_id">MAT-{{ m.material_id }}</small>
-            <small class="unlinked" *ngIf="!m.material_id">SIN VINCULAR AL CATÁLOGO</small>
-            <span class="bom-link" *ngIf="!m.material_id">
-              <select [(ngModel)]="m.materialSeleccionado" aria-label="Material del catálogo">
-                <option [ngValue]="null">Seleccionar material</option>
-                <option *ngFor="let material of materialesCompatibles(m)" [ngValue]="material.idMaterial">
-                  {{ material.nombre }}
-                </option>
-              </select>
-              <button class="outline" type="button" (click)="vincularMaterial(m)" [disabled]="guardando || !m.materialSeleccionado">Vincular</button>
-            </span>
+            <small class="unlinked" *ngIf="!m.material_id">PENDIENTE DE ASIGNACIÓN EN LA LIBERACIÓN DEL REMITO</small>
           </span>
           <span class="grid-number theoretical">{{ m.cantidad_teorica }}</span>
           <span class="grid-number stock" [class.negative]="m.stock_disponible <= 0">{{ m.stock_disponible }}</span>
-          <label class="consume-input"><input type="number" min="0" step="0.01" [max]="m.stock_disponible" placeholder="0" [disabled]="!m.material_id" [attr.aria-label]="'Consumo de ' + (m.material_nombre || m.descripcion_libre)" [(ngModel)]="consumosHoy[m.bom_id]"></label>
+          <label class="consume-input"><input type="number" min="0" step="0.01" [max]="m.stock_disponible" placeholder="0" [disabled]="!m.material_id" [attr.aria-label]="'Consumo de ' + m.descripcion_libre" [(ngModel)]="consumosHoy[m.bom_id]"></label>
           <span class="grid-number accumulated" [class.negative]="m.cantidad_consumida > m.cantidad_teorica">{{ m.cantidad_consumida || '—' }}</span>
           <span class="grid-unit">{{ m.uom_nombre }}</span>
         </div>
@@ -182,12 +173,15 @@
       </div>
       <div class="empty-materials" *ngIf="!materialesSeleccionados.length"><mat-icon>inventory_2</mat-icon><p>Esta operación no tiene materiales BOM asignados.</p></div>
       <button class="primary full" type="button" (click)="guardarConsumos()" [disabled]="guardando || !materialesSeleccionados.length">Guardar consumos</button>
+      <div class="consumption-inline-error" *ngIf="errorConsumo && !confirmacionConsumo">
+        <mat-icon>error_outline</mat-icon>{{ errorConsumo }}
+      </div>
       <div class="history consumption-history">
         <h3>Detalle de consumos</h3>
         <div class="history-grid-wrap" *ngIf="historialConsumos.length">
           <div class="history-grid history-head"><span>FECHA</span><span>MATERIAL</span><span>CONSUMO</span><span>ACCIÓN</span></div>
           <div class="history-grid history-row" *ngFor="let c of historialConsumos | slice:0:10" [class.history-over]="esConsumoHistoricoExcedido(c)" [class.annulled]="c.anulado">
-            <span>{{ c.fecha_consumo | date:'dd/MM/yyyy' }}</span>
+            <span>{{ formatearFechaCalendario(c.fecha_consumo) }}</span>
             <strong>{{ c.material_nombre }}</strong>
             <b>{{ c.cantidad_consumida }} {{ c.uom_nombre }}</b>
             <button class="outline" type="button" *ngIf="!c.anulado" (click)="anularConsumo(c)" [disabled]="guardando">Anular</button>
@@ -230,18 +224,23 @@
     <header>
       <span class="mono">OP {{ seleccionada?.secuencia }}</span>
       <h2>Confirmar consumo de materiales</h2>
-      <p>{{ seleccionada?.nombre }} · {{ fecha | date:'dd/MM/yyyy' }}</p>
+      <p>{{ seleccionada?.nombre }} · {{ formatearFechaCalendario(fecha) }}</p>
     </header>
     <div class="consumption-warning danger" *ngIf="consumoConAlertas"><mat-icon>warning</mat-icon><div><strong>Revisá antes de confirmar</strong><p>Hay materiales con stock insuficiente o cuyo acumulado superará la cantidad teórica.</p></div></div>
+    <div class="consumption-inline-error modal-error" *ngIf="errorConsumo">
+      <mat-icon>error_outline</mat-icon>{{ errorConsumo }}
+    </div>
     <div class="consumption-summary" *ngFor="let m of consumosPendientes" [class.danger]="m.sobreconsumo" [class.warning]="m.stockInsuficiente && !m.sobreconsumo">
-      <div><strong>{{ m.material_nombre || m.descripcion_libre }}</strong><small>{{ m.cantidad }} {{ m.uom_nombre }} a registrar</small></div>
+      <div><strong>{{ m.descripcion_libre }}</strong><small>{{ m.cantidad }} {{ m.uom_nombre }} a registrar</small></div>
       <span>Stock: {{ m.stock_disponible }} · Queda: {{ m.stockRestante }}</span>
       <b *ngIf="m.sobreconsumo">SOBRECONSUMO</b>
       <b *ngIf="m.stockInsuficiente">STOCK INSUFICIENTE</b>
     </div>
     <footer>
-      <button class="outline" type="button" (click)="cerrarConfirmacionConsumo()">Volver y revisar</button>
-      <button class="primary" type="button" (click)="confirmarConsumos()" [disabled]="guardando || consumoConStockInsuficiente">{{ consumoConAlertas ? 'Confirmar sobreconsumo' : 'Confirmar consumo' }}</button>
+      <button class="outline" type="button" (click)="cerrarConfirmacionConsumo()" [disabled]="guardando">Volver y revisar</button>
+      <button class="primary" type="button" (click)="confirmarConsumos()" [disabled]="guardando || consumoConStockInsuficiente">
+        {{ guardando ? 'Guardando consumo...' : consumoConAlertas ? 'Confirmar sobreconsumo' : 'Confirmar consumo' }}
+      </button>
     </footer>
   </section>
 </div>

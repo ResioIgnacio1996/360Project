@@ -188,7 +188,7 @@ export class RemitoMaster implements OnInit {
   }
 
   estadoRemito(remito: Remito): string {
-    return remito.liberado ? 'LIBERADO' : 'PENDIENTE';
+    return remito.estadoLiberacion || (remito.liberado ? 'LIBERADO' : 'PENDIENTE');
   }
 
   aplicarFiltros(): void {

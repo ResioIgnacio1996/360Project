@@ -15,15 +15,20 @@ export interface Remito {
   idProyecto?: number | null;
   proyectoNombre?: string | null;
   cantidadItems?: number;
+  estadoLiberacion?: 'PENDIENTE' | 'PARCIAL' | 'LIBERADO';
+  cantidadPendiente?: number;
   detalle?: DetalleRemito[];
 }
 
 export interface DetalleRemito {
   idDetalle?: number;
-  idMaterial: number;
+  idMaterial: number | null;
   material: string;
   cantidad: number;
   unidad: string;
+  cantidadLiberada?: number;
+  cantidadPendiente?: number;
+  estadoLiberacion?: string;
 }
 
 export interface RemitoPayload {
@@ -31,18 +36,30 @@ export interface RemitoPayload {
   fecha: string;
   registro_compra_id: number;
   detalle: Array<{
-    id_material: number;
+    id_material?: number | null;
+    descripcion: string;
     cantidad: number;
     UoM: string;
   }>;
 }
 
 export interface AsignacionMaterialRemito {
-  id_material: number;
+  detalle_remito_id: number;
   destinos: Array<{
     proyecto_id: number;
     cantidad: number;
+    material_id: number;
   }>;
+}
+
+export interface MaterialBomProyecto {
+  bom_id: number;
+  material_id: number | null;
+  descripcion_libre: string;
+  material_bom: string;
+  uom_nombre: string;
+  operacion_secuencia?: number;
+  operacion_nombre?: string;
 }
 
 export interface RemitoImportResponse {
@@ -112,6 +129,10 @@ export class Remitos {
     );
   }
 
+  getMaterialesBomProyecto(proyectoId: number): Observable<MaterialBomProyecto[]> {
+    return this.http.get<MaterialBomProyecto[]>(`${this.apiUrl}/proyecto/${proyectoId}/materiales-bom`);
+  }
+
   private normalizarRemito(item: any): Remito {
     return {
       idRemito: item.remito_id ?? item.idRemito,
@@ -126,6 +147,8 @@ export class Remitos {
       idProyecto: item.proyecto_id ?? item.idProyecto ?? null,
       proyectoNombre: item.proyecto_nombre ?? item.proyectoNombre ?? null,
       cantidadItems: item.cantidad_items ?? item.cantidadItems
+      ,estadoLiberacion: item.estado_liberacion ?? item.estadoLiberacion
+      ,cantidadPendiente: Number(item.cantidad_pendiente ?? item.cantidadPendiente ?? 0)
     };
   }
 
@@ -140,7 +163,10 @@ export class Remitos {
         idMaterial: item.id_material ?? item.idMaterial,
         material: item.material ?? '',
         cantidad: Number(item.cantidad ?? 0),
-        unidad: item.UoM ?? item.unidad ?? ''
+        unidad: item.UoM ?? item.unidad ?? '',
+        cantidadLiberada: Number(item.cantidad_liberada ?? 0),
+        cantidadPendiente: Number(item.cantidad_pendiente ?? item.cantidad ?? 0),
+        estadoLiberacion: item.estado_liberacion ?? 'PENDIENTE'
       }))
     };
   }

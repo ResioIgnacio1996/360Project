@@ -10,6 +10,5 @@ router.patch('/operaciones/:id/fecha-fin', verificarToken, controller.modificarF
 router.post('/operaciones/:id/avances', verificarToken, controller.registrarAvance);
 router.post('/operaciones/:id/consumos', verificarToken, controller.registrarConsumos);
 router.patch('/consumos/:id/anular', verificarToken, controller.anularConsumo);
-router.patch('/bom/:id/material', verificarToken, controller.vincularMaterialBom);
 
 module.exports = router;

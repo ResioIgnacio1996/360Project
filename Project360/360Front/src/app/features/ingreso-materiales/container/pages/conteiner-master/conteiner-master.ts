@@ -1,3 +1,88 @@
-import {CommonModule} from '@angular/common';import {Component,OnInit} from '@angular/core';import {FormsModule} from '@angular/forms';import {ActivatedRoute,Router} from '@angular/router';import {MatIconModule} from '@angular/material/icon';import {StockGeneral} from '../../../../../core/services/stock-general';import {ProyectoService} from '../../../../../core/services/proyecto/proyecto';
-@Component({selector:'app-container-master',standalone:true,imports:[CommonModule,FormsModule,MatIconModule],templateUrl:'./conteiner-master.html',styleUrl:'./conteiner-master.css'})
-export class containerMaster implements OnInit{proyectoId=0;proyecto:any;stock:any[]=[];asignados:any[]=[];stockId:number|null=null;cantidad:number|null=null;error='';procesando=false;constructor(private route:ActivatedRoute,private router:Router,private stockService:StockGeneral,private proyectos:ProyectoService){}ngOnInit(){this.proyectoId=Number(this.route.snapshot.paramMap.get('id'));if(!this.proyectoId){this.error='Seleccione un proyecto desde el maestro de proyectos.';return;}this.proyectos.getProyecto(this.proyectoId).subscribe(p=>this.proyecto=p);this.cargar();}cargar(){this.stockService.listar().subscribe(r=>this.stock=r.filter(x=>Number(x.cantidad_disponible)>0));this.stockService.porProyecto(this.proyectoId).subscribe(r=>this.asignados=r);}asignar(){if(!this.stockId||!this.cantidad||this.cantidad<=0)return;this.procesando=true;this.stockService.asignar({stock_general_id:this.stockId,proyecto_id:this.proyectoId,cantidad:this.cantidad}).subscribe({next:()=>{this.cantidad=null;this.procesando=false;this.cargar();},error:e=>{this.error=e?.error?.message||'Error al asignar';this.procesando=false;}});}devolver(item:any){const valor=Number(prompt(`Cantidad de ${item.material} a devolver:`,String(item.cantidad_disponible)));if(!valor)return;this.stockService.devolver({container_id:item.container_id,cantidad:valor}).subscribe({next:()=>this.cargar(),error:e=>this.error=e?.error?.message||'Error al devolver'});}volver(){this.router.navigate(['/proyectos']);}}
+import { CommonModule } from '@angular/common';
+import { Component, OnInit } from '@angular/core';
+import { FormsModule } from '@angular/forms';
+import { ActivatedRoute, Router } from '@angular/router';
+import { MatIconModule } from '@angular/material/icon';
+import { StockGeneral } from '../../../../../core/services/stock-general';
+import { ProyectoService } from '../../../../../core/services/proyecto/proyecto';
+
+@Component({
+  selector: 'app-container-master',
+  standalone: true,
+  imports: [CommonModule, FormsModule, MatIconModule],
+  templateUrl: './conteiner-master.html',
+  styleUrl: './conteiner-master.css'
+})
+export class containerMaster implements OnInit {
+  proyectoId = 0;
+  proyecto: any;
+  materiales: any[] = [];
+  busqueda = '';
+  cargando = true;
+  error = '';
+
+  constructor(
+    private route: ActivatedRoute,
+    private router: Router,
+    private stockService: StockGeneral,
+    private proyectos: ProyectoService
+  ) {}
+
+  ngOnInit(): void {
+    this.proyectoId = Number(this.route.snapshot.paramMap.get('id'));
+    if (!this.proyectoId) {
+      this.cargando = false;
+      this.error = 'Seleccione un proyecto desde el maestro de proyectos.';
+      return;
+    }
+
+    this.proyectos.getProyecto(this.proyectoId).subscribe({
+      next: proyecto => this.proyecto = proyecto,
+      error: () => this.error = 'No se pudieron cargar los datos del proyecto.'
+    });
+    this.cargarStock();
+  }
+
+  get materialesFiltrados(): any[] {
+    const termino = this.normalizar(this.busqueda);
+    if (!termino) return this.materiales;
+    return this.materiales.filter(item =>
+      this.normalizar(`${item.material} ${item.id_material} ${item.uom_nombre}`).includes(termino)
+    );
+  }
+
+  get materialesConStock(): number {
+    return this.materiales.filter(item => Number(item.cantidad_disponible) > 0).length;
+  }
+
+  get materialesSinStock(): number {
+    return this.materiales.filter(item => Number(item.cantidad_disponible) <= 0).length;
+  }
+
+  cargarStock(): void {
+    this.cargando = true;
+    this.error = '';
+    this.stockService.porProyecto(this.proyectoId).subscribe({
+      next: response => {
+        this.materiales = Array.isArray(response) ? response : [];
+        this.cargando = false;
+      },
+      error: error => {
+        this.error = error?.error?.message || 'No se pudo cargar el stock actual del proyecto.';
+        this.cargando = false;
+      }
+    });
+  }
+
+  volver(): void {
+    this.router.navigate(['/proyectos']);
+  }
+
+  verMovimientos(item: any): void {
+    this.router.navigate(['/proyectos', this.proyectoId, 'stock', item.id_material, 'movimientos']);
+  }
+
+  private normalizar(value: unknown): string {
+    return String(value ?? '').trim().toLocaleUpperCase('es-AR');
+  }
+}

@@ -75,6 +75,11 @@ export const routes: Routes = [
     { path: 'proyectos/editar/:id', component: ProyectoForm },
     { path: 'proyectos/:id', component: ProyectoHome },
     { path: 'proyectos/:id/stock', component: containerMaster },
+    {
+      path: 'proyectos/:id/stock/:materialId/movimientos',
+      loadComponent: () => import('./features/ingreso-materiales/container/pages/conteiner-movimientos/conteiner-movimientos')
+        .then(m => m.ContainerMovimientos)
+    },
     { path: 'proyectos/:id/programacion', component: Programacion },
     { path: 'proyectos/:id/programacion/importar', component: ImportacionProgramacion },
     { path: 'proyectos/:id/avances', component: AvanceOperaciones },
@@ -84,6 +89,7 @@ export const routes: Routes = [
         .then(m => m.DependenciasOperaciones)
     },
     { path: 'system-tools', component: SystemTools },
+    { path: 'system-tools/materiales', loadComponent: () => import('./features/system-tools/materiales-master/materiales-master').then(m => m.MaterialesMaster) },
 
     { path: 'configuracion', component: Configuracion },
 

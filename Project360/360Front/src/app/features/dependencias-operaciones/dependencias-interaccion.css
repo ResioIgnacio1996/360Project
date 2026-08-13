@@ -1,0 +1,8 @@
+.dependency-line { pointer-events: none; }
+.operation { cursor: grab; touch-action: none; user-select: none; }
+.operation:active { cursor: grabbing; }
+.canvas svg { touch-action: none; }
+.drag-help { color: var(--primary) !important; }
+.reset-view { display: flex; align-items: center; gap: 5px; padding: 5px 8px; border: 1px solid var(--border-2); border-radius: 5px; background: var(--surface-nav); color: var(--text-secondary); font: 600 8px var(--font-tech); cursor: pointer; }
+.reset-view:hover { border-color: var(--primary); color: var(--primary); }
+.reset-view mat-icon { width: 15px; height: 15px; font-size: 15px; }

@@ -17,4 +17,8 @@ export class MaterialService {
   getUom(): Observable<any[]> {
     return this.http.get<any[]>(`${this.apiUrl}/uom`);
   }
+
+  actualizarMaterial(id: number, payload: { nombre: string; uom_id: number }): Observable<any> {
+    return this.http.put<any>(`${this.apiUrl}/${id}`, payload);
+  }
 }

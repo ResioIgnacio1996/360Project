@@ -218,7 +218,7 @@
                       <small>{{ material.unidad || '' }}</small>
                     </mat-option>
                     <mat-option *ngIf="!materialesFiltrados.length" disabled>
-                      No existe. Se creara al guardar si completas cantidad y UOM.
+                      No existe en el maestro. Se guardarÃ¡ como descripciÃ³n documental.
                     </mat-option>
                   </ng-container>
                 </mat-autocomplete>
@@ -228,7 +228,7 @@
 
               <div class="material-status pending" *ngIf="materialNuevoPendiente(i)">
                 <mat-icon>add_circle</mat-icon>
-                Material nuevo: se creara al guardar.
+                Material documental: se vincularÃ¡ con la BOM al liberar el remito.
               </div>
             </div>
 

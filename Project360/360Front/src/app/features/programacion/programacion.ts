@@ -365,6 +365,22 @@ export class Programacion implements OnInit, OnDestroy {
       }
     });
   }
+  get excepcionesOrdenadas(): any[] {
+    return [...this.excepcionesCalendario].sort((a, b) => String(b.fecha).localeCompare(String(a.fecha)));
+  }
+  eliminarExcepcion(excepcion: any): void {
+    if (this.guardando || !excepcion?.excepcion_id) return;
+    const fecha = String(excepcion.fecha).slice(0, 10);
+    if (!window.confirm(`¿Quitar la excepción del ${fecha}?`)) return;
+    this.guardando = true;
+    this.service.eliminarExcepcion(this.proyectoId, Number(excepcion.excepcion_id)).subscribe({
+      next: r => this.finalizar(r.message),
+      error: e => {
+        this.guardando = false;
+        this.error = e?.error?.message || 'No se pudo eliminar la excepción';
+      }
+    });
+  }
   trackOperacion(_: number, op: OperacionProgramada): number { return op.operacion_id; }
   trackEtapa(_: number, etapa: EtapaProgramada): number { return etapa.etapa_id; }
   trackDia(_: number, dia: number): number { return dia; }
