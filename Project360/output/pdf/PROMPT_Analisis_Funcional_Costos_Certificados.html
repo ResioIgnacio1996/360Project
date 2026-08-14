@@ -1,0 +1,173 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>OBRA 360 - Analisis funcional de costos y certificados</title>
+<style>
+  @page { size: A4; margin: 18mm 16mm 18mm; }
+  * { box-sizing: border-box; }
+  body { margin: 0; color: #172033; font: 10.4pt/1.45 "Segoe UI", Arial, sans-serif; }
+  h1, h2, h3 { color: #12355b; break-after: avoid; }
+  h1 { margin: 0 0 8px; font-size: 24pt; line-height: 1.12; }
+  h2 { margin: 22px 0 7px; padding-bottom: 4px; border-bottom: 1px solid #bdd0df; font-size: 15pt; }
+  h3 { margin: 14px 0 5px; font-size: 11.5pt; }
+  p { margin: 5px 0 8px; }
+  ul, ol { margin: 5px 0 10px 20px; padding: 0; }
+  li { margin: 2px 0; }
+  table { width: 100%; border-collapse: collapse; margin: 8px 0 12px; break-inside: avoid; }
+  th { background: #12355b; color: white; text-align: left; }
+  th, td { border: 1px solid #cbd7e1; padding: 6px 7px; vertical-align: top; }
+  tr:nth-child(even) td { background: #f5f8fa; }
+  .cover { min-height: 245mm; display: flex; flex-direction: column; justify-content: center; page-break-after: always; }
+  .eyebrow { color: #168aad; font-weight: 700; letter-spacing: 1.4px; text-transform: uppercase; }
+  .subtitle { max-width: 620px; color: #526476; font-size: 14pt; }
+  .rule { width: 84px; height: 5px; margin: 22px 0; background: #19a7a0; }
+  .meta { margin-top: 42px; color: #637587; }
+  .callout { margin: 10px 0 12px; padding: 10px 12px; border-left: 4px solid #19a7a0; background: #eef8f7; }
+  .formula { margin: 7px 0; padding: 7px 10px; border-radius: 4px; background: #edf2f7; color: #25384a; font-family: Consolas, monospace; }
+  .note { color: #526476; font-size: 9.4pt; }
+  .page-break { page-break-before: always; }
+</style>
+</head>
+<body>
+<section class="cover">
+  <div class="eyebrow">OBRA 360</div>
+  <div class="rule"></div>
+  <h1>Prompt para análisis funcional</h1>
+  <p class="subtitle">Módulo de costos, certificaciones, cobranzas, pagos y salud financiera de proyectos de obra</p>
+  <div class="meta">Documento conceptual para entregar a un analista funcional<br>Versión 1.0 · Agosto de 2026</div>
+</section>
+
+<h2>1. Propósito y alcance</h2>
+<p>Realizar el análisis funcional de un nuevo módulo para OBRA 360. Este pedido es exclusivamente funcional: no incluye diseño técnico, código ni implementación.</p>
+<div class="callout"><strong>Pregunta central:</strong> ¿Cuánto se esperaba cobrar y pagar, cuánto se certificó, cuánto dinero se cobró o pagó realmente y cuándo ocurrió cada evento?</div>
+<p>El módulo debe controlar:</p>
+<ul>
+  <li>Avance físico de la obra.</li><li>Valor certificado y cobrado al cliente o comitente.</li>
+  <li>Costo certificado y pagado a cada contratista.</li><li>Margen previsto y diferencia certificada.</li>
+  <li>Planes de certificaciones, cobranzas y pagos.</li><li>Desvíos y salud financiera actual y proyectada.</li>
+</ul>
+
+<h2>2. Unidad principal: operación</h2>
+<p>La unidad económica y productiva es la <strong>operación</strong> del cronograma. Debe contener código, descripción, secuencia, fechas estimadas, avance físico real, precio cliente y asignaciones de contratistas.</p>
+
+<h2>3. Precio cliente y costos de contratistas</h2>
+<h3>3.1 Precio cliente</h3>
+<p>Cada operación posee un único <strong>precio cliente</strong> (actualmente llamado “costo final”): valor total definido por el arquitecto o la empresa para cobrar al comitente. Se recomienda mostrar “Precio cliente” en la interfaz para evitar ambigüedad.</p>
+<h3>3.2 Costo real por contratista</h3>
+<p>Una operación puede tener uno o varios contratistas o prestadores. Cada asignación entre operación y contratista posee un <strong>costo real</strong>: importe total acordado por su participación.</p>
+<div class="formula">Asignación económica = Operación + Contratista + Costo real</div>
+<table><tr><th>OP-600 — Colado de hormigón</th><th>Importe</th></tr><tr><td>Precio cliente</td><td>USD 20.000</td></tr><tr><td>Costo real Contratista A</td><td>USD 6.000</td></tr><tr><td>Costo real Contratista B</td><td>USD 4.000</td></tr><tr><td>Costo real total</td><td>USD 10.000</td></tr><tr><td>Margen previsto</td><td>USD 10.000</td></tr></table>
+<p>No debe crearse una columna distinta por contratista. Debe existir una asignación independiente por cada relación operación-contratista.</p>
+<h3>3.3 Alcance de costos</h3>
+<p>Esta etapa incluye solamente mano de obra contratada y servicios tercerizados. Quedan fuera materiales, proveedores de materiales, compras, inventarios y, hasta nueva definición, mano de obra propia.</p>
+
+<h2>4. Cálculos de margen</h2>
+<div class="formula">Costo real total = suma de costos reales de contratistas asignados</div>
+<div class="formula">Margen previsto = precio cliente − costo real total</div>
+<div class="formula">Margen sobre venta (%) = margen previsto / precio cliente × 100</div>
+<p class="note">El margen previsto no equivale necesariamente a ganancia definitiva: pueden quedar certificaciones, ajustes y movimientos financieros pendientes.</p>
+
+<h2>5. Tres dimensiones independientes</h2>
+<ol>
+  <li><strong>Avance físico:</strong> trabajo realmente ejecutado.</li>
+  <li><strong>Avance certificado:</strong> trabajo reconocido económicamente. Existe un acumulado independiente para el cliente y para cada contratista.</li>
+  <li><strong>Movimiento de dinero:</strong> cobranzas al cliente y pagos a contratistas.</li>
+</ol>
+<table><tr><th>Dimensión</th><th>Ejemplo acumulado</th></tr><tr><td>Avance físico real</td><td>70%</td></tr><tr><td>Certificado al cliente</td><td>75%</td></tr><tr><td>Certificado al Contratista A</td><td>60%</td></tr><tr><td>Certificado al Contratista B</td><td>50%</td></tr></table>
+<p>Cada línea conserva su propio historial. Un certificado nunca debe usar como referencia el historial de otra contraparte ni el último pago.</p>
+
+<h2>6. Regla del delta</h2>
+<div class="formula">Delta = porcentaje acumulado actual − porcentaje acumulado certificado anteriormente</div>
+<p>Sin certificado anterior, el delta equivale al porcentaje acumulado actual. Solo se liquida el delta, nunca nuevamente el acumulado completo. Una operación certificada al 100% para una contraparte no vuelve a generar monto para esa misma contraparte, salvo ajuste formal.</p>
+
+<h2>7. Certificado al cliente</h2>
+<div class="formula">Monto del período = precio cliente × delta certificado al cliente</div>
+<h3>7.1 Método por fecha de corte</h3>
+<ol><li>Seleccionar fecha.</li><li>Consultar avance real de las operaciones a esa fecha.</li><li>Comparar con el acumulado previamente certificado al cliente.</li><li>Calcular delta e importe.</li></ol>
+<h3>7.2 Método por operación ancla</h3>
+<ol><li>Seleccionar la última operación a incluir.</li><li>Incluir operaciones de secuencia menor o igual al ancla.</li><li>Excluir posteriores aunque tengan avance.</li><li>Usar el avance real actual y calcular el delta.</li><li>Incluir el ancla aun con 0%, registrándola como punto de corte sin monto.</li></ol>
+
+<h2>8. Certificado al contratista</h2>
+<div class="formula">Monto del período = costo real de la asignación × delta certificado a ese contratista</div>
+<ol><li>Seleccionar contratista.</li><li>Mostrar únicamente sus operaciones asignadas.</li><li>Permitir selección manual de operaciones.</li><li>Usar el costo real de cada asignación.</li><li>Calcular el delta contra el último certificado de ese mismo contratista.</li></ol>
+<p>No se aplica “todo hacia atrás”: las operaciones anteriores pueden pertenecer a otras cuadrillas.</p>
+
+<h2>9. Certificación, cobranza y pago</h2>
+<div class="callout"><strong>Regla crítica:</strong> emitir un certificado no significa cobrarlo ni pagarlo.</div>
+<p>El certificado al cliente genera una cuenta por cobrar; el certificado al contratista genera una cuenta por pagar. Ambos pueden estar sin movimiento, parcialmente cobrados/pagados o cancelados totalmente.</p>
+<p>Cada cobranza o pago debe registrar certificado asociado, contraparte, fecha efectiva, importe, medio, referencia y observaciones. Se deben admitir múltiples movimientos parciales por certificado.</p>
+
+<h2>10. Plan de certificaciones</h2>
+<p>Al inicio se carga un plan original para comparar lo previsto con lo ocurrido. Deben existir un plan al cliente y planes por contratista.</p>
+<h3>10.1 Plan al cliente</h3>
+<p>Número, método de corte, operación ancla o fecha, fecha estimada de emisión, monto esperado y notas. Por operación, la fecha inicial se obtiene de la finalización estimada del ancla; por fecha, de la fecha fija cargada.</p>
+<h3>10.2 Plan por contratista</h3>
+<p>Número correlativo por contratista, contratista, operaciones incluidas, fecha estimada, monto esperado y notas. Si incluye varias operaciones, definir si la fecha surge de la operación con finalización más tardía (recomendado) o de mayor secuencia.</p>
+
+<h2>11. Inmutabilidad y versiones</h2>
+<p>El plan original debe quedar congelado y no recalcularse al reprogramar el cronograma. Analizar revisiones versionadas con fecha, usuario, motivo y nuevos valores, permitiendo comparar la realidad tanto contra el plan original como contra la revisión vigente.</p>
+
+<h2>12. Vinculación plan-real</h2>
+<p>Al emitir un certificado, el sistema sugiere el próximo registro planificado pendiente para el cliente o contratista. El usuario confirma o cambia la asociación. Los certificados sin correspondencia se marcan <strong>Fuera de plan</strong> y siguen siendo válidos.</p>
+
+<h2>13. Plan financiero</h2>
+<p>Separar fecha de emisión de fecha prevista de cobro o pago. Analizar carga directa, cálculo por plazo financiero o ambas alternativas.</p>
+<div class="formula">Emisión prevista: 12/06 + plazo de 30 días = cobranza prevista: 12/07</div>
+<p>Esta distinción permite detectar proyectos rentables que atraviesan períodos sin liquidez.</p>
+
+<h2>14. Comparaciones y desvíos</h2>
+<table><tr><th>Comparación</th><th>Qué mide</th></tr><tr><td>Fecha planificada vs. emisión real</td><td>Atraso de certificación</td></tr><tr><td>Monto planificado vs. certificado</td><td>Desvío económico del avance</td></tr><tr><td>Certificado vs. cobrado/pagado</td><td>Saldo pendiente</td></tr><tr><td>Fecha financiera prevista vs. efectiva</td><td>Atraso de caja</td></tr></table>
+<div class="formula">Desvío % = (monto real − monto planificado) / monto planificado × 100</div>
+<div class="formula">Por cobrar = certificado al cliente − cobranzas aplicadas</div>
+<div class="formula">Por pagar = certificado al contratista − pagos aplicados</div>
+
+<h2>15. Indicadores económicos</h2>
+<ul>
+  <li><strong>Margen previsto total:</strong> precios cliente menos costos reales contratados.</li>
+  <li><strong>Diferencia certificada:</strong> certificados al cliente menos certificados a contratistas.</li>
+  <li><strong>Caja real:</strong> cobranzas efectivas menos pagos efectivos.</li>
+  <li><strong>Saldos:</strong> certificado pendiente de cobrar y de pagar.</li>
+</ul>
+<p>La diferencia certificada no debe presentarse como ganancia definitiva.</p>
+
+<h2>16. Salud financiera</h2>
+<p>Informar margen previsto, diferencia certificada, caja real, cobros y pagos pendientes, vencimientos, flujo proyectado y próxima fecha potencial de caja negativa.</p>
+<ul><li><strong>Verde:</strong> caja y cobranzas dentro de lo esperado.</li><li><strong>Amarillo:</strong> atrasos o riesgo próximo.</li><li><strong>Rojo:</strong> caja negativa, cobranzas vencidas relevantes o pagos sin cobertura.</li></ul>
+<p>Cada estado debe explicar la causa con importes y período.</p>
+
+<h2>17. Pantallas conceptuales</h2>
+<ol>
+  <li><strong>Economía de operación:</strong> precio cliente, contratistas, costo por contratista, costo total y margen.</li>
+  <li><strong>Nuevo certificado al cliente:</strong> corte, operaciones, anterior, actual, delta, precio y montos.</li>
+  <li><strong>Nuevo certificado al contratista:</strong> responsable, operaciones seleccionables, anterior, actual, delta, costo y montos.</li>
+  <li><strong>Planificado vs. real:</strong> separar certificados, cobranzas y pagos.</li>
+  <li><strong>Salud financiera:</strong> caja, proyección, márgenes, saldos, desvíos y alertas.</li>
+</ol>
+
+<h2>18. Reglas de integridad</h2>
+<ol>
+  <li>No certificar dos veces el mismo porcentaje.</li><li>No superar 100% salvo ajuste autorizado.</li>
+  <li>Un contratista solo certifica operaciones asignadas.</li><li>Cada contraparte conserva historial independiente.</li>
+  <li>Pagos y cobranzas no modifican porcentajes certificados.</li><li>Un certificado emitido no se edita silenciosamente.</li>
+  <li>Correcciones mediante anulación, revisión o ajuste trazable.</li><li>El costo total suma asignaciones; el precio cliente es único.</li>
+  <li>Materiales fuera de alcance.</li><li>Admitir certificados fuera de plan y movimientos parciales.</li>
+  <li>El plan original no cambia automáticamente.</li><li>Toda cifra calculada debe informar su origen.</li>
+</ol>
+
+<h2>19. Casos especiales a resolver</h2>
+<p>Operación sin contratista; varios contratistas; reemplazo de contratista; cambios de costo o precio; adicionales y deductivos; certificación superior al avance físico; ajustes negativos; corrección después del 100%; anulación; cobro o pago parcial; anticipos; retenciones; diferencias de cambio; múltiples vínculos entre registros planificados y reales; y proyectos multimoneda.</p>
+
+<h2>20. Entregables requeridos</h2>
+<ol>
+  <li>Modelo conceptual de entidades y relaciones.</li><li>Glosario exacto de negocio.</li>
+  <li>Flujos de certificación, cobranza y pago.</li><li>Estados y transiciones.</li>
+  <li>Reglas de cálculo y validación.</li><li>Matriz de permisos.</li>
+  <li>Bocetos funcionales.</li><li>Casos de uso principales y alternativos.</li>
+  <li>Tratamiento de anulaciones y ajustes.</li><li>Modelo de planificación y versiones.</li>
+  <li>Indicadores de salud financiera.</li><li>Criterios de aceptación verificables.</li>
+  <li>Decisiones pendientes, riesgos y ambigüedades.</li><li>Propuesta de alcance mínimo viable.</li>
+</ol>
+<div class="callout"><strong>Trazabilidad esperada:</strong> Operación → precio cliente → contratistas y costos reales → plan → certificado → cobranza o pago → margen y salud financiera.</div>
+</body>
+</html>
