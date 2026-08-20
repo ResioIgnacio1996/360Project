@@ -75,10 +75,20 @@
                         <option *ngFor="let rubro of rubros" [value]="rubro.rubro_id">
                             {{ rubro.nombre }}
                         </option>
+                        <option value="OTRO">Otro</option>
                     </select>
 
                     <small *ngIf="campoInvalido('rubro_id') && proveedorForm.get('rubro_id')?.errors?.['required']">
                         El rubro es obligatorio.
+                    </small>
+                </div>
+
+                <div class="form-group" *ngIf="esOtroRubro()">
+                    <label>Nombre del nuevo rubro</label>
+                    <input type="text" formControlName="nuevo_rubro" maxlength="100"
+                        placeholder="Ingrese el nombre del rubro" />
+                    <small *ngIf="campoInvalido('nuevo_rubro')">
+                        El nombre del nuevo rubro es obligatorio y admite hasta 100 caracteres.
                     </small>
                 </div>
 

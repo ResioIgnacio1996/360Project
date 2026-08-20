@@ -13,6 +13,27 @@
       </button>
 
       <button
+        class="btn btn-secondary"
+        type="button"
+        *ngIf="puedeEditar()"
+        (click)="editarRemito()"
+      >
+        <mat-icon>edit</mat-icon>
+        Modificar remito
+      </button>
+
+      <button
+        class="btn btn-danger"
+        type="button"
+        *ngIf="puedeCancelar()"
+        [disabled]="cancelando"
+        (click)="cancelarRemito()"
+      >
+        <mat-icon>cancel</mat-icon>
+        {{ cancelando ? 'Cancelando...' : 'Cancelar remito' }}
+      </button>
+
+      <button
         class="btn btn-primary"
         type="button"
         [disabled]="!remito || remito.liberado || liberando || cargandoCoincidenciasBom"
@@ -103,6 +124,7 @@
 
     <section class="block distribution-block" *ngIf="!remito.liberado">
       <div class="block-header distribution-header">
+        <div class="complete-release-note">Podés liberar uno, varios o todos los materiales, y dejar saldo pendiente para otra operación.</div>
         <div>
           <h2 class="block-title">Asignación de cantidades por proyecto</h2>
           <p>Podés liberar una parte, distribuirla entre proyectos y volver luego por el saldo pendiente.</p>
@@ -120,20 +142,23 @@
           <div class="material-distribution-header">
             <div>
               <strong>{{ material.material }}</strong>
-              <span>Total recibido: {{ material.cantidadTotal }} {{ material.unidad }}</span>
+              <span>Pendiente de liberar: {{ material.cantidadTotal }} {{ material.unidad }}</span>
             </div>
             <span
               class="distribution-balance"
-              [class.complete]="distribucionMaterialValida(material)"
+              [class.complete]="materialSeleccionadoParaLiberar(material) && distribucionMaterialValida(material)"
               [class.exceeded]="cantidadRestante(material) < 0">
-              <ng-container *ngIf="cantidadRestante(material) > 0">
+              <ng-container *ngIf="!materialSeleccionadoParaLiberar(material)">
+                No se libera en esta operación
+              </ng-container>
+              <ng-container *ngIf="materialSeleccionadoParaLiberar(material) && cantidadRestante(material) > 0">
                 QuedarÃ¡n pendientes {{ cantidadRestante(material) }} {{ material.unidad }}
               </ng-container>
               <ng-container *ngIf="cantidadRestante(material) < 0">
                 Excede {{ -cantidadRestante(material) }} {{ material.unidad }}
               </ng-container>
-              <ng-container *ngIf="cantidadRestante(material) === 0">
-                Sin saldo pendiente en esta liberación
+              <ng-container *ngIf="materialSeleccionadoParaLiberar(material) && cantidadRestante(material) === 0">
+                Se libera todo el saldo de este material
               </ng-container>
             </span>
           </div>

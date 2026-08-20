@@ -25,7 +25,7 @@ import { Configuracion } from './features/configuracion/configuracion';
 import { ProveedoresMaster } from './features/proveedores/proveedores-master/proveedores-master';
 import { ProveedorForm } from './features/proveedores/proveedor-form/proveedor-form';
 
-import { authGuard } from './core/guards/auth-guard';
+import { authGuard, guestGuard } from './core/guards/auth-guard';
 
 import { ClientesMaster } from './features/clientes/clientes-master/clientes-master';
 import { ClienteForm } from './features/clientes/cliente-form/cliente-form';
@@ -50,10 +50,11 @@ import { Programacion } from './features/programacion/programacion';
 import { ImportacionProgramacion } from './features/programacion/importacion-programacion/importacion-programacion';
 import { SystemTools } from './features/system-tools/system-tools';
 import { AvanceOperaciones } from './features/avance-operaciones/avance-operaciones';
+import { ResponsableDetalle } from './features/responsables-cuadrillas/responsable-detalle/responsable-detalle';
 export const routes: Routes = [
   { path: '', redirectTo: 'login', pathMatch: 'full' },
 
-  { path: 'login', component: Login },
+  { path: 'login', component: Login, canActivate: [guestGuard] },
 
   {
     path: '', component: Layout, canActivate: [authGuard], children: [{ path: 'dashboard', component: Dashboard },
@@ -81,7 +82,12 @@ export const routes: Routes = [
         .then(m => m.ContainerMovimientos)
     },
     { path: 'proyectos/:id/programacion', component: Programacion },
+    { path: 'proyectos/:id/programacion/gantt', component: Programacion },
     { path: 'proyectos/:id/programacion/importar', component: ImportacionProgramacion },
+    {
+      path: 'proyectos/:id/bom',
+      loadComponent: () => import('./features/bom/bom-proyecto').then(m => m.BomProyecto)
+    },
     { path: 'proyectos/:id/avances', component: AvanceOperaciones },
     {
       path: 'proyectos/:id/dependencias',
@@ -90,6 +96,8 @@ export const routes: Routes = [
     },
     { path: 'system-tools', component: SystemTools },
     { path: 'system-tools/materiales', loadComponent: () => import('./features/system-tools/materiales-master/materiales-master').then(m => m.MaterialesMaster) },
+    { path: 'system-tools/responsables-cuadrillas', loadComponent: () => import('./features/responsables-cuadrillas/responsables-cuadrillas-master/responsables-cuadrillas-master').then(m => m.ResponsablesCuadrillasMaster) },
+    { path: 'system-tools/responsables-cuadrillas/:id', component: ResponsableDetalle },
 
     { path: 'configuracion', component: Configuracion },
 
@@ -112,6 +120,7 @@ export const routes: Routes = [
 {path: 'ingreso-materiales/registros/:id/validacion-documento',component: RegistroCompraDetalle},
 {path: 'ingreso-materiales/registros/:id/remitos',component: RemitoMaster},
 {path: 'ingreso-materiales/registros/:id/remitos/nuevo',component: RemitoForm},
+{path: 'ingreso-materiales/registros/:id/remitos/:remitoId/editar',component: RemitoForm},
 {path: 'ingreso-materiales/registros/:id/remitos/:remitoId',component: RemitoDetalle},
 {path: 'ingreso-materiales/registros/:id/remitos/:remitoId/validar',component: RemitoDetalle},
 {path: 'ingreso-materiales/registros/:id/remitos/:remitoId/liberar-stock',component: RemitoDetalle},
@@ -134,6 +143,10 @@ export const routes: Routes = [
 },
 {
     path: 'ingreso-materiales/remitos/nuevo',
+    component: RemitoForm
+},
+{
+    path: 'ingreso-materiales/remitos/editar/:id',
     component: RemitoForm
 },
 {

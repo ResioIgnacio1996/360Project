@@ -1,5 +1,15 @@
 const { conectarDB, sql } = require('../DB/dbConection');
 const campos = 'p.proyecto_id,p.cliente_id,p.nombre,p.cliente,p.direccion,p.fecha_inicio,p.fecha_fin_estimada,p.estado,p.eliminado';
+const nombreCliente = "COALESCE(NULLIF(c.razon_social, ''), LTRIM(RTRIM(CONCAT(c.apellido, ' ', c.nombre))))";
+const prepararCliente = async (pool) => {
+  await pool.request().query(`
+    IF COL_LENGTH('Cliente', 'razon_social') IS NULL ALTER TABLE Cliente ADD razon_social NVARCHAR(150) NULL;
+  `);
+  await pool.request().query(`
+    UPDATE Cliente SET razon_social=LTRIM(RTRIM(CONCAT(NULLIF(apellido,''),' ',nombre)))
+    WHERE NULLIF(LTRIM(RTRIM(razon_social)),'') IS NULL;
+  `);
+};
 
 const normalizarFecha = (valor) => {
   if (!valor) return null;
@@ -7,8 +17,8 @@ const normalizarFecha = (valor) => {
   return /^\d{4}-\d{2}-\d{2}$/.test(texto) ? texto : null;
 };
 
-const getProyectos = async (_req,res) => { try { const pool=await conectarDB(); const r=await pool.request().query(`SELECT ${campos}, CONCAT(c.nombre,' ',c.apellido) cliente_nombre FROM Proyecto p LEFT JOIN Cliente c ON c.id_cliente=p.cliente_id WHERE ISNULL(p.eliminado,0)=0 ORDER BY p.proyecto_id DESC`); res.json(r.recordset); } catch(e){ res.status(500).json({message:'Error al obtener proyectos',error:e.message}); } };
-const getProyectoById = async (req,res) => { try { const pool=await conectarDB(); const r=await pool.request().input('id',sql.BigInt,req.params.id).query(`SELECT ${campos}, CONCAT(c.nombre,' ',c.apellido) cliente_nombre FROM Proyecto p LEFT JOIN Cliente c ON c.id_cliente=p.cliente_id WHERE p.proyecto_id=@id AND ISNULL(p.eliminado,0)=0`); if(!r.recordset.length)return res.status(404).json({message:'Proyecto no encontrado'}); res.json(r.recordset[0]); } catch(e){res.status(500).json({message:'Error al obtener proyecto',error:e.message});} };
+const getProyectos = async (_req,res) => { try { const pool=await conectarDB(); await prepararCliente(pool); const r=await pool.request().query(`SELECT ${campos}, ${nombreCliente} cliente_nombre FROM Proyecto p LEFT JOIN Cliente c ON c.id_cliente=p.cliente_id WHERE ISNULL(p.eliminado,0)=0 ORDER BY p.proyecto_id DESC`); res.json(r.recordset); } catch(e){ res.status(500).json({message:'Error al obtener proyectos',error:e.message}); } };
+const getProyectoById = async (req,res) => { try { const pool=await conectarDB(); await prepararCliente(pool); const r=await pool.request().input('id',sql.BigInt,req.params.id).query(`SELECT ${campos}, ${nombreCliente} cliente_nombre FROM Proyecto p LEFT JOIN Cliente c ON c.id_cliente=p.cliente_id WHERE p.proyecto_id=@id AND ISNULL(p.eliminado,0)=0`); if(!r.recordset.length)return res.status(404).json({message:'Proyecto no encontrado'}); res.json(r.recordset[0]); } catch(e){res.status(500).json({message:'Error al obtener proyecto',error:e.message});} };
 
 const guardar = async (req,res,editar) => {
   const {cliente_id,nombre,direccion,estado}=req.body;

@@ -62,7 +62,7 @@
         </thead>
 
         <tbody>
-          <tr *ngFor="let proveedor of proveedoresFiltrados">
+          <tr *ngFor="let proveedor of proveedoresPagina">
             <td>{{ proveedor.proveedor_id }}</td>
             <td>{{ proveedor.razon_social }}</td>
             <td>{{ proveedor.cuit || '-' }}</td>
@@ -94,5 +94,14 @@
         </tbody>
       </table>
     </div>
+    <mat-paginator
+      *ngIf="!cargando && proveedoresFiltrados.length > 0"
+      [length]="proveedoresFiltrados.length"
+      [pageIndex]="pageIndex"
+      [pageSize]="pageSize"
+      [pageSizeOptions]="pageSizeOptions"
+      showFirstLastButtons
+      (page)="cambiarPagina($event)">
+    </mat-paginator>
   </div>
 </div>

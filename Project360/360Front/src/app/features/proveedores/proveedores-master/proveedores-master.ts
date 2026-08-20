@@ -2,6 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
+import { MatPaginatorModule, PageEvent } from '@angular/material/paginator';
 
 import { ProveedorService } from '../../../core/services/proveedor/proveedor';
 import { Proveedor } from '../../../shared/interfaces/proveedor.interface';
@@ -9,7 +10,7 @@ import { Proveedor } from '../../../shared/interfaces/proveedor.interface';
 @Component({
   selector: 'app-proveedores-master',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, MatPaginatorModule],
   templateUrl: './proveedores-master.html',
   styleUrl: './proveedores-master.css'
 })
@@ -23,6 +24,9 @@ export class ProveedoresMaster implements OnInit {
   eliminando = false;
   error = '';
   mensaje = '';
+  pageIndex = 0;
+  pageSize = 10;
+  readonly pageSizeOptions = [10, 25, 50, 100];
 
   constructor(
     private proveedorService: ProveedorService,
@@ -42,6 +46,7 @@ export class ProveedoresMaster implements OnInit {
       next: (data) => {
         this.proveedores = data;
         this.proveedoresFiltrados = data;
+        this.pageIndex = 0;
         this.cargando = false;
       },
       error: (err) => {
@@ -62,6 +67,17 @@ export class ProveedoresMaster implements OnInit {
       proveedor.rubro?.toLowerCase().includes(texto) ||
       proveedor.ubicacion?.toLowerCase().includes(texto)
     );
+    this.pageIndex = 0;
+  }
+
+  get proveedoresPagina(): Proveedor[] {
+    const start = this.pageIndex * this.pageSize;
+    return this.proveedoresFiltrados.slice(start, start + this.pageSize);
+  }
+
+  cambiarPagina(event: PageEvent): void {
+    this.pageIndex = event.pageIndex;
+    this.pageSize = event.pageSize;
   }
 
   nuevoProveedor(): void {

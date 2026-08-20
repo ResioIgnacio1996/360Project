@@ -28,6 +28,10 @@ export class ProveedorService {
     return this.http.get<RubroProveedor[]>(`${this.apiUrl}/rubros/lista`);
   }
 
+  crearRubroProveedor(nombre: string): Observable<{ rubro: RubroProveedor; existente: boolean }> {
+    return this.http.post<{ rubro: RubroProveedor; existente: boolean }>(`${this.apiUrl}/rubros`, { nombre });
+  }
+
   crearProveedor(proveedor: Partial<Proveedor>): Observable<any> {
     return this.http.post(this.apiUrl, proveedor);
   }

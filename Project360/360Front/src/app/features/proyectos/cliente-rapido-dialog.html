@@ -1,8 +1,11 @@
 <h2 mat-dialog-title>Nuevo cliente</h2>
 <mat-dialog-content [formGroup]="form">
-  <p class="dialog-description">Complete los datos mínimos para crear y seleccionar el cliente.</p>
-  <mat-form-field appearance="outline"><mat-label>Razón social</mat-label><input matInput formControlName="razon_social" autocomplete="organization"><mat-error *ngIf="form.controls.razon_social.hasError('required')">La razón social es obligatoria.</mat-error></mat-form-field>
-  <mat-form-field appearance="outline"><mat-label>CUIL / CUIT</mat-label><input matInput formControlName="cuil" autocomplete="off"></mat-form-field>
+  <p class="dialog-description">Complete los datos comerciales y de contacto.</p>
+  <mat-form-field appearance="outline"><mat-label>Razón social o nombre</mat-label><input matInput formControlName="razon_social" autocomplete="organization"><mat-error *ngIf="form.controls.razon_social.invalid">Campo obligatorio, máximo 150 caracteres.</mat-error></mat-form-field>
+  <mat-form-field appearance="outline"><mat-label>CUIT / CUIL</mat-label><input matInput formControlName="cuil" maxlength="13" (input)="formatearCuil($event)"><mat-error *ngIf="form.controls.cuil.invalid">Campo obligatorio de 11 dígitos.</mat-error></mat-form-field>
+  <mat-form-field appearance="outline"><mat-label>Teléfono de contacto</mat-label><input matInput type="tel" formControlName="telefono"></mat-form-field>
+  <mat-form-field appearance="outline"><mat-label>Ubicación</mat-label><input matInput formControlName="ubicacion" placeholder="Ciudad, provincia"></mat-form-field>
+  <mat-form-field appearance="outline"><mat-label>Email</mat-label><input matInput type="email" formControlName="email"><mat-error *ngIf="form.controls.email.invalid">Ingrese un email válido.</mat-error></mat-form-field>
   <p class="dialog-error" *ngIf="error">{{error}}</p>
 </mat-dialog-content>
 <mat-dialog-actions align="end"><button mat-button type="button" [mat-dialog-close]="null" [disabled]="guardando">Cancelar</button><button mat-flat-button type="button" color="primary" [disabled]="guardando" (click)="guardar()">{{guardando?'Creando...':'Crear cliente'}}</button></mat-dialog-actions>

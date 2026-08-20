@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnInit, ViewChild, inject } from '@angular/core';
+import { Component, OnInit, ViewChild, ViewEncapsulation, inject } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 
@@ -15,6 +15,7 @@ import { MatSelectModule } from '@angular/material/select';
 import { MatDatepickerModule } from '@angular/material/datepicker';
 import { MatNativeDateModule } from '@angular/material/core';
 import { MatExpansionModule } from '@angular/material/expansion';
+import { MatSort, MatSortModule } from '@angular/material/sort';
 
 import { Remito, Remitos } from '../../../../../core/services/remitos';
 import { RegistroCompraService } from '../../../../../core/services/registro-compra/registro-compra';
@@ -38,14 +39,19 @@ import { RegistroCompra } from '../../../../../shared/interfaces/RegistroDeCompr
     MatDatepickerModule,
     MatNativeDateModule,
     MatExpansionModule
+    ,MatSortModule
   ],
   templateUrl: './remito-master.html',
-  styleUrl: './remito-master.css',
+  styleUrls: [
+    './remito-master.css',
+    '../../../registro-compra/pages/registro-compra-master/registro-compra-master.css'
+  ],
+  encapsulation: ViewEncapsulation.None
 })
 export class RemitoMaster implements OnInit {
   private fb = inject(FormBuilder);
 
-  readonly estadosFiltro = ['TODOS', 'PENDIENTE', 'LIBERADO'];
+  readonly estadosFiltro = ['TODOS', 'PENDIENTE', 'PARCIAL', 'LIBERADO'];
 
   displayedColumns = [
     'numero',
@@ -60,6 +66,7 @@ export class RemitoMaster implements OnInit {
   remitos: Remito[] = [];
   cargando = false;
   liberandoId: number | null = null;
+  cancelandoId: number | null = null;
   idRegistroCompra: number | null = null;
   registroCompra: RegistroCompra | null = null;
   filtrosAbiertos = true;
@@ -71,7 +78,20 @@ export class RemitoMaster implements OnInit {
     fechaHasta: [null as Date | null]
   });
 
-  @ViewChild(MatPaginator) paginator!: MatPaginator;
+  private paginator?: MatPaginator;
+  private sort?: MatSort;
+
+  @ViewChild(MatPaginator)
+  set matPaginator(paginator: MatPaginator | undefined) {
+    this.paginator = paginator;
+    this.conectarPaginador();
+  }
+
+  @ViewChild(MatSort)
+  set matSort(sort: MatSort | undefined) {
+    this.sort = sort;
+    this.conectarOrdenamiento();
+  }
 
   constructor(
     private remitosService: Remitos,
@@ -123,7 +143,8 @@ export class RemitoMaster implements OnInit {
         this.cargando = false;
         this.remitos = remitos;
         this.dataSource = new MatTableDataSource(remitos);
-        this.dataSource.paginator = this.paginator;
+        this.conectarPaginador();
+        this.conectarOrdenamiento();
         this.aplicarFiltros();
       },
       error: error => {
@@ -153,38 +174,54 @@ export class RemitoMaster implements OnInit {
     this.router.navigate(['/ingreso-materiales/remitos/detalle', remito.idRemito]);
   }
 
-  puedeLiberar(remito: Remito): boolean {
-    return !remito.liberado && this.liberandoId !== remito.idRemito;
+  puedeEditar(remito: Remito): boolean {
+    return this.estadoRemito(remito) === 'PENDIENTE'
+      && this.liberandoId !== remito.idRemito
+      && this.cancelandoId !== remito.idRemito;
   }
 
-  liberar(remito: Remito): void {
-    const confirmado = confirm(
-      `Confirmas la liberacion del Remito ${remito.numero}?\n\n` +
-      'Esta accion actualizara el Stock General y recalculara el estado del Registro de Compra.\n\n' +
-      'Una vez liberado, el Remito no podra volver a liberarse.'
-    );
-
-    if (!confirmado) {
+  editarRemito(remito: Remito): void {
+    if (!this.puedeEditar(remito)) return;
+    if (this.idRegistroCompra) {
+      this.router.navigate([
+        '/ingreso-materiales/registros', this.idRegistroCompra, 'remitos', remito.idRemito, 'editar'
+      ]);
       return;
     }
+    this.router.navigate(['/ingreso-materiales/remitos/editar', remito.idRemito]);
+  }
 
-    this.liberandoId = remito.idRemito;
+  puedeLiberar(remito: Remito): boolean {
+    return !remito.liberado && this.liberandoId !== remito.idRemito && this.cancelandoId !== remito.idRemito;
+  }
 
-    this.remitosService.liberarRemito(remito.idRemito).subscribe({
+  puedeCancelar(remito: Remito): boolean {
+    return this.estadoRemito(remito) === 'PENDIENTE'
+      && this.liberandoId !== remito.idRemito
+      && this.cancelandoId !== remito.idRemito;
+  }
+
+  cancelarRemito(remito: Remito): void {
+    if (!this.puedeCancelar(remito) || !confirm(
+      `¿Cancelar el Remito ${remito.numero}?\n\nDejará de verse en el sistema y permitirá editar la OC/FAC cuando no queden otros remitos activos.`
+    )) return;
+
+    this.cancelandoId = remito.idRemito;
+    this.remitosService.cancelarRemito(remito.idRemito).subscribe({
       next: response => {
-        this.liberandoId = null;
-        this.snackBar.open(response?.message || 'Remito liberado correctamente.', 'Cerrar', {
-          duration: 3500
-        });
+        this.cancelandoId = null;
+        this.snackBar.open(response?.message || 'Remito cancelado correctamente.', 'Cerrar', { duration: 4500 });
         this.cargarRemitos();
       },
       error: error => {
-        this.liberandoId = null;
-        this.snackBar.open(error?.error?.message || 'Error al liberar remito.', 'Cerrar', {
-          duration: 4000
-        });
+        this.cancelandoId = null;
+        this.snackBar.open(error?.error?.message || 'No se pudo cancelar el remito.', 'Cerrar', { duration: 4500 });
       }
     });
+  }
+
+  liberar(remito: Remito): void {
+    this.verDetalle(remito);
   }
 
   estadoRemito(remito: Remito): string {
@@ -218,7 +255,7 @@ export class RemitoMaster implements OnInit {
     });
 
     this.dataSource.data = filtrados;
-    this.dataSource.paginator = this.paginator;
+    this.conectarPaginador();
     this.paginator?.firstPage();
   }
 
@@ -265,5 +302,25 @@ export class RemitoMaster implements OnInit {
     }
 
     this.router.navigate(['/ingreso-materiales']);
+  }
+
+  private conectarPaginador(): void {
+    if (this.paginator) {
+      this.dataSource.paginator = this.paginator;
+    }
+  }
+
+  private conectarOrdenamiento(): void {
+    this.dataSource.sortingDataAccessor = (remito: Remito, columna: string): string | number => {
+      switch (columna) {
+        case 'fecha': return new Date(String(remito.fecha || '').substring(0, 10)).getTime() || 0;
+        case 'numero': return this.normalizarTexto(remito.numero);
+        case 'registroCompra': return this.normalizarTexto(remito.registroCompraNumero || remito.idRegistroCompra);
+        case 'proveedor': return this.normalizarTexto(remito.proveedor);
+        case 'estado': return this.normalizarTexto(this.estadoRemito(remito));
+        default: return '';
+      }
+    };
+    if (this.sort) this.dataSource.sort = this.sort;
   }
 }

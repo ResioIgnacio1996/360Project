@@ -2,7 +2,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 
-import { Cliente } from '../../../shared/interfaces/cliente.interface';
+import { Cliente, ClientePayload } from '../../../shared/interfaces/cliente.interface';
 
 @Injectable({
   providedIn: 'root'
@@ -21,11 +21,11 @@ export class ClienteService {
     return this.http.get<Cliente>(`${this.apiUrl}/${id}`);
   }
 
-  crearCliente(cliente: Omit<Cliente, 'id_cliente'>): Observable<any> {
+  crearCliente(cliente: ClientePayload): Observable<any> {
     return this.http.post(this.apiUrl, cliente);
   }
 
-  actualizarCliente(id: number, cliente: Omit<Cliente, 'id_cliente'>): Observable<any> {
+  actualizarCliente(id: number, cliente: ClientePayload): Observable<any> {
     return this.http.put(`${this.apiUrl}/${id}`, cliente);
   }
 

@@ -1,0 +1,69 @@
+<div class="bom-page">
+  <header class="page-header">
+    <div>
+      <button class="back" type="button" (click)="volver()"><mat-icon>arrow_back</mat-icon> PROYECTO</button>
+      <span class="eyebrow">PLAN DE MATERIALES</span>
+      <h1>BOM del proyecto</h1>
+      <p>{{ proyecto?.nombre || 'Proyecto' }} · Materiales previstos para cada operacion del plan activo.</p>
+    </div>
+    <button class="primary" type="button" (click)="nuevaLinea()" [disabled]="!operaciones.length || cargando">
+      <mat-icon>add</mat-icon> Agregar material
+    </button>
+  </header>
+
+  <div class="alert success" *ngIf="mensaje"><mat-icon>check_circle</mat-icon>{{ mensaje }}</div>
+  <div class="alert error" *ngIf="error && !formularioAbierto"><mat-icon>error_outline</mat-icon>{{ error }}</div>
+
+  <section class="stats" *ngIf="!cargando">
+    <div><small>CANTIDAD MATERIALES</small><strong>{{ lineas.length }}</strong></div>
+    <div><small>OPERACIONES CON MATERIAL</small><strong>{{ operacionesConMaterial }}</strong></div>
+    <div><small>OPERACIONES DEL PLAN</small><strong>{{ operaciones.length }}</strong></div>
+  </section>
+
+  <section class="toolbar" *ngIf="!cargando">
+    <label class="search"><mat-icon>search</mat-icon><input [(ngModel)]="busqueda" placeholder="Buscar material, etapa u operacion"></label>
+    <select [(ngModel)]="operacionFiltro" aria-label="Filtrar por operacion">
+      <option [ngValue]="0">Todas las operaciones</option>
+      <option *ngFor="let op of operaciones" [ngValue]="op.operacion_id">{{ op.secuencia }} · {{ op.operacion_nombre }}</option>
+    </select>
+  </section>
+
+  <div class="loading" *ngIf="cargando">Cargando BOM...</div>
+
+  <section class="table-card" *ngIf="!cargando">
+    <div class="table-wrap" *ngIf="filtradas.length; else vacio">
+      <table>
+        <thead><tr><th>ETAPA</th><th>SECUENCIA OP.</th><th>NRO. LINEA</th><th>DESCRIPCION LIBRE</th><th>CANTIDAD TEORICA</th><th>UNIDAD</th><th>ACCIONES</th></tr></thead>
+        <tbody>
+          <tr *ngFor="let linea of filtradas">
+            <td><span class="stage">{{ linea.etapa_codigo }}</span></td>
+            <td><strong class="sequence">{{ linea.secuencia }}</strong><small>{{ linea.operacion_nombre }}</small></td>
+            <td class="mono">{{ linea.numero_linea }}</td>
+            <td><strong>{{ linea.descripcion_libre }}</strong><small class="material-id">MAT-{{ linea.material_id }}</small></td>
+            <td class="quantity">{{ linea.cantidad_teorica | number:'1.0-3' }}</td>
+            <td><span class="uom">{{ linea.unidad }}</span></td>
+            <td><div class="actions"><button type="button" title="Editar" (click)="editar(linea)"><mat-icon>edit</mat-icon></button><button class="danger" type="button" title="Eliminar" (click)="eliminar(linea)" [disabled]="linea.consumos_registrados > 0"><mat-icon>delete</mat-icon></button></div><small class="locked" *ngIf="linea.consumos_registrados > 0">CON CONSUMOS</small></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <ng-template #vacio><div class="empty"><mat-icon>format_list_bulleted</mat-icon><h2>No hay materiales para mostrar</h2><p>Agrega una linea manualmente o importa la BOM desde Programacion.</p></div></ng-template>
+  </section>
+</div>
+
+<div class="modal-backdrop" *ngIf="formularioAbierto" (click)="cerrarFormulario()">
+  <form class="modal" (click)="$event.stopPropagation()" (ngSubmit)="guardar()">
+    <header><span class="eyebrow">{{ lineaEditada ? 'EDITAR LINEA BOM' : 'NUEVA LINEA BOM' }}</span><h2>{{ lineaEditada ? lineaEditada.descripcion_libre : 'Agregar material' }}</h2><p>La descripcion y la UOM determinan el material normalizado del sistema.</p></header>
+    <div class="modal-warning" *ngIf="lineaEditada?.consumos_registrados > 0"><mat-icon>lock</mat-icon><span>Esta linea tiene consumos. Solo podes cambiar la cantidad teorica o su numero dentro de la misma operacion.</span></div>
+    <label>OPERACION<select [(ngModel)]="form.operacion_id" name="operacion" (ngModelChange)="cambiarOperacion()" [disabled]="lineaEditada?.consumos_registrados > 0" required><option [ngValue]="0" disabled>Seleccionar operacion</option><option *ngFor="let op of operaciones" [ngValue]="op.operacion_id">{{ op.etapa_codigo }} · {{ op.secuencia }} · {{ op.operacion_nombre }}</option></select></label>
+    <div class="form-grid">
+      <label>NRO. LINEA<input type="number" min="1" step="1" [(ngModel)]="form.numero_linea" name="linea" required></label>
+      <label>CANTIDAD TEORICA<input type="number" min="0.001" step="0.001" [(ngModel)]="form.cantidad_teorica" name="cantidad" required></label>
+    </div>
+    <label>MATERIAL<select [(ngModel)]="form.material_id" name="material" (ngModelChange)="cambiarMaterial()" [disabled]="lineaEditada?.consumos_registrados > 0"><option [ngValue]="0">＋ Crear nuevo material</option><option *ngFor="let material of materiales" [ngValue]="material.id_material">{{ material.nombre }}</option></select></label>
+    <label>{{ form.material_id ? 'DESCRIPCION DEL MATERIAL' : 'NOMBRE DEL NUEVO MATERIAL' }}<input maxlength="200" [(ngModel)]="form.descripcion_libre" name="descripcion" [disabled]="form.material_id || lineaEditada?.consumos_registrados > 0" required></label>
+    <label>UNIDAD DE MEDIDA<select [(ngModel)]="form.uom_id" name="uom" [disabled]="form.material_id || lineaEditada?.consumos_registrados > 0" required><option [ngValue]="0" disabled>Seleccionar UOM</option><option *ngFor="let uom of unidades" [ngValue]="uom.uom_id">{{ uom.nombre }}</option></select></label>
+    <div class="alert error" *ngIf="error"><mat-icon>error_outline</mat-icon>{{ error }}</div>
+    <footer><button class="secondary" type="button" (click)="cerrarFormulario()" [disabled]="guardando">Cancelar</button><button class="primary" type="submit" [disabled]="guardando">{{ guardando ? 'Guardando...' : 'Guardar linea BOM' }}</button></footer>
+  </form>
+</div>

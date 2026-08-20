@@ -10,10 +10,11 @@
 .gantt-grid{grid-template-columns:210px var(--timeline-width)!important;align-items:stretch}.months,.dates,.track{grid-template-columns:repeat(var(--days),54px)!important;width:var(--timeline-width);min-width:var(--timeline-width);max-width:var(--timeline-width);box-sizing:border-box}.g-head.label,.timeline-head{box-sizing:border-box}.g-label,.track{height:36px;min-height:36px;max-height:36px;box-sizing:border-box;margin:0}.track>i{width:54px;min-width:54px;box-sizing:border-box}.dates>span{width:54px;min-width:54px;box-sizing:border-box}.months>span{box-sizing:border-box}.g-label{width:210px;min-width:210px;max-width:210px}
 
 /* Tabla APS: distribución estable para que encabezado y datos no se desplacen. */
-.table-scroll table{width:max(100%,1580px);min-width:1580px;table-layout:fixed}
+.table-scroll table{width:max(100%,1666px);min-width:1666px;table-layout:fixed}
 .table-scroll .col-seq{width:58px}
 .table-scroll .col-operacion{width:250px}
 .table-scroll .col-etapa{width:210px}
+.table-scroll .col-peso{width:86px}
 .table-scroll .col-dependencia{width:72px}
 .table-scroll .col-responsable{width:250px}
 .table-scroll .col-fecha{width:92px}
@@ -23,7 +24,7 @@
 .table-scroll th{height:34px;vertical-align:middle}
 .table-scroll tbody tr{height:36px}
 .table-scroll td{height:36px;padding-top:5px;padding-bottom:5px;vertical-align:middle}
-.table-scroll td:nth-child(12){overflow:visible}
+.table-scroll td:nth-child(13){overflow:visible}
 
 /* Línea del día actual: centrada en la columna y continua en todo el Gantt. */
 .dates>span.es-hoy,.track>i.es-hoy{outline:0;box-shadow:none}
@@ -185,7 +186,7 @@
   box-shadow:0 0 0 1px var(--primary),0 6px 16px color-mix(in srgb,var(--primary) 35%,transparent)
 }
 .kpis .import-bop:active{transform:translateY(0)}
-.edit-operation{width:600px;max-height:92vh;overflow:auto}
+.edit-operation{width:760px;max-height:92vh;overflow:auto}
 .edit-lock{
   margin-top:10px;
   padding:7px 9px;

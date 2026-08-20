@@ -48,7 +48,7 @@
         </thead>
 
         <tbody>
-          <tr *ngFor="let rol of rolesFiltrados">
+          <tr *ngFor="let rol of rolesPagina">
             <td class="tech-value"><strong>{{ rol.nombre }}</strong></td>
             <td>{{ rol.descripcion || '-' }}</td>
             <td class="text-center">
@@ -68,6 +68,16 @@
         </tbody>
       </table>
     </div>
+
+    <mat-paginator
+      *ngIf="!cargando && rolesFiltrados.length > 0"
+      [length]="rolesFiltrados.length"
+      [pageIndex]="pageIndex"
+      [pageSize]="pageSize"
+      [pageSizeOptions]="pageSizeOptions"
+      showFirstLastButtons
+      (page)="cambiarPagina($event)">
+    </mat-paginator>
 
     <div *ngIf="!cargando && rolesFiltrados.length === 0" class="empty-state">
       No se encontraron roles para los filtros seleccionados.

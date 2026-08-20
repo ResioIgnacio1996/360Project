@@ -1,3 +1,18 @@
-<div class="registro-compra-form-page cliente-form-page"><div class="page-header"><div><span class="breadcrumb">OBRA360 / Comercial / Clientes</span><h1>{{ esEdicion ? 'Editar cliente' : 'Nuevo cliente' }}</h1><p>{{ esEdicion ? 'Modifique los datos generales del cliente.' : 'Complete los datos del nuevo cliente.' }}</p></div></div><div *ngIf="error" class="error-message">{{ error }}</div><div *ngIf="cargando" class="state-message">Cargando cliente...</div>
-  <form *ngIf="!cargando" [formGroup]="clienteForm" (ngSubmit)="guardar()" class="block"><div class="block-header"><h2 class="block-title">Datos del cliente</h2></div><div class="block-body"><div class="form-grid"><label class="form-group">Nombre *<input formControlName="nombre" placeholder="Ingrese el nombre"><small *ngIf="campoInvalido('nombre')">El nombre es obligatorio y admite hasta 50 caracteres.</small></label><label class="form-group">Apellido *<input formControlName="apellido" placeholder="Ingrese el apellido"><small *ngIf="campoInvalido('apellido')">El apellido es obligatorio y admite hasta 50 caracteres.</small></label><label class="form-group full-width">CUIL<input formControlName="cuil" placeholder="20-12345678-9" maxlength="13" (input)="formatearCuil($event)"></label></div><div class="form-actions"><button type="button" class="btn btn-ghost" (click)="cancelar()"><mat-icon>close</mat-icon>Cancelar</button><button class="btn btn-primary" [disabled]="guardando"><mat-icon>save</mat-icon>{{guardando?'Guardando...':'Guardar cliente'}}</button></div></div></form>
+<div class="registro-compra-form-page cliente-form-page">
+  <div class="page-header"><div><span class="breadcrumb">OBRA360 / Comercial / Clientes</span><h1>{{ esEdicion ? 'Editar cliente' : 'Nuevo cliente' }}</h1><p>{{ esEdicion ? 'Modifique los datos comerciales y de contacto.' : 'Complete los datos comerciales y de contacto.' }}</p></div></div>
+  <div *ngIf="error" class="error-message">{{ error }}</div>
+  <div *ngIf="cargando" class="state-message">Cargando cliente...</div>
+  <form *ngIf="!cargando" [formGroup]="clienteForm" (ngSubmit)="guardar()" class="block">
+    <div class="block-header"><h2 class="block-title">Datos del cliente</h2></div>
+    <div class="block-body">
+      <div class="form-grid">
+        <label class="form-group">Razón social o nombre *<input formControlName="razon_social" placeholder="Ingrese la razón social o nombre"><small *ngIf="campoInvalido('razon_social')">La razón social o nombre es obligatoria y admite hasta 150 caracteres.</small></label>
+        <label class="form-group">CUIT / CUIL *<input formControlName="cuil" placeholder="30-12345678-9" maxlength="13" (input)="formatearCuil($event)"><small *ngIf="campoInvalido('cuil')">El CUIT/CUIL es obligatorio y debe tener 11 dígitos.</small></label>
+        <label class="form-group">Teléfono de contacto<input type="tel" formControlName="telefono" placeholder="Ingrese el teléfono"></label>
+        <label class="form-group">Email<input type="email" formControlName="email" placeholder="cliente@mail.com"><small *ngIf="campoInvalido('email')">Ingrese un email válido de hasta 100 caracteres.</small></label>
+        <label class="form-group full-width">Ubicación<input formControlName="ubicacion" placeholder="Ciudad, provincia"></label>
+      </div>
+      <div class="form-actions"><button type="button" class="btn btn-ghost" (click)="cancelar()"><mat-icon>close</mat-icon>Cancelar</button><button class="btn btn-primary" [disabled]="guardando"><mat-icon>save</mat-icon>{{guardando?'Guardando...':'Guardar cliente'}}</button></div>
+    </div>
+  </form>
 </div>

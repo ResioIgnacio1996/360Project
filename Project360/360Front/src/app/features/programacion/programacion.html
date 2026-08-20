@@ -17,9 +17,10 @@
       <div class="late">
         <span>ATRASADAS</span><b>{{ atrasadas }}</b>
       </div>
-      <button (click)="abrirCrearOperacion()">＋ Nueva operación</button>
-      <button class="import-bop" (click)="importarBop()">📥 Importar BOP</button
-      ><button (click)="volver()">← Proyecto</button>
+      <button *ngIf="!soloGantt" (click)="abrirCrearOperacion()">＋ Nueva operación</button>
+      <button *ngIf="!soloGantt" class="import-bop" (click)="importarBop()">📥 Importar BOP</button>
+      <button *ngIf="soloGantt" class="import-bop" (click)="volverProgramacion()">← PROGRAMACIÓN</button>
+      <button (click)="volver()">← Proyecto</button>
     </div>
   </header>
   <section class="toolbar">
@@ -28,14 +29,15 @@
   <div class="notice error" *ngIf="error">{{ error }}</div>
   <div class="notice" *ngIf="mensaje">{{ mensaje }}</div>
   <div class="loading" *ngIf="cargando">Cargando programación…</div>
-  <section class="stage-progress" *ngIf="!cargando && etapasProgramadas.length">
+  <section class="stage-progress" *ngIf="!cargando && !soloGantt">
     <div class="stage-filter-tools all-stages">
       <span>FILTRAR ETAPA</span>
       <button [class.active]="filtroEtapa === 'TODAS'" (click)="filtroEtapa = 'TODAS'">
         TODAS LAS ETAPAS
       </button>
+      <button type="button" (click)="abrirCrearEtapa()">＋ NUEVA ETAPA</button>
     </div>
-    <button
+    <article
       class="stage-card"
       *ngFor="let etapa of etapasProgramadas; trackBy: trackEtapa"
       [class.active]="filtroEtapa === etapa.nombre"
@@ -44,26 +46,29 @@
     >
       <header>
         <span>{{ etapa.codigo }}</span>
-        <b>{{ etapa.pct_avance | number: '1.0-1' }}%</b>
+        <b title="Editar etapa" (click)="abrirEditarEtapa(etapa, $event)">{{ etapa.pct_avance | number: '1.0-1' }}% · ✎</b>
       </header>
       <p>{{ etapa.nombre }}</p>
       <div><i [style.width.%]="etapa.pct_avance"></i></div>
       <small>Peso {{ etapa.peso_pct | number: '1.0-1' }}% · Aporte {{ etapa.aporte_proyecto | number: '1.0-1' }}%</small>
-    </button>
+    </article>
     <div class="stage-filter-tools state-filter">
       <span>ESTADO OPERACIÓN</span>
       <select [(ngModel)]="filtroEstado">
         <option value="TODAS">Todos los estados</option>
-        <option value="PENDIENTE">Pendientes</option>
-        <option value="EN_CURSO">En curso</option>
+        <option value="EN_TERMINO">En término</option>
+        <option value="EN_RIESGO">En riesgo</option>
         <option value="ATRASADA">Atrasadas</option>
-        <option value="COMPLETA">Completas</option>
+        <option value="CUMPLIDA">Cumplidas</option>
+        <option value="CUMPLIDA_A_TIEMPO">Cumplidas a tiempo</option>
+        <option value="CUMPLIDA_CON_DEMORA">Cumplidas con demora</option>
         <option value="BLOQUEADA">Bloqueadas</option>
+        <option value="ARCHIVADA">Archivadas</option>
       </select>
     </div>
   </section>
-  <main #workspace class="workspace" *ngIf="!cargando" [style.--table-height]="alturaTablaPct + '%'">
-    <section class="aps">
+  <main #workspace class="workspace" *ngIf="!cargando" [style.--table-height]="alturaTablaPct + '%'" [style.grid-template-rows]="soloGantt ? '1fr' : null">
+    <section class="aps" *ngIf="!soloGantt">
       <div class="section-title">
         <span>TABLA APS</span><small>{{ filtradas.length }} operaciones visibles</small>
       </div>
@@ -73,6 +78,7 @@
             <col class="col-seq" />
             <col class="col-operacion" />
             <col class="col-etapa" />
+            <col class="col-peso" />
             <col class="col-dependencia" />
             <col class="col-responsable" />
             <col class="col-fecha" span="6" />
@@ -84,6 +90,7 @@
               <th>SEQ</th>
               <th>OPERACIÓN</th>
               <th>ETAPA</th>
+              <th>PESO ETAPA</th>
               <th>DEP.</th>
               <th>RESP.</th>
               <th>INI.EST.</th>
@@ -108,6 +115,7 @@
                 ><em *ngIf="op.archivada">ARCHIVADA</em>
               </td>
               <td>{{ op.etapa_codigo }} · {{ op.etapa_nombre }}</td>
+              <td class="seq">{{ op.peso_pct | number: '1.0-2' }}%</td>
               <td class="mono">{{ op.dependencias_secuencia || '—' }}</td>
               <td>{{ op.responsable_nombre || 'Sin asignar' }}</td>
               <td class="est">{{ op.fecha_inicio_estimada | date: 'dd/MM/yy' }}</td>
@@ -125,7 +133,7 @@
                 <small>{{ op.pct_avance_actual }}%</small>
               </td>
               <td>
-                <span class="status" [ngClass]="claseEstado(op)">{{ op.estado_label }}</span>
+                <span class="status" [style.color]="colorEstado(op)" [style.background]="fondoEstado(op)">{{ op.estado_label }}</span>
               </td>
             </tr>
           </tbody>
@@ -140,7 +148,7 @@
         </div>
       </div>
     </section>
-    <div
+    <div *ngIf="!soloGantt"
       class="workspace-resizer"
       role="separator"
       aria-orientation="horizontal"
@@ -157,6 +165,8 @@
         ><button [class.on]="capas.reprogramado" (click)="toggle('reprogramado')">● REPROGRAMADO</button
         ><button [class.on]="capas.real" (click)="toggle('real')">● REAL</button
         ><button class="calendar-action" (click)="abrirExcepcion()">＋ EXCEPCIÓN</button>
+        <button *ngIf="!soloGantt" class="gantt-full-action" (click)="abrirGanttCompleto()">⛶ VER GANTT COMPLETO</button>
+        <button *ngIf="soloGantt" class="gantt-full-action" (click)="volverProgramacion()">← VOLVER A PROGRAMACIÓN</button>
       </div>
       <div class="section-title">
         <span>GANTT COMPARATIVO</span><small>{{ descripcionHoy }} · Estimado · Reprogramado · Real</small>
@@ -185,7 +195,7 @@
             </div>
           </div>
           <ng-container *ngFor="let op of filtradas; trackBy: trackOperacion"
-            ><button class="g-label" (click)="seleccionar(op)">
+            ><button class="g-label" [style.border-left]="'3px solid ' + colorEstado(op)" [title]="op.estado_label" (click)="seleccionar(op)">
               <b>{{ op.secuencia }}</b
               ><span>{{ op.nombre }}</span>
             </button>
@@ -201,6 +211,8 @@
               ><button
                 *ngIf="capas.reprogramado && op.fecha_inicio_reprog"
                 class="bar reprogrammed"
+                [style.background]="colorEstado(op)"
+                [title]="op.estado_label"
                 [style.left.%]="posicion(op.fecha_inicio_reprog)"
                 [style.width.%]="ancho(op.fecha_inicio_reprog, op.fecha_fin_reprog)"
                 (click)="seleccionar(op)"
@@ -237,7 +249,7 @@
     <div *ngIf="seleccionada as op">
       <small>OP {{ op.secuencia }} · {{ op.etapa_codigo }}</small>
       <h2>{{ op.nombre }}</h2>
-      <span class="status" [ngClass]="claseEstado(op)">{{ op.estado_label }}</span>
+      <span class="status" [style.color]="colorEstado(op)" [style.background]="fondoEstado(op)">{{ op.estado_label }}</span>
       <h3>COMPARACIÓN DE FECHAS</h3>
       <div class="date-cards">
         <div>
@@ -277,6 +289,10 @@
           <dd>{{ op.pct_avance_actual }}%</dd>
         </div>
         <div>
+          <dt>Peso en la etapa</dt>
+          <dd>{{ op.peso_pct | number: '1.0-2' }}%</dd>
+        </div>
+        <div>
           <dt>Dependencias</dt>
           <dd>{{ op.dependencias_secuencia || 'Sin predecesoras' }}</dd>
         </div>
@@ -313,6 +329,7 @@
           </select>
         </label>
         <label>DURACIÓN (HS)<input type="number" min=".25" step=".25" [(ngModel)]="nuevaOperacion.duracion_hs" name="duracionNueva" required /></label>
+        <label>DESFASE DE INICIO (HS)<input type="number" min="0" step="1" [(ngModel)]="nuevaOperacion.desfase_inicio_hs" name="desfaseInicioNueva" required /></label>
         <label>UNIDAD DE AVANCE
           <select [(ngModel)]="nuevaOperacion.unidad_avance" name="unidad">
             <option value="PORCENTAJE">Porcentaje</option>
@@ -369,6 +386,12 @@
         <label>DURACIÓN (HS)
           <input type="number" min=".25" step=".25" [(ngModel)]="operacionEditada.duracion_hs" name="duracionEditada" required />
         </label>
+        <label>DESFASE DE INICIO (HS)
+          <input type="number" min="0" step="1" [(ngModel)]="operacionEditada.desfase_inicio_hs" name="desfaseEditado" required />
+        </label>
+        <label>PESO EN ETAPA (%)
+          <input type="number" min="0" max="100" step=".01" [(ngModel)]="operacionEditada.peso_pct" name="pesoEditado" required />
+        </label>
         <label class="wide">NOMBRE
           <input [(ngModel)]="operacionEditada.nombre" name="nombreEditado" maxlength="200" required />
         </label>
@@ -395,12 +418,77 @@
             </span>
           </div>
         </label>
+        <div class="wide">
+          <h3>MATERIALES CONSUMIBLES</h3>
+          <div class="selected-predecessors" *ngIf="materialesOperacionEditada.length">
+            <span *ngFor="let linea of materialesOperacionEditada">
+              <b>{{ linea.descripcion_libre }}</b> · {{ linea.cantidad_teorica | number: '1.0-3' }} {{ linea.unidad }}
+            </span>
+          </div>
+          <div class="create-grid">
+            <label class="predecessor-field">{{ nuevoMaterialOperacion ? 'NOMBRE DEL NUEVO MATERIAL' : 'MATERIAL' }}
+              <input [(ngModel)]="materialOperacion.descripcion_libre" (ngModelChange)="cambiarMaterialOperacion($event)" name="descripcionMaterialOperacion" autocomplete="off" maxlength="200" placeholder="{{ nuevoMaterialOperacion ? 'Ingresar nombre' : 'Buscar material existente' }}" />
+              <div class="predecessor-suggestions predecessor-list" *ngIf="materialesOperacionSugeridos.length">
+                <button type="button" *ngFor="let material of materialesOperacionSugeridos" (click)="seleccionarMaterialOperacion(material)">
+                  <b>MAT-{{ material.id_material }}</b><span>{{ material.nombre }}</span><small>{{ material.uom_id }}</small>
+                </button>
+              </div>
+            </label>
+            <label>CANTIDAD TEÓRICA
+              <input type="number" min="0.001" step="0.001" [(ngModel)]="materialOperacion.cantidad_teorica" name="cantidadMaterialOperacion" />
+            </label>
+            <label>UNIDAD
+              <select [(ngModel)]="materialOperacion.uom_id" name="uomMaterialOperacion">
+                <option [ngValue]="0">Seleccionar UOM</option>
+                <option *ngFor="let uom of unidadesBom" [ngValue]="uom.uom_id">{{ uom.nombre }}</option>
+              </select>
+            </label>
+          </div>
+          <div class="actions">
+            <button type="button" class="warn" (click)="alternarNuevoMaterialOperacion()">{{ nuevoMaterialOperacion ? 'Usar material existente' : '＋ Crear nuevo material' }}</button>
+            <button type="button" (click)="agregarMaterialOperacion()" [disabled]="guardando">＋ Agregar material</button>
+          </div>
+        </div>
       </div>
       <div class="form-error" *ngIf="errorFormulario">{{ errorFormulario }}</div>
-      <div class="impact">La modificación quedará auditada y recalculará las fechas reprogramadas de la cadena.</div>
+      <div class="impact">El peso modifica el avance de la etapa y su aporte al KPI del proyecto. La suma de las operaciones de una etapa no puede superar el 100%.</div>
       <footer>
         <button type="button" class="ghost" (click)="modal = null">Cancelar</button>
         <button type="submit" [disabled]="guardando">{{ guardando ? 'Guardando…' : 'Guardar cambios' }}</button>
+      </footer>
+    </form>
+  </div>
+  <div class="overlay" *ngIf="modal === 'etapa'" (click)="modal = null">
+    <form class="modal edit-operation" (click)="$event.stopPropagation()" (ngSubmit)="guardarEtapa()">
+      <h2>{{ etapaEditada ? 'Editar etapa' : 'Nueva etapa' }}</h2>
+      <p>Los atributos coinciden con la carga de etapas del CSV.</p>
+      <div class="create-grid">
+        <label class="wide">NOMBRE
+          <input [(ngModel)]="etapaForm.nombre" name="nombreEtapa" maxlength="200" required />
+        </label>
+        <label>PESO EN EL PROYECTO (%)
+          <input type="number" min="0" max="100" step=".01" [(ngModel)]="etapaForm.peso_pct" name="pesoEtapa" required />
+        </label>
+        <label>ESTADO
+          <input [value]="etapaEditada?.estado_label || 'Pendiente'" readonly />
+          <small>Calculado por el sistema.</small>
+        </label>
+        <label>AVANCE ACTUAL (%)
+          <input [value]="etapaEditada?.pct_avance || 0" readonly />
+          <small>Calculado con el peso y avance de sus operaciones.</small>
+        </label>
+        <label>FECHA DE CREACIÓN
+          <input [value]="(etapaEditada?.fecha_creacion | date:'dd/MM/yyyy HH:mm') || 'Se asigna al guardar'" readonly />
+        </label>
+        <label>ÚLTIMA ACTUALIZACIÓN
+          <input [value]="(etapaEditada?.fecha_actualizacion | date:'dd/MM/yyyy HH:mm') || 'Se asigna al guardar'" readonly />
+        </label>
+      </div>
+      <div class="form-error" *ngIf="errorFormulario">{{ errorFormulario }}</div>
+      <div class="impact">La suma de los pesos de las etapas activas no puede superar el 100%.</div>
+      <footer>
+        <button type="button" class="ghost" (click)="modal = null">Cancelar</button>
+        <button type="submit" [disabled]="guardando">{{ guardando ? 'Guardando…' : 'Guardar etapa' }}</button>
       </footer>
     </form>
   </div>
@@ -441,7 +529,7 @@
       </footer>
     </form>
   </div>
-  <div class="overlay" *ngIf="modal && modal !== 'crear' && modal !== 'editar' && modal !== 'excepcion'" (click)="modal = null">
+  <div class="overlay" *ngIf="modal && modal !== 'crear' && modal !== 'editar' && modal !== 'excepcion' && modal !== 'etapa'" (click)="modal = null">
     <form
       class="modal"
       (click)="$event.stopPropagation()"

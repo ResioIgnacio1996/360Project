@@ -45,6 +45,10 @@ export class RegistroCompraService {
     return this.http.put(`${this.apiUrl}/${id}/cancelar`, {});
   }
 
+  obtenerImpactoCancelacion(id: number): Observable<any> {
+    return this.http.get(`${this.apiUrl}/${id}/impacto-cancelacion`);
+  }
+
   importarDocumento(file: File): Observable<RegistroCompraImportResponse> {
     const formData = new FormData();
     formData.append('documento', file);
@@ -91,6 +95,12 @@ export class RegistroCompraService {
       fechaEntrega: registro.fecha_entrega ?? registro.fechaEntrega ?? null,
       observaciones: registro.observaciones ?? null,
       activo: registro.activo,
+      cantidadRemitosActivos: Number(registro.cantidad_remitos_activos ?? registro.cantidadRemitosActivos ?? 0),
+      estadoLiberacion: registro.estado_liberacion ?? registro.estadoLiberacion ?? 'PENDIENTE',
+      cantidadMateriales: Number(registro.cantidad_materiales ?? registro.cantidadMateriales ?? 0),
+      materialesLiberados: Number(registro.materiales_liberados ?? registro.materialesLiberados ?? 0),
+      cantidadLiberada: Number(registro.cantidad_liberada ?? registro.cantidadLiberada ?? 0),
+      cantidadTotal: Number(registro.cantidad_total ?? registro.cantidadTotal ?? 0),
       proveedor: {
         idProveedor: registro.proveedor_id ?? registro.proveedor?.idProveedor ?? null,
         razonSocial: registro.razon_social ?? registro.proveedor?.razonSocial ?? '',
@@ -125,6 +135,10 @@ export class RegistroCompraService {
         descripcionOriginal: item.descripcionOriginal ?? item.material ?? item.nombreMaterial ?? '',
         cantidad: Number(item.cantidad ?? item.cantidadSolicitada ?? 0),
         cantidadSolicitada: Number(item.cantidad ?? item.cantidadSolicitada ?? 0),
+        cantidadRecibida: Number(item.cantidad_liberada ?? item.cantidadRecibida ?? 0),
+        cantidadEnRemitos: Number(item.cantidad_en_remitos ?? item.cantidadEnRemitos ?? 0),
+        cantidadPendienteLiberar: Number(item.cantidad_pendiente_liberar ?? item.cantidadPendienteLiberar ?? 0),
+        estadoLiberacion: item.estado_liberacion ?? item.estadoLiberacion ?? 'PENDIENTE',
         unidad: item.UoM ?? item.unidad ?? '',
         existe: true
       }))

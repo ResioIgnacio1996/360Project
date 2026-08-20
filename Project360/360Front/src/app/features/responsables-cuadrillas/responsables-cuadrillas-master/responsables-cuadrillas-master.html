@@ -1,0 +1,144 @@
+<div class="module-page">
+  <header class="page-header">
+    <div>
+      <span class="breadcrumb">SYSTEM TOOLS / RESPONSABLES Y CUADRILLAS</span>
+      <h1>Maestro de Responsables y Cuadrillas</h1>
+      <p>Equipos, subcontratistas y responsables asignables a las operaciones de todos los proyectos.</p>
+    </div>
+
+    <div class="header-actions">
+      <a class="btn btn-ghost" routerLink="/system-tools">
+        <mat-icon>arrow_back</mat-icon>
+        Volver
+      </a>
+
+      <button class="btn btn-primary" type="button" (click)="agregar()">
+        <mat-icon>add</mat-icon>
+        Agregar
+      </button>
+    </div>
+  </header>
+
+  <section class="block">
+    <div class="toolbar">
+      <mat-form-field appearance="outline" class="search">
+        <mat-label>Buscar</mat-label>
+        <input matInput [(ngModel)]="filtro" placeholder="Codigo o nombre">
+        <mat-icon matSuffix>search</mat-icon>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline">
+        <mat-label>Tipo</mat-label>
+        <mat-select [(ngModel)]="tipoFiltro">
+          <mat-option value="TODOS">Todos</mat-option>
+          <mat-option *ngFor="let tipo of tipos" [value]="tipo.valor">{{ tipo.nombre }}</mat-option>
+        </mat-select>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline">
+        <mat-label>Estado</mat-label>
+        <mat-select [(ngModel)]="estadoFiltro">
+          <mat-option value="TODOS">Todos</mat-option>
+          <mat-option value="ACTIVOS">Activos</mat-option>
+          <mat-option value="INACTIVOS">Inactivos</mat-option>
+        </mat-select>
+      </mat-form-field>
+
+      <span class="counter">{{ filtrados.length }} RESPONSABLES</span>
+    </div>
+
+    <div class="state-message" *ngIf="cargando">Cargando responsables y cuadrillas...</div>
+
+    <div class="table-wrap" *ngIf="!cargando">
+      <table>
+        <thead>
+          <tr>
+            <th>Codigo</th>
+            <th>Nombre</th>
+            <th>Tipo</th>
+            <th>Estado</th>
+            <th>Proyectos</th>
+            <th>Operaciones</th>
+            <th>Cumplimiento</th>
+            <th class="actions-header">Acciones</th>
+          </tr>
+        </thead>
+
+        <tbody>
+          <tr *ngFor="let item of filtrados">
+            <td class="tech-value">{{ item.codigo }}</td>
+            <td><strong>{{ item.nombre }}</strong></td>
+            <td>{{ nombreTipo(item.tipo) }}</td>
+            <td>
+              <span class="status-badge" [class.active]="item.activo" [class.inactive]="!item.activo">
+                {{ item.activo ? 'Activo' : 'Inactivo' }}
+              </span>
+            </td>
+            <td>{{ item.proyectos_asignados }}</td>
+            <td>{{ item.operaciones_asignadas }}</td>
+            <td>
+              <span
+                class="timing"
+                [class.late]="item.operaciones_atrasadas"
+                [class.risk]="!item.operaciones_atrasadas && item.operaciones_en_riesgo"
+              >
+                {{ item.operaciones_atrasadas ? item.operaciones_atrasadas + ' atrasadas' : item.operaciones_en_riesgo ? item.operaciones_en_riesgo + ' en riesgo' : 'En termino' }}
+              </span>
+            </td>
+            <td class="actions-cell">
+              <button mat-icon-button matTooltip="Ver operaciones" (click)="verDetalle(item)">
+                <mat-icon>analytics</mat-icon>
+              </button>
+
+              <button mat-icon-button matTooltip="Modificar" (click)="editar(item)">
+                <mat-icon>edit</mat-icon>
+              </button>
+
+              <button mat-icon-button [matTooltip]="item.activo ? 'Desactivar' : 'Activar'" (click)="cambiarEstado(item)">
+                <mat-icon>{{ item.activo ? 'toggle_on' : 'toggle_off' }}</mat-icon>
+              </button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="state-message" *ngIf="!filtrados.length">No se encontraron responsables o cuadrillas.</div>
+    </div>
+  </section>
+</div>
+
+<div class="modal-backdrop" *ngIf="editando" (click)="cancelar()">
+  <section class="edit-modal" (click)="$event.stopPropagation()">
+    <span class="breadcrumb">{{ editando === 'NUEVO' ? 'NUEVO REGISTRO' : 'MODIFICAR RESPONSABLE' }}</span>
+    <h2>{{ editando === 'NUEVO' ? 'Agregar responsable o cuadrilla' : 'Editar responsable o cuadrilla' }}</h2>
+
+    <mat-form-field appearance="outline">
+      <mat-label>Codigo</mat-label>
+      <input matInput maxlength="20" [(ngModel)]="borrador.codigo">
+    </mat-form-field>
+
+    <mat-form-field appearance="outline">
+      <mat-label>Nombre</mat-label>
+      <input matInput maxlength="200" [(ngModel)]="borrador.nombre">
+    </mat-form-field>
+
+    <mat-form-field appearance="outline">
+      <mat-label>Tipo</mat-label>
+      <mat-select [(ngModel)]="borrador.tipo">
+        <mat-option *ngFor="let tipo of tipos" [value]="tipo.valor">{{ tipo.nombre }}</mat-option>
+      </mat-select>
+    </mat-form-field>
+
+    <label class="active-toggle">
+      <input type="checkbox" [(ngModel)]="borrador.activo">
+      Activo
+    </label>
+
+    <footer>
+      <button class="btn btn-ghost" type="button" (click)="cancelar()" [disabled]="guardando">Cancelar</button>
+      <button class="btn btn-primary" type="button" (click)="guardar()" [disabled]="guardando">
+        {{ guardando ? 'Guardando...' : 'Guardar' }}
+      </button>
+    </footer>
+  </section>
+</div>

@@ -13,6 +13,7 @@ const {
     getRegistroCompraById,
     crearRegistroCompra,
     actualizarRegistroCompra,
+    obtenerImpactoCancelacion,
     cancelarRegistroCompra
 } = require('../controllers/materiales/RegistroCompra.controller');
 
@@ -48,6 +49,8 @@ router.post(
     upload.single('documento'),
     extraerRegistroCompraDocumento
 );
+
+router.get('/:id/impacto-cancelacion', verificarToken, obtenerImpactoCancelacion);
 
 router.get('/:id', verificarToken, getRegistroCompraById);
 

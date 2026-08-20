@@ -10,6 +10,6 @@
 .card-badge{position:absolute;right:8px;bottom:8px;padding:2px 8px;border-radius:10px;font-family:var(--font-tech);font-size:8px;font-weight:700;letter-spacing:.5px}
 .home-card small{color:var(--text-muted);font-size:11px;margin-bottom:2px}
 .home-card strong{color:var(--text);font-size:14px;font-weight:600;line-height:1.25}
-.cover-blue{background:var(--blue)}.cover-green{background:#1a3a2a}.cover-purple{background:#2a1a3a}.cover-slate{background:#1a2a3a}.cover-red{background:#3a1a1a}
+.cover-blue{background:var(--blue)}.cover-green{background:#1a3a2a}.cover-cyan{background:#11606a}.cover-purple{background:#2a1a3a}.cover-slate{background:#1a2a3a}.cover-red{background:#3a1a1a}
 .badge-blue{background:rgba(30,111,255,.25);color:#90b8ff}.badge-green{background:rgba(45,212,160,.2);color:var(--green)}.badge-yellow{background:rgba(255,197,66,.15);color:var(--yellow)}.badge-red{background:rgba(255,77,106,.15);color:var(--red)}
 @media(max-width:700px){.home-heading{align-items:flex-start;gap:8px;flex-direction:column}.home-heading small{line-height:1.5}.system-tools-page{padding:4px 0 22px}}

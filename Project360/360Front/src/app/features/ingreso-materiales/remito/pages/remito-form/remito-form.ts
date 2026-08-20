@@ -13,7 +13,7 @@ import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatTooltipModule } from '@angular/material/tooltip';
 
 import { RegistroCompraService } from '../../../../../core/services/registro-compra/registro-compra';
-import { RemitoImportResponse, Remitos } from '../../../../../core/services/remitos';
+import { DetalleRemito, RemitoImportResponse, Remitos } from '../../../../../core/services/remitos';
 import { DetalleRegistroCompra, RegistroCompra } from '../../../../../shared/interfaces/RegistroDeCompra.interface';
 
 @Component({
@@ -41,10 +41,14 @@ export class RemitoForm implements OnInit {
   registroCompraSeleccionado: RegistroCompra | null = null;
   detalleRegistroCompra: DetalleRegistroCompra[] = [];
   idRegistroCompraFijo: number | null = null;
+  remitoId: number | null = null;
+  esEdicion = false;
+  cargando = false;
   guardando = false;
   importando = false;
   archivoSeleccionado: File | null = null;
   advertencias: string[] = [];
+  cantidadesOriginalesEdicion = new Map<number, number>();
 
   formatosPermitidos = [
     'application/pdf',
@@ -69,12 +73,24 @@ export class RemitoForm implements OnInit {
     this.inicializarFormulario();
     this.cargarRegistrosCompra();
 
-    const idRegistroCompra = this.route.snapshot.paramMap.get('id');
+    const remitoIdParam = this.route.snapshot.paramMap.get('remitoId');
+    this.esEdicion = this.route.snapshot.url.some(segment => segment.path === 'editar');
+    this.remitoId = this.esEdicion
+      ? Number(remitoIdParam || this.route.snapshot.paramMap.get('id'))
+      : null;
+    const esContextoRegistro = this.route.snapshot.url.some(segment => segment.path === 'registros')
+      && this.route.snapshot.url.some(segment => segment.path === 'remitos');
+    const idRegistroCompra = esContextoRegistro ? this.route.snapshot.paramMap.get('id') : null;
 
     if (idRegistroCompra) {
       this.idRegistroCompraFijo = Number(idRegistroCompra);
       this.form.patchValue({ idRegistroCompra: this.idRegistroCompraFijo });
       this.form.get('idRegistroCompra')?.disable({ emitEvent: false });
+    }
+
+    if (this.remitoId) {
+      this.cargarRemitoParaEditar(this.remitoId);
+    } else if (this.idRegistroCompraFijo) {
       this.cargarDetalleRegistroCompra(this.idRegistroCompraFijo);
     }
 
@@ -157,12 +173,15 @@ export class RemitoForm implements OnInit {
       .toUpperCase();
   }
 
-  cargarDetalleRegistroCompra(id: number): void {
+  cargarDetalleRegistroCompra(id: number, detalleRemito?: DetalleRemito[]): void {
     this.registroCompraService.getRegistroById(id).subscribe({
       next: registro => {
         this.registroCompraSeleccionado = registro;
         this.detalleRegistroCompra = registro.detalle ?? [];
         this.detalle.clear();
+        if (detalleRemito?.length) {
+          this.cargarDetalleRemitoEnFormulario(detalleRemito);
+        }
         this.materialManualForm.reset({
           idDetalle: null,
           cantidad: null,
@@ -175,6 +194,51 @@ export class RemitoForm implements OnInit {
         });
       }
     });
+  }
+
+  cargarRemitoParaEditar(remitoId: number): void {
+    this.cargando = true;
+    this.remitosService.getRemitoById(remitoId).subscribe({
+      next: remito => {
+        this.cargando = false;
+        const estado = remito.estadoLiberacion || (remito.liberado ? 'LIBERADO' : 'PENDIENTE');
+        if (estado !== 'PENDIENTE') {
+          this.snackBar.open('No se puede modificar un remito que ya tiene liberaciones.', 'Cerrar', { duration: 4500 });
+          this.router.navigate(this.getRutaRetorno());
+          return;
+        }
+
+        this.idRegistroCompraFijo = Number(remito.idRegistroCompra);
+        this.form.patchValue({
+          numero: remito.numero,
+          fecha: this.normalizarFecha(remito.fecha),
+          idRegistroCompra: this.idRegistroCompraFijo
+        }, { emitEvent: false });
+        this.form.get('idRegistroCompra')?.disable({ emitEvent: false });
+        this.cargarDetalleRegistroCompra(this.idRegistroCompraFijo, remito.detalle ?? []);
+      },
+      error: error => {
+        this.cargando = false;
+        this.snackBar.open(error?.error?.message || 'No se pudo cargar el remito.', 'Cerrar', { duration: 4000 });
+      }
+    });
+  }
+
+  cargarDetalleRemitoEnFormulario(detalleRemito: DetalleRemito[]): void {
+    this.cantidadesOriginalesEdicion.clear();
+    for (const item of detalleRemito) {
+      const materialOc = this.detalleRegistroCompra.find(material =>
+        this.normalizarTexto(material.nombreMaterial) === this.normalizarTexto(item.material)
+        && this.normalizarTexto(material.unidad) === this.normalizarTexto(item.unidad)
+      ) || this.buscarMaterialEnRegistroCompra(item.material);
+
+      if (materialOc) {
+        if (materialOc.idDetalle) {
+          this.cantidadesOriginalesEdicion.set(Number(materialOc.idDetalle), Number(item.cantidad));
+        }
+        this.detalle.push(this.crearDetalleItem(materialOc, Number(item.cantidad), item.unidad));
+      }
+    }
   }
 
   onMaterialManualChange(idDetalle: number): void {
@@ -208,6 +272,16 @@ export class RemitoForm implements OnInit {
       this.snackBar.open('El material seleccionado no pertenece al Registro de Compra.', 'Cerrar', {
         duration: 3000
       });
+      return;
+    }
+
+    const disponible = this.cantidadDisponibleParaRemito(material);
+    if (Number(value.cantidad) - disponible >= 0.005) {
+      this.snackBar.open(
+        `La cantidad supera el saldo disponible para remitos: ${disponible} ${material.unidad}.`,
+        'Cerrar',
+        { duration: 4000 }
+      );
       return;
     }
 
@@ -374,19 +448,43 @@ export class RemitoForm implements OnInit {
   }
 
   crearDetalleItem(item: DetalleRegistroCompra, cantidad: number | null = null, unidad?: string): FormGroup {
+    const disponible = this.cantidadDisponibleParaRemito(item);
     return this.fb.group({
       idDetalle: [item.idDetalle],
       material: [item.nombreMaterial],
       cantidadSolicitada: [item.cantidadSolicitada ?? item.cantidad],
-      cantidad: [cantidad, [Validators.required, Validators.min(0.01)]],
+      cantidad: [cantidad, [Validators.required, Validators.min(0.01), Validators.max(disponible)]],
       unidad: [unidad || item.unidad, Validators.required]
     });
+  }
+
+  cantidadDisponibleParaRemito(item: DetalleRegistroCompra | null): number {
+    if (!item) return 0;
+    const solicitado = Number(item.cantidadSolicitada ?? item.cantidad ?? 0);
+    const comprometido = Number(item.cantidadEnRemitos ?? 0);
+    const cantidadPropia = this.esEdicion && item.idDetalle
+      ? Number(this.cantidadesOriginalesEdicion.get(Number(item.idDetalle)) || 0)
+      : 0;
+    return Math.max(solicitado - comprometido + cantidadPropia, 0);
   }
 
   guardar(): void {
     if (this.form.invalid) {
       this.form.markAllAsTouched();
-      this.snackBar.open('Completa los campos obligatorios.', 'Cerrar', { duration: 3000 });
+      const faltantes: string[] = [];
+      const raw = this.form.getRawValue();
+      if (!String(raw.numero || '').trim()) faltantes.push('número de remito');
+      if (!raw.fecha) faltantes.push('fecha');
+      if (!raw.idRegistroCompra) faltantes.push('OC/FAC asociada');
+      if (this.detalle.controls.some(control => control.get('cantidad')?.hasError('max'))) {
+        faltantes.push('una cantidad supera el saldo disponible de la OC');
+      }
+      if (this.detalle.controls.some(control => control.invalid)) faltantes.push('detalle de materiales');
+      this.snackBar.open(
+        `No se puede guardar. Revisá: ${[...new Set(faltantes)].join(', ') || 'campos marcados en rojo'}.`,
+        'Cerrar',
+        { duration: 4500 }
+      );
       return;
     }
 
@@ -396,6 +494,21 @@ export class RemitoForm implements OnInit {
 
     if (detalle.length === 0) {
       this.snackBar.open('Carga al menos una cantidad recibida.', 'Cerrar', { duration: 3000 });
+      return;
+    }
+
+    const excedido = detalle.find(item => {
+      const material = this.buscarMaterialPorId(Number(item.idDetalle));
+      return material && Number(item.cantidad) - this.cantidadDisponibleParaRemito(material) >= 0.005;
+    });
+    if (excedido) {
+      const material = this.buscarMaterialPorId(Number(excedido.idDetalle));
+      this.snackBar.open(
+        `La cantidad de ${excedido.material} supera el saldo disponible para remitos: `
+        + `${material ? this.cantidadDisponibleParaRemito(material) : 0} ${excedido.unidad}.`,
+        'Cerrar',
+        { duration: 4500 }
+      );
       return;
     }
 
@@ -414,10 +527,16 @@ export class RemitoForm implements OnInit {
 
     this.guardando = true;
 
-    this.remitosService.crearRemito(payload).subscribe({
+    const request$ = this.esEdicion && this.remitoId
+      ? this.remitosService.actualizarRemito(this.remitoId, payload)
+      : this.remitosService.crearRemito(payload);
+
+    request$.subscribe({
       next: () => {
         this.guardando = false;
-        this.snackBar.open('Remito creado correctamente. Queda pendiente de liberacion.', 'Cerrar', {
+        this.snackBar.open(
+          this.esEdicion ? 'Remito modificado correctamente.' : 'Remito creado correctamente. Queda pendiente de liberacion.',
+          'Cerrar', {
           duration: 3500
         });
         this.router.navigate(this.getRutaRetorno());

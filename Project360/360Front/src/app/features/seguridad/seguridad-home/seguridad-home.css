@@ -11,7 +11,7 @@
 }
 
 .security-tile {
-  min-height: 118px;
+  min-height: 96px;
   padding: 16px;
   border: 1px solid var(--border);
   border-radius: 8px;
@@ -21,7 +21,7 @@
   cursor: pointer;
   display: grid;
   gap: 8px;
-  align-content: start;
+  align-content: center;
   transition: background .18s ease, border-color .18s ease, transform .18s ease;
 }
 
@@ -41,10 +41,4 @@
   font-size: 11px;
   letter-spacing: 1.2px;
   text-transform: uppercase;
-}
-
-.security-tile small {
-  color: var(--text-secondary);
-  font-size: 13px;
-  line-height: 1.25;
 }

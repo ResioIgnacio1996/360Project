@@ -2,8 +2,8 @@
   <div class="page-header">
     <div>
       <span class="breadcrumb">DB360 / Materiales / Remitos</span>
-      <h1>Nuevo Remito</h1>
-      <p>Registra la recepcion informada. El stock se impacta recien al liberar.</p>
+      <h1>{{ esEdicion ? 'Modificar Remito' : 'Nuevo Remito' }}</h1>
+      <p>{{ esEdicion ? 'Actualiza los datos del remito pendiente.' : 'Registra la recepcion informada. El stock se impacta recien al liberar.' }}</p>
     </div>
   </div>
 
@@ -105,7 +105,7 @@
               *ngFor="let material of materialesDisponibles"
               [value]="material.idDetalle"
             >
-              {{ material.nombreMaterial }} - Pendiente OC: {{ material.cantidadSolicitada || material.cantidad }} {{ material.unidad }}
+              {{ material.nombreMaterial }} - Disponible para remitos: {{ cantidadDisponibleParaRemito(material) }} {{ material.unidad }}
             </mat-option>
           </mat-select>
         </mat-form-field>
@@ -134,12 +134,22 @@
         >
           <div class="material-info">
             <strong>{{ item.get('material')?.value }}</strong>
-            <span>OC: {{ item.get('cantidadSolicitada')?.value }} {{ item.get('unidad')?.value }}</span>
+            <span>
+              OC: {{ item.get('cantidadSolicitada')?.value }} {{ item.get('unidad')?.value }}
+              Â· Disponible para este remito:
+              {{ cantidadDisponibleParaRemito(buscarMaterialPorId(item.get('idDetalle')?.value)) }} {{ item.get('unidad')?.value }}
+            </span>
           </div>
 
           <mat-form-field appearance="outline">
             <mat-label>Cantidad del remito</mat-label>
             <input matInput type="number" min="0" formControlName="cantidad" />
+            <mat-error *ngIf="item.get('cantidad')?.hasError('required') || item.get('cantidad')?.hasError('min')">
+              Ingresá una cantidad mayor a cero.
+            </mat-error>
+            <mat-error *ngIf="item.get('cantidad')?.hasError('max')">
+              Supera el saldo disponible de la OC.
+            </mat-error>
           </mat-form-field>
 
           <mat-form-field appearance="outline">
@@ -164,8 +174,8 @@
 
     <div class="form-actions">
       <button mat-stroked-button type="button" (click)="cancelar()">Cancelar</button>
-      <button mat-raised-button color="primary" type="submit" [disabled]="guardando">
-        {{ guardando ? 'Guardando...' : 'Guardar remito' }}
+      <button mat-raised-button color="primary" type="submit" [disabled]="guardando || cargando">
+        {{ guardando ? 'Guardando...' : (esEdicion ? 'Guardar cambios' : 'Guardar remito') }}
       </button>
     </div>
   </form>

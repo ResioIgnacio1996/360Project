@@ -8,6 +8,7 @@ import {
   ProgramacionService,
 } from '../../core/services/programacion/programacion';
 import { CalendarioService } from '../../core/services/calendario/calendario.service';
+import { BomService } from '../../core/services/bom/bom';
 
 @Component({
   selector: 'app-programacion',
@@ -30,15 +31,22 @@ export class Programacion implements OnInit, OnDestroy {
   filtroEstado = 'TODAS';
   filtroEtapa = 'TODAS';
   capas = { estimado: true, reprogramado: true, real: true };
-  modal: 'duracion' | 'nmt' | 'crear' | 'editar' | 'excepcion' | null = null;
-  operacionEditada: any = { secuencia: null, nombre: '', duracion_hs: 0, descripcion: '', dependencias: [] };
+  modal: 'duracion' | 'nmt' | 'crear' | 'editar' | 'excepcion' | 'etapa' | null = null;
+  etapaEditada: EtapaProgramada | null = null;
+  etapaForm: any = { codigo: '', nombre: '', orden: 1, peso_pct: 0 };
+  operacionEditada: any = { secuencia: null, nombre: '', duracion_hs: 0, desfase_inicio_hs: 0, peso_pct: 0, descripcion: '', dependencias: [] };
+  materialesCatalogo: any[] = [];
+  unidadesBom: any[] = [];
+  lineasBom: any[] = [];
+  materialOperacion = { material_id: 0, descripcion_libre: '', cantidad_teorica: null as number | null, uom_id: 0 };
+  nuevoMaterialOperacion = false;
   nuevaExcepcion: any = {
     fecha: '', tipo: 'FERIADO', hs_disponibles: 0, motivo: '', recuperable: false
   };
   alturaTablaPct = 47;
   nuevaOperacion: any = {
     etapa_id: null, secuencia: null, nombre: '', responsable_id: null, duracion_hs: 8,
-    unidad_avance: 'PORCENTAJE', cantidad_meta: null, peso_pct: 0,
+    unidad_avance: 'PORCENTAJE', cantidad_meta: null, peso_pct: 0, desfase_inicio_hs: 0,
     dependencias: [], criterio_cierre: '', descripcion: ''
   };
   busquedaPredecesora = '';
@@ -66,13 +74,16 @@ export class Programacion implements OnInit, OnDestroy {
   private readonly moverPanel = (evento: PointerEvent) => this.redimensionarPanel(evento);
   private readonly soltarPanel = () => this.finalizarRedimension();
   readonly proyectoId: number;
+  readonly soloGantt: boolean;
   constructor(
     private route: ActivatedRoute,
     private router: Router,
     private service: ProgramacionService,
     private calendarioService: CalendarioService,
+    private bomService: BomService,
   ) {
     this.proyectoId = Number(this.route.snapshot.paramMap.get('id'));
+    this.soloGantt = this.router.url.endsWith('/gantt');
   }
   ngOnInit(): void {
     this.cargar();
@@ -321,8 +332,17 @@ export class Programacion implements OnInit, OnDestroy {
   esFinSemana(i: number): boolean {
     return [0, 6].includes(this.fechaDia(i).getUTCDay());
   }
-  claseEstado(o: OperacionProgramada): string {
-    return `estado-${o.estado_codigo.toLowerCase()}`;
+  colorEstado(o: OperacionProgramada): string {
+    const colores: Record<string, string> = {
+      EN_TERMINO: 'var(--green)', EN_RIESGO: 'var(--yellow)', ATRASADA: 'var(--red)',
+      CUMPLIDA: 'var(--green)', CUMPLIDA_A_TIEMPO: 'var(--green)',
+      CUMPLIDA_CON_DEMORA: 'var(--orange)', BLOQUEADA: 'var(--red)',
+      ARCHIVADA: 'var(--text-muted)'
+    };
+    return colores[o.estado_codigo] || 'var(--text-secondary)';
+  }
+  fondoEstado(o: OperacionProgramada): string {
+    return `color-mix(in srgb,${this.colorEstado(o)} 14%,transparent)`;
   }
   seleccionar(o: OperacionProgramada): void {
     this.seleccionada = o;
@@ -333,18 +353,61 @@ export class Programacion implements OnInit, OnDestroy {
   importarBop(): void {
     this.router.navigate(['/proyectos', this.proyectoId, 'programacion', 'importar']);
   }
+  abrirGanttCompleto(): void {
+    this.router.navigate(['/proyectos', this.proyectoId, 'programacion', 'gantt']);
+  }
+  volverProgramacion(): void {
+    this.router.navigate(['/proyectos', this.proyectoId, 'programacion']);
+  }
   abrirCrearOperacion(): void {
     const ultima = Math.max(0, ...this.operaciones.map(op => Number(op.secuencia)));
     this.nuevaOperacion = {
       etapa_id: this.etapasProgramadas[0]?.etapa_id || null,
       secuencia: ultima + 100,
       nombre: '', responsable_id: null, duracion_hs: 8, unidad_avance: 'PORCENTAJE',
-      cantidad_meta: null, peso_pct: 0,
+      cantidad_meta: null, peso_pct: 0, desfase_inicio_hs: 0,
       dependencias: [], criterio_cierre: '', descripcion: ''
     };
     this.busquedaPredecesora = '';
     this.actualizarSugerenciasPredecesoras();
     this.modal = 'crear';
+  }
+  abrirCrearEtapa(): void {
+    const siguiente = Math.max(0, ...this.etapasProgramadas.map(etapa => Number(etapa.orden) || 0)) + 1;
+    this.etapaEditada = null;
+    this.etapaForm = { codigo: `E${siguiente}`, nombre: '', orden: siguiente, peso_pct: 0 };
+    this.errorFormulario = '';
+    this.modal = 'etapa';
+  }
+  abrirEditarEtapa(etapa: EtapaProgramada, evento?: Event): void {
+    evento?.stopPropagation();
+    this.etapaEditada = etapa;
+    this.etapaForm = {
+      codigo: etapa.codigo,
+      nombre: etapa.nombre,
+      orden: Number(etapa.orden),
+      peso_pct: Number(etapa.peso_pct)
+    };
+    this.errorFormulario = '';
+    this.modal = 'etapa';
+  }
+  guardarEtapa(): void {
+    const etapa = this.etapaForm;
+    if (!etapa.codigo.trim() || !etapa.nombre.trim() || !Number.isInteger(Number(etapa.orden)) ||
+        Number(etapa.orden) <= 0 || !Number.isFinite(Number(etapa.peso_pct)) ||
+        Number(etapa.peso_pct) < 0 || Number(etapa.peso_pct) > 100) return;
+    this.guardando = true;
+    this.errorFormulario = '';
+    const request = this.etapaEditada
+      ? this.service.actualizarEtapa(this.proyectoId, this.etapaEditada.etapa_id, etapa)
+      : this.service.crearEtapa(this.proyectoId, etapa);
+    request.subscribe({
+      next: respuesta => this.finalizar(respuesta.message),
+      error: e => {
+        this.guardando = false;
+        this.errorFormulario = e?.error?.message || 'No se pudo guardar la etapa';
+      }
+    });
   }
   abrirExcepcion(): void {
     this.nuevaExcepcion = {
@@ -415,6 +478,8 @@ export class Programacion implements OnInit, OnDestroy {
       secuencia: this.seleccionada.secuencia,
       nombre: this.seleccionada.nombre,
       duracion_hs: Number(this.seleccionada.duracion_hs),
+      desfase_inicio_hs: Number(this.seleccionada.desfase_inicio_hs || 0),
+      peso_pct: Number(this.seleccionada.peso_pct || 0),
       descripcion: this.seleccionada.descripcion || '',
       dependencias: String(this.seleccionada.dependencias_secuencia || '')
         .split(',').map(Number).filter(Number.isInteger)
@@ -422,16 +487,121 @@ export class Programacion implements OnInit, OnDestroy {
     this.busquedaPredecesoraEdicion = '';
     this.errorFormulario = '';
     this.actualizarSugerenciasEdicion();
+    this.materialOperacion = { material_id: 0, descripcion_libre: '', cantidad_teorica: null, uom_id: 0 };
+    this.nuevoMaterialOperacion = false;
     this.modal = 'editar';
+    this.cargarMaterialesEdicion();
+  }
+  private cargarMaterialesEdicion(): void {
+    this.bomService.contexto(this.proyectoId).subscribe({
+      next: contexto => {
+        this.materialesCatalogo = (contexto.materiales || []).map((material: any) => ({
+          ...material, id_material: Number(material.id_material), uom_id: Number(material.uom_id)
+        }));
+        this.unidadesBom = (contexto.unidades || []).map((uom: any) => ({ ...uom, uom_id: Number(uom.uom_id) }));
+      },
+      error: e => this.errorFormulario = e?.error?.message || 'No se pudo cargar el catálogo de materiales'
+    });
+    this.bomService.listar(this.proyectoId).subscribe({
+      next: lineas => this.lineasBom = lineas || [],
+      error: e => this.errorFormulario = e?.error?.message || 'No se pudieron cargar los materiales de la operación'
+    });
+  }
+  get materialesOperacionEditada(): any[] {
+    return this.seleccionada
+      ? this.lineasBom.filter(linea => Number(linea.operacion_id) === Number(this.seleccionada?.operacion_id))
+      : [];
+  }
+  cambiarMaterialOperacion(nombre: string): void {
+    if (this.nuevoMaterialOperacion) return;
+    const clave = String(nombre || '').trim().toLocaleLowerCase();
+    const material = this.materialesCatalogo.find(item => String(item.nombre || '').trim().toLocaleLowerCase() === clave);
+    this.materialOperacion.material_id = Number(material?.id_material || 0);
+    this.materialOperacion.uom_id = Number(material?.uom_id || 0);
+  }
+  get materialesOperacionSugeridos(): any[] {
+    if (this.nuevoMaterialOperacion || this.materialOperacion.material_id) return [];
+    const texto = this.materialOperacion.descripcion_libre.trim().toLocaleLowerCase();
+    if (!texto) return [];
+    return this.materialesCatalogo
+      .filter(material => String(material.nombre || '').toLocaleLowerCase().includes(texto))
+      .slice(0, 8);
+  }
+  seleccionarMaterialOperacion(material: any): void {
+    this.materialOperacion.material_id = Number(material.id_material);
+    this.materialOperacion.descripcion_libre = String(material.nombre || '');
+    this.materialOperacion.uom_id = Number(material.uom_id || 0);
+    this.errorFormulario = '';
+  }
+  alternarNuevoMaterialOperacion(): void {
+    this.nuevoMaterialOperacion = !this.nuevoMaterialOperacion;
+    this.materialOperacion = { material_id: 0, descripcion_libre: '', cantidad_teorica: null, uom_id: 0 };
+  }
+  agregarMaterialOperacion(): void {
+    if (!this.seleccionada || this.guardando) return;
+    const material = this.materialOperacion;
+    if (!this.nuevoMaterialOperacion && !material.material_id) {
+      this.errorFormulario = 'Seleccioná un material existente de la lista o presioná Crear nuevo material';
+      return;
+    }
+    if (!material.descripcion_libre.trim() || !(Number(material.cantidad_teorica) > 0) || !material.uom_id) {
+      this.errorFormulario = 'Completa el material, la cantidad teórica y la unidad de medida';
+      return;
+    }
+    const numeroLinea = Math.max(0, ...this.materialesOperacionEditada.map(linea => Number(linea.numero_linea) || 0)) + 1;
+    this.guardando = true;
+    this.bomService.crearLinea(this.proyectoId, {
+      operacion_id: this.seleccionada.operacion_id,
+      numero_linea: numeroLinea,
+      ...material
+    }).subscribe({
+      next: respuesta => {
+        this.guardando = false;
+        this.mensaje = respuesta?.message || 'Material agregado a la operación';
+        this.cargarMaterialesEdicion();
+        this.materialOperacion = { material_id: 0, descripcion_libre: '', cantidad_teorica: null, uom_id: 0 };
+        this.nuevoMaterialOperacion = false;
+      },
+      error: e => {
+        this.guardando = false;
+        this.errorFormulario = e?.error?.message || 'No se pudo agregar el material';
+      }
+    });
   }
   guardarOperacionEditada(): void {
     if (!this.seleccionada || Number(this.seleccionada.pct_avance_actual) !== 0) return;
     const datos = this.operacionEditada;
-    if (!datos.secuencia || !datos.nombre.trim() || !(datos.duracion_hs > 0)) return;
+    if (!datos.secuencia || !datos.nombre.trim() || !(datos.duracion_hs > 0) ||
+        !Number.isFinite(Number(datos.peso_pct)) || Number(datos.peso_pct) < 0 || Number(datos.peso_pct) > 100 ||
+        !Number.isInteger(Number(datos.desfase_inicio_hs)) || Number(datos.desfase_inicio_hs) < 0) return;
+    const material = this.materialOperacion;
+    const materialPendiente = Boolean(material.descripcion_libre.trim() || material.cantidad_teorica || material.uom_id || material.material_id);
+    if (materialPendiente && (!material.descripcion_libre.trim() || !(Number(material.cantidad_teorica) > 0) || !material.uom_id ||
+        (!this.nuevoMaterialOperacion && !material.material_id))) {
+      this.errorFormulario = 'Para vincular el material completa una selección válida, cantidad teórica y UOM';
+      return;
+    }
     this.errorFormulario = '';
     this.guardando = true;
     this.service.actualizarOperacion(this.seleccionada.operacion_id, datos).subscribe({
-      next: r => this.finalizar(r.message),
+      next: r => {
+        if (!materialPendiente || !this.seleccionada) {
+          this.finalizar(r.message);
+          return;
+        }
+        const numeroLinea = Math.max(0, ...this.materialesOperacionEditada.map(linea => Number(linea.numero_linea) || 0)) + 1;
+        this.bomService.crearLinea(this.proyectoId, {
+          operacion_id: this.seleccionada.operacion_id,
+          numero_linea: numeroLinea,
+          ...material
+        }).subscribe({
+          next: () => this.finalizar(`${r.message}. Material vinculado a la BOM`),
+          error: e => {
+            this.guardando = false;
+            this.errorFormulario = `La operación se guardó, pero el material no pudo vincularse: ${e?.error?.message || 'error de BOM'}`;
+          }
+        });
+      },
       error: e => {
         this.guardando = false;
         this.errorFormulario = e?.error?.message || 'No se pudo actualizar la operación';

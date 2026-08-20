@@ -10,6 +10,12 @@ export interface RegistroCompra {
   proyecto?: ProyectoRegistroCompra | null;
   detalle: DetalleRegistroCompra[];
   activo?: boolean;
+  cantidadRemitosActivos?: number;
+  estadoLiberacion?: 'PENDIENTE' | 'PARCIAL' | 'LIBERADO';
+  cantidadMateriales?: number;
+  materialesLiberados?: number;
+  cantidadLiberada?: number;
+  cantidadTotal?: number;
 }
 
 export interface EstadoRegistroCompra {
@@ -38,6 +44,9 @@ export interface DetalleRegistroCompra {
   cantidad: number;
   cantidadSolicitada?: number;
   cantidadRecibida?: number;
+  cantidadEnRemitos?: number;
+  cantidadPendienteLiberar?: number;
+  estadoLiberacion?: 'PENDIENTE' | 'PARCIAL' | 'LIBERADO';
   unidad: string;
   existe?: boolean;
 }

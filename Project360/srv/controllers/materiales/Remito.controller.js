@@ -40,7 +40,8 @@ const getRemitos = async (req, res) => {
                 p.proveedor_id,
                 p.razon_social,
                 e.nombre AS estado_registro_compra,
-                el.estado_liberacion,
+                CASE WHEN ISNULL(r.liberado,0)=1 THEN 'LIBERADO'
+                     ELSE ISNULL(el.estado_liberacion,'PENDIENTE') END AS estado_liberacion,
                 el.cantidad_pendiente
             FROM Remito r
             INNER JOIN registroDecompra rc
@@ -119,7 +120,8 @@ const getRemitoById = async (req, res) => {
                     pr.nombre AS proyecto_nombre,
                     p.razon_social,
                     e.nombre AS estado_registro_compra
-                    ,el.estado_liberacion
+                    ,CASE WHEN ISNULL(r.liberado,0)=1 THEN 'LIBERADO'
+                          ELSE ISNULL(el.estado_liberacion,'PENDIENTE') END AS estado_liberacion
                     ,el.cantidad_liberada
                     ,el.cantidad_pendiente
                 FROM Remito r
@@ -134,6 +136,7 @@ const getRemitoById = async (req, res) => {
                 LEFT JOIN vw_EstadoLiberacionRemito el
                     ON el.remito_id=r.remito_id
                 WHERE r.remito_id = @remito_id
+                  AND ISNULL(r.activo,1)=1
             `);
 
         if (cabecera.recordset.length === 0) {
@@ -188,7 +191,8 @@ const getRemitosByRegistroCompra = async (req, res) => {
                     r.fecha,
                     r.liberado,
                     r.idRegistroDeCompra,
-                    el.estado_liberacion,
+                    CASE WHEN ISNULL(r.liberado,0)=1 THEN 'LIBERADO'
+                         ELSE ISNULL(el.estado_liberacion,'PENDIENTE') END AS estado_liberacion,
                     el.cantidad_pendiente,
                     COUNT(dr.detalle_remito_id) AS cantidad_items
                 FROM Remito r
@@ -196,6 +200,7 @@ const getRemitosByRegistroCompra = async (req, res) => {
                 LEFT JOIN Detalle_Remito dr
                     ON dr.remito_id = r.remito_id
                 WHERE r.idRegistroDeCompra = @idRegistroDeCompra
+                  AND ISNULL(r.activo,1)=1
                 GROUP BY
                     r.remito_id,
                     r.numero,
@@ -211,6 +216,55 @@ const getRemitosByRegistroCompra = async (req, res) => {
 
     } catch (error) {
         responderError(res, error, 'Error al obtener remitos por registro de compra');
+    }
+};
+
+const cancelarRemito = async (req, res) => {
+    const remitoId = Number(req.params.id);
+    if (!Number.isInteger(remitoId) || remitoId <= 0) {
+        return res.status(400).json({ message: 'Remito invalido' });
+    }
+
+    let transaction;
+    try {
+        const pool = await conectarDB();
+        transaction = new sql.Transaction(pool);
+        await transaction.begin(sql.ISOLATION_LEVEL.SERIALIZABLE);
+
+        const result = await new sql.Request(transaction)
+            .input('remito_id', sql.BigInt, remitoId)
+            .query(`
+                SELECT r.remito_id,r.numero,r.idRegistroDeCompra,r.liberado,
+                    CASE WHEN EXISTS(
+                        SELECT 1
+                        FROM Detalle_Remito dr
+                        INNER JOIN LiberacionRemitoDetalle l ON l.detalle_remito_id=dr.detalle_remito_id
+                        WHERE dr.remito_id=r.remito_id AND ISNULL(l.activo,1)=1
+                    ) THEN 1 ELSE 0 END AS tiene_liberaciones
+                FROM Remito r WITH (UPDLOCK,HOLDLOCK)
+                WHERE r.remito_id=@remito_id AND ISNULL(r.activo,1)=1
+            `);
+
+        if (!result.recordset.length) throw crearHttpError('Remito no encontrado o ya cancelado', 404);
+        const remito = result.recordset[0];
+        if (remito.liberado || remito.tiene_liberaciones) {
+            throw crearHttpError('No se puede cancelar un remito con liberaciones totales o parciales', 409);
+        }
+
+        await new sql.Request(transaction)
+            .input('remito_id', sql.BigInt, remitoId)
+            .query('UPDATE Remito SET activo=0 WHERE remito_id=@remito_id');
+
+        await recalcularEstadoRegistroCompra(transaction, remito.idRegistroDeCompra);
+        await transaction.commit();
+        res.json({
+            message: 'Remito cancelado correctamente. Ya puedes modificar el Registro de Compra si no quedan otros remitos activos.',
+            remito_id: remitoId,
+            registro_compra_id: remito.idRegistroDeCompra
+        });
+    } catch (error) {
+        if (transaction) try { await transaction.rollback(); } catch {}
+        responderError(res, error, 'Error al cancelar remito');
     }
 };
 
@@ -271,9 +325,10 @@ const obtenerDetalleRegistroCompra = async (request, idRegistroDeCompra) => {
     return result.recordset;
 };
 
-const obtenerCantidadesLiberadas = async (request, idRegistroDeCompra) => {
+const obtenerCantidadesEnRemitos = async (request, idRegistroDeCompra, remitoExcluir = null) => {
     const result = await request
         .input('idRegistroDeCompra', sql.BigInt, idRegistroDeCompra)
+        .input('remito_excluir', sql.BigInt, remitoExcluir)
         .query(`
             SELECT
                 dbo.fn_NormalizarClave(dr.Descripcion) AS descripcion_clave,
@@ -284,7 +339,8 @@ const obtenerCantidadesLiberadas = async (request, idRegistroDeCompra) => {
                 ON dr.remito_id = r.remito_id
             WHERE
                 r.idRegistroDeCompra = @idRegistroDeCompra
-                AND r.liberado = 1
+                AND ISNULL(r.activo,1)=1
+                AND (@remito_excluir IS NULL OR r.remito_id<>@remito_excluir)
             GROUP BY dbo.fn_NormalizarClave(dr.Descripcion),dbo.fn_NormalizarClave(dr.UoM)
         `);
 
@@ -294,10 +350,12 @@ const obtenerCantidadesLiberadas = async (request, idRegistroDeCompra) => {
     }, {});
 };
 
-const validarDetalleContraRegistroCompra = (detalleRemito, detalleRegistroCompra, cantidadesLiberadas) => {
+const validarDetalleContraRegistroCompra = (detalleRemito, detalleRegistroCompra, cantidadesEnRemitos) => {
     const detallePorMaterial = new Map(
         detalleRegistroCompra.map(item => [`${normalizarUom(item.material)}|${normalizarUom(item.UoM)}`, item])
     );
+
+    const cantidadesNuevas = new Map();
 
     for (const item of detalleRemito) {
         const clave = `${normalizarUom(item.descripcion || item.material)}|${normalizarUom(item.UoM)}`;
@@ -323,12 +381,22 @@ const validarDetalleContraRegistroCompra = (detalleRemito, detalleRegistroCompra
             );
         }
 
-        const solicitado = Number(detalleOc.cantidad_solicitada);
-        const recibido = Number(cantidadesLiberadas[clave] || 0);
-        const pendiente = solicitado - recibido;
+        cantidadesNuevas.set(clave, Number(cantidadesNuevas.get(clave) || 0) + cantidad);
+    }
 
-        if (cantidad > pendiente) {
-            throw crearHttpError(`La cantidad supera el pendiente del material ${detalleOc.material}`, 409);
+    for (const [clave, cantidadNueva] of cantidadesNuevas) {
+        const detalleOc = detallePorMaterial.get(clave);
+        const solicitado = Number(detalleOc.cantidad_solicitada);
+        const yaCargado = Number(cantidadesEnRemitos[clave] || 0);
+        const disponible = Math.max(solicitado - yaCargado, 0);
+
+        if (cantidadNueva - disponible >= 0.005) {
+            throw crearHttpError(
+                `La suma de los Remitos supera la cantidad de la OC para ${detalleOc.material}. `
+                + `Solicitado: ${solicitado} ${detalleOc.UoM}; ya cargado en otros Remitos: ${yaCargado}; `
+                + `disponible: ${disponible}; nuevo Remito: ${cantidadNueva}.`,
+                409
+            );
         }
     }
 };
@@ -364,7 +432,7 @@ const crearRemito = async (req, res) => {
 
         const pool = await conectarDB();
         transaction = new sql.Transaction(pool);
-        await transaction.begin();
+        await transaction.begin(sql.ISOLATION_LEVEL.SERIALIZABLE);
 
         const registroCompra = await obtenerRegistroCompra(new sql.Request(transaction), idRegistro);
         validarRegistroCompraParaRemito(registroCompra);
@@ -382,8 +450,8 @@ const crearRemito = async (req, res) => {
         }
 
         const detalleOc = await obtenerDetalleRegistroCompra(new sql.Request(transaction), idRegistro);
-        const cantidadesLiberadas = await obtenerCantidadesLiberadas(new sql.Request(transaction), idRegistro);
-        validarDetalleContraRegistroCompra(detalle, detalleOc, cantidadesLiberadas);
+        const cantidadesEnRemitos = await obtenerCantidadesEnRemitos(new sql.Request(transaction), idRegistro);
+        validarDetalleContraRegistroCompra(detalle, detalleOc, cantidadesEnRemitos);
 
         const insertRemito = await new sql.Request(transaction)
             .input('numero', sql.VarChar, numero)
@@ -452,6 +520,114 @@ const crearRemito = async (req, res) => {
         }
 
         responderError(res, error, 'Error al crear remito');
+    }
+};
+
+const actualizarRemito = async (req, res) => {
+    const remitoId = Number(req.params.id);
+    const {
+        numero,
+        fecha,
+        idRegistroDeCompra,
+        registro_compra_id,
+        detalle
+    } = req.body;
+    const idRegistroSolicitado = Number(idRegistroDeCompra || registro_compra_id);
+
+    if (!Number.isInteger(remitoId) || remitoId <= 0) {
+        return res.status(400).json({ success: false, message: 'Remito invalido' });
+    }
+    if (!numero || !fecha || !idRegistroSolicitado) {
+        return res.status(400).json({ success: false, message: 'numero, fecha y registro_compra_id son obligatorios' });
+    }
+    if (!Array.isArray(detalle) || detalle.length === 0) {
+        return res.status(400).json({ success: false, message: 'El remito debe tener al menos un material' });
+    }
+
+    let transaction;
+    try {
+        const pool = await conectarDB();
+        transaction = new sql.Transaction(pool);
+        await transaction.begin(sql.ISOLATION_LEVEL.SERIALIZABLE);
+
+        const existente = await new sql.Request(transaction)
+            .input('remito_id', sql.BigInt, remitoId)
+            .query(`
+                SELECT r.remito_id,r.idRegistroDeCompra,r.liberado,
+                    CASE WHEN EXISTS(
+                        SELECT 1
+                        FROM Detalle_Remito dr
+                        INNER JOIN LiberacionRemitoDetalle l
+                            ON l.detalle_remito_id=dr.detalle_remito_id
+                           AND ISNULL(l.activo,1)=1
+                        WHERE dr.remito_id=r.remito_id
+                    ) THEN 1 ELSE 0 END AS tiene_liberaciones
+                FROM Remito r WITH (UPDLOCK,HOLDLOCK)
+                WHERE r.remito_id=@remito_id AND ISNULL(r.activo,1)=1
+            `);
+
+        if (!existente.recordset.length) {
+            throw crearHttpError('Remito no encontrado o cancelado', 404);
+        }
+
+        const remitoActual = existente.recordset[0];
+        if (remitoActual.liberado || remitoActual.tiene_liberaciones) {
+            throw crearHttpError('No se puede modificar un Remito que ya tiene liberaciones', 409);
+        }
+        if (Number(remitoActual.idRegistroDeCompra) !== idRegistroSolicitado) {
+            throw crearHttpError('No se puede cambiar el Registro de Compra asociado al Remito', 409);
+        }
+
+        const registroCompra = await obtenerRegistroCompra(new sql.Request(transaction), idRegistroSolicitado);
+        validarRegistroCompraParaRemito(registroCompra);
+
+        const duplicado = await new sql.Request(transaction)
+            .input('numero', sql.VarChar, numero)
+            .input('remito_id', sql.BigInt, remitoId)
+            .query('SELECT remito_id FROM Remito WHERE numero=@numero AND remito_id<>@remito_id');
+        if (duplicado.recordset.length) {
+            throw crearHttpError('Ya existe un Remito con ese numero', 409);
+        }
+
+        const detalleOc = await obtenerDetalleRegistroCompra(new sql.Request(transaction), idRegistroSolicitado);
+        const cantidadesEnRemitos = await obtenerCantidadesEnRemitos(
+            new sql.Request(transaction),
+            idRegistroSolicitado,
+            remitoId
+        );
+        validarDetalleContraRegistroCompra(detalle, detalleOc, cantidadesEnRemitos);
+
+        await new sql.Request(transaction)
+            .input('remito_id', sql.BigInt, remitoId)
+            .input('numero', sql.VarChar, String(numero).trim())
+            .input('fecha', sql.Date, fecha)
+            .query(`
+                UPDATE Remito SET numero=@numero,fecha=@fecha
+                WHERE remito_id=@remito_id
+            `);
+
+        await new sql.Request(transaction)
+            .input('remito_id', sql.BigInt, remitoId)
+            .query('DELETE FROM Detalle_Remito WHERE remito_id=@remito_id');
+
+        for (const item of detalle) {
+            await new sql.Request(transaction)
+                .input('remito_id', sql.BigInt, remitoId)
+                .input('id_material', sql.BigInt, null)
+                .input('descripcion', sql.NVarChar(255), String(item.descripcion || item.material || '').trim())
+                .input('cantidad', sql.Decimal(18, 2), item.cantidad)
+                .input('UoM', sql.VarChar, normalizarUom(item.UoM))
+                .query(`
+                    INSERT INTO Detalle_Remito(remito_id,id_material,Descripcion,cantidad,UoM)
+                    VALUES(@remito_id,@id_material,@descripcion,@cantidad,@UoM)
+                `);
+        }
+
+        await transaction.commit();
+        res.json({ success: true, message: 'Remito modificado correctamente', data: { remito_id: remitoId } });
+    } catch (error) {
+        if (transaction) try { await transaction.rollback(); } catch {}
+        responderError(res, error, 'Error al modificar remito');
     }
 };
 
@@ -678,18 +854,26 @@ const construirLiberacionParcial = (asignaciones, detalleRemito) => {
     if (!Array.isArray(asignaciones) || !asignaciones.length) {
         throw crearHttpError('Debe informar al menos un material para liberar', 400);
     }
+
     const porDetalle = new Map(detalleRemito.map(item => [Number(item.detalle_remito_id), item]));
     const usados = new Set();
     const distribucion = [];
+
     for (const asignacion of asignaciones) {
         const detalleId = Number(asignacion?.detalle_remito_id);
         const itemRemito = porDetalle.get(detalleId);
         if (!itemRemito) throw crearHttpError(`El detalle ${detalleId} no pertenece al remito`, 409);
         if (usados.has(detalleId)) throw crearHttpError(`El material ${itemRemito.material} esta repetido`, 400);
         usados.add(detalleId);
+
         let total = 0;
         const proyectos = new Set();
-        for (const destino of Array.isArray(asignacion.destinos) ? asignacion.destinos : []) {
+
+        const destinos = Array.isArray(asignacion.destinos)
+            ? asignacion.destinos.filter(destino => Number(destino?.cantidad) > 0)
+            : [];
+
+        for (const destino of destinos) {
             const proyectoId = Number(destino?.proyecto_id);
             const materialId = Number(destino?.material_id);
             const cantidad = Number(destino?.cantidad);
@@ -701,11 +885,24 @@ const construirLiberacionParcial = (asignaciones, detalleRemito) => {
             total += cantidad;
             distribucion.push({ itemRemito, proyectoId, materialId, cantidad });
         }
-        if (total - Number(itemRemito.cantidad_pendiente) >= 0.005) {
-            throw crearHttpError(`La liberacion de ${itemRemito.material} supera el saldo pendiente`, 409);
+
+        if (total === 0) {
+            continue;
+        }
+
+        const saldoPendiente = Number(itemRemito.cantidad_pendiente);
+        if (total - saldoPendiente >= 0.005) {
+            throw crearHttpError(
+                `La cantidad a liberar de ${itemRemito.material} supera el saldo pendiente: ${saldoPendiente} ${itemRemito.UoM}`,
+                409
+            );
         }
     }
-    if (!distribucion.length) throw crearHttpError('Debe liberar al menos una cantidad', 400);
+
+    if (!distribucion.length) {
+        throw crearHttpError('Debe indicar una cantidad mayor a cero para al menos un material del Remito', 400);
+    }
+
     return distribucion;
 };
 
@@ -738,6 +935,10 @@ const liberarRemito = async (req, res) => {
         const asignacionesSolicitadas = Array.isArray(req.body?.asignaciones)
             ? req.body.asignaciones
             : null;
+
+        if (!asignacionesSolicitadas) {
+            throw crearHttpError('Debe indicar las cantidades a liberar desde el detalle del Remito', 400);
+        }
         const primerProyectoDistribuido = asignacionesSolicitadas?.[0]?.destinos?.[0]?.proyecto_id;
         const proyectoSolicitado = Number(req.body?.proyecto_id || primerProyectoDistribuido || 0);
         const pool = await conectarDB();
@@ -756,6 +957,7 @@ const liberarRemito = async (req, res) => {
                     liberado
                 FROM Remito WITH (UPDLOCK, HOLDLOCK)
                 WHERE remito_id = @remito_id
+                  AND ISNULL(activo,1)=1
             `);
 
         if (remito.recordset.length === 0) {
@@ -770,11 +972,7 @@ const liberarRemito = async (req, res) => {
 
         const registroCompra = await obtenerRegistroCompra(new sql.Request(transaction), remitoActual.idRegistroDeCompra);
         validarRegistroCompraParaRemito(registroCompra);
-        const proyectoId = Number(
-            asignacionesSolicitadas
-                ? proyectoSolicitado
-                : (registroCompra.proyecto_id || proyectoSolicitado)
-        );
+        const proyectoId = Number(proyectoSolicitado);
         if (!proyectoId) {
             throw crearHttpError('Debe seleccionar el proyecto al que se liberará el stock', 400);
         }
@@ -784,13 +982,6 @@ const liberarRemito = async (req, res) => {
         if (!proyecto.recordset.length) {
             throw crearHttpError('El proyecto seleccionado no existe o está inactivo', 400);
         }
-        if (!asignacionesSolicitadas && !registroCompra.proyecto_id) {
-            await new sql.Request(transaction)
-                .input('registro_compra_id', sql.BigInt, remitoActual.idRegistroDeCompra)
-                .input('proyecto_id', sql.BigInt, proyectoId)
-                .query('UPDATE registroDecompra SET proyecto_id=@proyecto_id WHERE registro_compra_id=@registro_compra_id');
-        }
-
         const detalleRemito = await new sql.Request(transaction)
             .input('remito_id', sql.BigInt, id)
             .query(`
@@ -815,14 +1006,7 @@ const liberarRemito = async (req, res) => {
             throw crearHttpError('No se puede liberar un Remito sin detalle', 400);
         }
 
-        const distribucion = asignacionesSolicitadas
-            ? construirLiberacionParcial(asignacionesSolicitadas, detalleRemito.recordset)
-            : detalleRemito.recordset.map(itemRemito => ({
-                itemRemito,
-                proyectoId,
-                materialId: Number(itemRemito.id_material),
-                cantidad: Number(itemRemito.cantidad_pendiente)
-            }));
+        const distribucion = construirLiberacionParcial(asignacionesSolicitadas, detalleRemito.recordset);
 
         const proyectosDistribucion = await obtenerProyectosActivos(
             transaction,
@@ -915,7 +1099,9 @@ module.exports = {
     getMaterialesBomProyecto,
     getRemitoById,
     getRemitosByRegistroCompra,
+    cancelarRemito,
     crearRemito,
+    actualizarRemito,
     liberarRemito,
     recalcularEstadoRegistroCompra
 };

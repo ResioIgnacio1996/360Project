@@ -5,6 +5,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
+import { MatPaginatorModule, PageEvent } from '@angular/material/paginator';
 import { MatSelectModule } from '@angular/material/select';
 import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 
@@ -20,6 +21,7 @@ import { Usuario } from '../../../../shared/interfaces/usuario.interface';
     MatFormFieldModule,
     MatIconModule,
     MatInputModule,
+    MatPaginatorModule,
     MatSelectModule,
     MatSlideToggleModule
   ],
@@ -36,6 +38,9 @@ export class UsuariosMaster implements OnInit {
 
   cargando = false;
   error = '';
+  pageIndex = 0;
+  pageSize = 10;
+  readonly pageSizeOptions = [10, 25, 50, 100];
 
   filtrosForm = this.fb.group({
     usuario: [''],
@@ -96,6 +101,8 @@ export class UsuariosMaster implements OnInit {
 
       return coincideUsuario && coincideNombre && coincideActivo && coincideRol;
     });
+
+    this.pageIndex = 0;
   }
 
   limpiarFiltros(): void {
@@ -121,6 +128,16 @@ export class UsuariosMaster implements OnInit {
           usuario.activo = estadoAnterior;
         }
       });
+  }
+
+  get usuariosPagina(): Usuario[] {
+    const start = this.pageIndex * this.pageSize;
+    return this.usuariosFiltrados.slice(start, start + this.pageSize);
+  }
+
+  cambiarPagina(event: PageEvent): void {
+    this.pageIndex = event.pageIndex;
+    this.pageSize = event.pageSize;
   }
 
   private obtenerRolesDisponibles(usuarios: Usuario[]): string[] {

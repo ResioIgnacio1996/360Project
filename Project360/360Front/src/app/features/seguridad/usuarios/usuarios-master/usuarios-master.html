@@ -86,7 +86,7 @@
           </thead>
 
           <tbody>
-            @for (u of usuariosFiltrados; track u.usuario_id) {
+            @for (u of usuariosPagina; track u.usuario_id) {
               <tr>
                 <td class="tech-value"><strong>{{ u.usuario }}</strong></td>
                 <td>{{ u.nombre }}</td>
@@ -114,6 +114,15 @@
           </tbody>
         </table>
       </div>
+
+      <mat-paginator
+        [length]="usuariosFiltrados.length"
+        [pageIndex]="pageIndex"
+        [pageSize]="pageSize"
+        [pageSizeOptions]="pageSizeOptions"
+        showFirstLastButtons
+        (page)="cambiarPagina($event)">
+      </mat-paginator>
     }
 
     @if (!cargando && usuariosFiltrados.length === 0) {

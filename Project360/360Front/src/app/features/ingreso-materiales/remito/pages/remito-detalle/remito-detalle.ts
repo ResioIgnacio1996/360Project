@@ -68,6 +68,7 @@ export class RemitoDetalle implements OnInit {
   displayedColumns = ['material', 'cantidad', 'unidad'];
   cargando = false;
   liberando = false;
+  cancelando = false;
   cargandoCoincidenciasBom = false;
   errorCoincidenciasBom = '';
   resumenLiberacionVisible = false;
@@ -134,7 +135,7 @@ export class RemitoDetalle implements OnInit {
 
     if (!this.distribucionValida()) {
       this.snackBar.open(
-        'Distribuí completamente cada material entre proyectos, sin faltantes ni excesos.',
+        'Elegí al menos un material y una cantidad válida, sin superar el saldo pendiente.',
         'Cerrar',
         { duration: 4000 }
       );
@@ -286,7 +287,7 @@ export class RemitoDetalle implements OnInit {
   }
 
   get resumenConFaltantesBom(): boolean {
-    return this.resumenAsignaciones.some(asignacion => !asignacion.coincideBom);
+    return this.resumenAsignaciones.some(asignacion => !asignacion.bomSeleccionadaId);
   }
 
   liberar(): void {
@@ -294,16 +295,25 @@ export class RemitoDetalle implements OnInit {
       return;
     }
 
-    const asignaciones = this.materialesLiberacion.filter(material => this.cantidadAsignada(material) > 0).map(material => ({
-      detalle_remito_id: material.idDetalle,
-      destinos: material.destinos.filter(destino => Number(destino.cantidad) > 0).map(destino => ({
-        proyecto_id: Number(destino.proyectoId),
-        cantidad: Number(destino.cantidad),
-        material_id: this.resumenAsignaciones.find(asignacion =>
-          asignacion.clave === this.claveDestino(material, destino)
-        )?.bomSeleccionadaId || 0
+    if (this.resumenConFaltantesBom) {
+      this.snackBar.open('Seleccioná el material BOM para cada línea que vas a liberar.', 'Cerrar', {
+        duration: 4000
+      });
+      return;
+    }
+
+    const asignaciones = this.materialesLiberacion
+      .map(material => ({
+        detalle_remito_id: material.idDetalle,
+        destinos: material.destinos.filter(destino => Number(destino.cantidad) > 0).map(destino => ({
+          proyecto_id: Number(destino.proyectoId),
+          cantidad: Number(destino.cantidad),
+          material_id: this.resumenAsignaciones.find(asignacion =>
+            asignacion.clave === this.claveDestino(material, destino)
+          )?.bomSeleccionadaId || 0
+        }))
       }))
-    }));
+      .filter(asignacion => asignacion.destinos.length > 0);
 
     this.liberando = true;
 
@@ -325,6 +335,46 @@ export class RemitoDetalle implements OnInit {
     });
   }
 
+  puedeCancelar(): boolean {
+    const estado = this.remito?.estadoLiberacion || (this.remito?.liberado ? 'LIBERADO' : 'PENDIENTE');
+    return !!this.remito && estado === 'PENDIENTE' && !this.liberando && !this.cancelando;
+  }
+
+  puedeEditar(): boolean {
+    const estado = this.remito?.estadoLiberacion || (this.remito?.liberado ? 'LIBERADO' : 'PENDIENTE');
+    return !!this.remito && estado === 'PENDIENTE' && !this.liberando && !this.cancelando;
+  }
+
+  editarRemito(): void {
+    if (!this.remito || !this.puedeEditar()) return;
+    if (this.idRegistroCompra) {
+      this.router.navigate([
+        '/ingreso-materiales/registros', this.idRegistroCompra, 'remitos', this.remito.idRemito, 'editar'
+      ]);
+      return;
+    }
+    this.router.navigate(['/ingreso-materiales/remitos/editar', this.remito.idRemito]);
+  }
+
+  cancelarRemito(): void {
+    if (!this.remito || !this.puedeCancelar() || !confirm(
+      `¿Cancelar el Remito ${this.remito.numero}?\n\nDejará de verse en el sistema y permitirá editar la OC/FAC cuando no queden otros remitos activos.`
+    )) return;
+
+    this.cancelando = true;
+    this.remitosService.cancelarRemito(this.remito.idRemito).subscribe({
+      next: response => {
+        this.cancelando = false;
+        this.snackBar.open(response?.message || 'Remito cancelado correctamente.', 'Cerrar', { duration: 4500 });
+        this.volver();
+      },
+      error: error => {
+        this.cancelando = false;
+        this.snackBar.open(error?.error?.message || 'No se pudo cancelar el remito.', 'Cerrar', { duration: 4500 });
+      }
+    });
+  }
+
   inicializarDistribucion(remito: Remito): void {
     this.materialesLiberacion = (remito.detalle ?? []).filter(item => Number(item.cantidadPendiente ?? item.cantidad) > 0).map(item => ({
       idDetalle: Number(item.idDetalle),
@@ -334,7 +384,7 @@ export class RemitoDetalle implements OnInit {
       cantidadTotal: Number(item.cantidadPendiente ?? item.cantidad),
       destinos: [{
         proyectoId: remito.idProyecto ?? null,
-        cantidad: Number(item.cantidadPendiente ?? item.cantidad)
+        cantidad: 0
       }]
     }));
   }
@@ -371,6 +421,10 @@ export class RemitoDetalle implements OnInit {
     return this.redondearCantidad(material.cantidadTotal - this.cantidadAsignada(material));
   }
 
+  materialSeleccionadoParaLiberar(material: MaterialLiberacion): boolean {
+    return material.destinos.some(destino => Number(destino.cantidad) > 0);
+  }
+
   proyectoUsadoEnOtroDestino(
     material: MaterialLiberacion,
     proyectoId: number,
@@ -396,7 +450,7 @@ export class RemitoDetalle implements OnInit {
   }
 
   distribucionValida(): boolean {
-    return this.materialesLiberacion.some(material => this.cantidadAsignada(material) > 0)
+    return this.materialesLiberacion.some(material => this.materialSeleccionadoParaLiberar(material))
       && this.materialesLiberacion.every(material => this.distribucionMaterialValida(material));
   }
 

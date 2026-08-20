@@ -192,15 +192,15 @@
                 <mat-icon>visibility</mat-icon>
               </button>
 
-              <button mat-icon-button matTooltip="Editar" [disabled]="!puedeEditar(registro)" (click)="editar(registro)">
+              <button mat-icon-button [matTooltip]="tooltipEditar(registro)" [disabled]="!puedeEditar(registro)" (click)="editar(registro)">
                 <mat-icon>edit</mat-icon>
               </button>
 
-              <button mat-icon-button matTooltip="Ver remitos de esta OC" [disabled]="getEstadoCodigo(registro) === 'CANCELADA'" (click)="verRemitos(registro)">
+              <button mat-icon-button matTooltip="Ver remitos activos y liberados de esta OC" (click)="verRemitos(registro)">
                 <mat-icon>local_shipping</mat-icon>
               </button>
 
-              <button mat-icon-button matTooltip="Cancelar" [disabled]="!puedeCancelar(registro)" (click)="cancelar(registro)">
+              <button mat-icon-button [matTooltip]="tooltipCancelar(registro)" [disabled]="!puedeCancelar(registro)" (click)="cancelar(registro)">
                 <mat-icon>cancel</mat-icon>
               </button>
             </div>

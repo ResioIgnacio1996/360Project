@@ -1,4 +1,4 @@
-<div class="module-page">
+<div class="module-page remito-master-page">
   <div class="page-header">
     <div>
       <span class="breadcrumb">
@@ -99,33 +99,40 @@
     <div class="state-message" *ngIf="cargando">Cargando remitos...</div>
 
     <div class="table-wrap" *ngIf="!cargando">
-      <table mat-table [dataSource]="dataSource" class="remito-table mat-elevation-z0">
+      <table
+        mat-table
+        matSort
+        matSortActive="fecha"
+        matSortDirection="desc"
+        matSortDisableClear
+        [dataSource]="dataSource"
+        class="remito-table mat-elevation-z0">
         <ng-container matColumnDef="numero">
-          <th mat-header-cell *matHeaderCellDef>Numero</th>
+          <th mat-header-cell *matHeaderCellDef mat-sort-header>Numero</th>
           <td mat-cell *matCellDef="let remito">
             <strong>{{ remito.numero }}</strong>
           </td>
         </ng-container>
 
         <ng-container matColumnDef="fecha">
-          <th mat-header-cell *matHeaderCellDef>Fecha</th>
+          <th mat-header-cell *matHeaderCellDef mat-sort-header>Fecha</th>
           <td mat-cell *matCellDef="let remito">{{ formatearFecha(remito.fecha) }}</td>
         </ng-container>
 
         <ng-container matColumnDef="registroCompra">
-          <th mat-header-cell *matHeaderCellDef>Registro Compra</th>
+          <th mat-header-cell *matHeaderCellDef mat-sort-header>Registro Compra</th>
           <td mat-cell *matCellDef="let remito">
             {{ remito.registroCompraNumero || remito.idRegistroCompra }}
           </td>
         </ng-container>
 
         <ng-container matColumnDef="proveedor">
-          <th mat-header-cell *matHeaderCellDef>Proveedor</th>
+          <th mat-header-cell *matHeaderCellDef mat-sort-header>Proveedor</th>
           <td mat-cell *matCellDef="let remito">{{ remito.proveedor || '-' }}</td>
         </ng-container>
 
         <ng-container matColumnDef="estado">
-          <th mat-header-cell *matHeaderCellDef>Estado</th>
+          <th mat-header-cell *matHeaderCellDef mat-sort-header>Estado</th>
           <td mat-cell *matCellDef="let remito">
             <span class="estado-badge" [class.liberado]="remito.liberado">
               {{ estadoRemito(remito) }}
@@ -143,11 +150,30 @@
             <button
               mat-icon-button
               color="primary"
+              matTooltip="Modificar remito pendiente"
+              [disabled]="!puedeEditar(remito)"
+              (click)="editarRemito(remito)">
+              <mat-icon>edit</mat-icon>
+            </button>
+
+            <button
+              mat-icon-button
+              color="primary"
               matTooltip="Asignar proyectos y liberar"
               [disabled]="!puedeLiberar(remito)"
               (click)="verDetalle(remito)"
             >
               <mat-icon>inventory</mat-icon>
+            </button>
+
+            <button
+              mat-icon-button
+              class="cancel-remito"
+              matTooltip="Cancelar remito pendiente"
+              [disabled]="!puedeCancelar(remito)"
+              (click)="cancelarRemito(remito)"
+            >
+              <mat-icon>cancel</mat-icon>
             </button>
           </td>
         </ng-container>

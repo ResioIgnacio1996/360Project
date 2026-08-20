@@ -41,50 +41,41 @@
         <button class="module-card module-teal" type="button" (click)="abrirProgramacion()">
           <mat-icon class="module-icon">event_note</mat-icon>
           <strong>Programación</strong>
-          <p>Cronograma, calendario, etapas, operaciones e importación del plan.</p>
-          <span class="module-badge badge-teal">OPERATIVO</span>
         </button>
 
         <button class="module-card module-orange" type="button" (click)="abrirAvances()">
           <mat-icon class="module-icon">trending_up</mat-icon>
           <strong>Avance de Operaciones</strong>
-          <p>Estado de las operaciones, fechas reales y porcentaje de avance.</p>
-          <span class="module-badge badge-orange">OPERACIONES</span>
         </button>
 
         <button class="module-card module-purple" type="button" (click)="abrirDependencias()">
           <mat-icon class="module-icon">account_tree</mat-icon>
           <strong>Dependencias</strong>
-          <p>Mapa jerárquico de precedencias, ramas paralelas, bloqueos y avance operativo.</p>
-          <span class="module-badge badge-purple">PLAN ACTIVO</span>
+        </button>
+
+        <button class="module-card module-teal" type="button" (click)="abrirBom()">
+          <mat-icon class="module-icon">format_list_bulleted</mat-icon>
+          <strong>BOM del proyecto</strong>
         </button>
 
         <button class="module-card module-blue" type="button" (click)="abrirContainer()">
           <mat-icon class="module-icon">inventory_2</mat-icon>
           <strong>Container / Stock actual</strong>
-          <p>Existencias reales del proyecto después de las liberaciones y los consumos registrados.</p>
-          <span class="module-badge badge-blue">INVENTARIO</span>
         </button>
 
         <button class="module-card module-red pending" type="button" disabled>
           <mat-icon class="module-icon">warning_amber</mat-icon>
           <strong>No Conformidades</strong>
-          <p>Registro y seguimiento de problemas detectados en el proyecto.</p>
-          <span class="module-badge badge-red">PENDIENTE</span>
         </button>
 
         <button class="module-card module-purple pending" type="button" disabled>
           <mat-icon class="module-icon">engineering</mat-icon>
           <strong>Cuadrillas</strong>
-          <p>Asignación de equipos, rendimiento y jornadas de trabajo.</p>
-          <span class="module-badge badge-muted">PENDIENTE</span>
         </button>
 
         <button class="module-card module-green pending" type="button" disabled>
           <mat-icon class="module-icon">bar_chart</mat-icon>
           <strong>Dashboard</strong>
-          <p>Indicadores consolidados y estado general del proyecto.</p>
-          <span class="module-badge badge-teal">PENDIENTE</span>
         </button>
       </div>
     </main>

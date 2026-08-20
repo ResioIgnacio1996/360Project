@@ -437,3 +437,11 @@
     display: none;
   }
 }
+.distribution-header p {
+  display: none;
+}
+
+.complete-release-note {
+  color: var(--text-secondary);
+  font-size: 12px;
+}

@@ -90,23 +90,34 @@ const construirProgramacion = (filas, calendario, excepciones) => {
 const aplicarEstadosDerivados = (operaciones) => {
   const hoy = fechaISO(new Date());
   const etiquetas = {
-    PENDIENTE: 'Pendiente',
-    EN_CURSO: 'En curso',
+    EN_TERMINO: 'En término',
+    EN_RIESGO: 'En riesgo',
     ATRASADA: 'Atrasada',
-    COMPLETA: 'Completa',
+    CUMPLIDA: 'Cumplida',
+    CUMPLIDA_A_TIEMPO: 'Cumplida a tiempo',
+    CUMPLIDA_CON_DEMORA: 'Cumplida con demora',
     BLOQUEADA: 'Bloqueada',
     ARCHIVADA: 'Archivada'
   };
   return operaciones.map(op => {
     const avance = Number(op.pct_avance_actual || 0);
-    const finVigente = fechaISO(op.fecha_fin_reprog || op.fecha_fin_estimada);
+    const finEstimada = fechaISO(op.fecha_fin_estimada);
+    const finReal = fechaISO(op.fecha_fin_real);
+    const diasParaVencer = finEstimada
+      ? Math.round((Date.parse(finEstimada) - Date.parse(hoy)) / 86400000)
+      : null;
     let codigo;
     if (op.archivada) codigo = 'ARCHIVADA';
-    else if (avance >= 100 || op.fecha_fin_real) codigo = 'COMPLETA';
     else if (op.estado_codigo === 'BLOQUEADA') codigo = 'BLOQUEADA';
-    else if (finVigente && hoy > finVigente) codigo = 'ATRASADA';
-    else if (avance > 0 || op.fecha_inicio_real) codigo = 'EN_CURSO';
-    else codigo = 'PENDIENTE';
+    else if (avance >= 100 && finReal && finEstimada && finReal <= finEstimada)
+      codigo = 'CUMPLIDA_A_TIEMPO';
+    else if (avance >= 100 && finReal && finEstimada && finReal > finEstimada)
+      codigo = 'CUMPLIDA_CON_DEMORA';
+    else if (avance >= 100) codigo = 'CUMPLIDA';
+    else if (finEstimada && finEstimada < hoy) codigo = 'ATRASADA';
+    else if (diasParaVencer !== null && diasParaVencer >= 0 && diasParaVencer <= 3)
+      codigo = 'EN_RIESGO';
+    else codigo = 'EN_TERMINO';
     return { ...op, estado_codigo: codigo, estado_label: etiquetas[codigo] };
   });
 };
@@ -117,13 +128,13 @@ const getProgramacion = async (req, res) => {
     const request = pool.request().input('proyecto_id', sql.BigInt, req.params.id);
     const result = await request.query(`
       SELECT p.proyecto_id,p.nombre,p.fecha_inicio,p.fecha_fin_estimada,p.estado,
-             vp.codigo version_codigo
+             vp.version_id,vp.codigo version_codigo
       FROM Proyecto p
       LEFT JOIN VersionPlan vp ON vp.proyecto_id=p.proyecto_id AND vp.es_activa=1
       WHERE p.proyecto_id=@proyecto_id;
 
       SELECT o.operacion_id,o.proyecto_id,o.secuencia,o.nombre,o.descripcion,o.criterio_cierre,
-             o.duracion_hs,o.desfase_inicio_hs,o.pct_avance_actual,o.cantidad_meta,o.cantidad_acumulada,
+             o.duracion_hs,o.desfase_inicio_hs,o.peso_pct,o.pct_avance_actual,o.cantidad_meta,o.cantidad_acumulada,
              o.fecha_inicio_estimada,o.fecha_fin_estimada,o.fecha_inicio_real,o.fecha_fin_real,
              o.fecha_no_antes_del,o.archivada,e.codigo etapa_codigo,e.nombre etapa_nombre,
              r.responsable_id,r.nombre responsable_nombre,eo.codigo estado_codigo,eo.label_es estado_label,
@@ -141,7 +152,7 @@ const getProgramacion = async (req, res) => {
         AND (o.version_id=(SELECT TOP 1 version_id FROM VersionPlan WHERE proyecto_id=@proyecto_id AND es_activa=1)
              OR o.archivada=1)
       GROUP BY o.operacion_id,o.proyecto_id,o.secuencia,o.nombre,o.descripcion,o.criterio_cierre,
-               o.duracion_hs,o.desfase_inicio_hs,o.pct_avance_actual,o.cantidad_meta,o.cantidad_acumulada,
+               o.duracion_hs,o.desfase_inicio_hs,o.peso_pct,o.pct_avance_actual,o.cantidad_meta,o.cantidad_acumulada,
                o.fecha_inicio_estimada,o.fecha_fin_estimada,o.fecha_inicio_real,o.fecha_fin_real,
                o.fecha_no_antes_del,o.archivada,e.codigo,e.nombre,r.responsable_id,r.nombre,eo.codigo,eo.label_es,ua.codigo
       ORDER BY o.secuencia;
@@ -151,14 +162,18 @@ const getProgramacion = async (req, res) => {
       JOIN CalendarioProyecto c ON c.calendario_id=ex.calendario_id
       WHERE c.proyecto_id=@proyecto_id;
 
-      SELECT e.etapa_id,e.codigo,e.nombre,e.orden,e.peso_pct,
+      SELECT e.etapa_id,e.proyecto_id,e.version_id,e.estado_id,e.codigo,e.nombre,e.orden,e.peso_pct,
+             ee.codigo estado_codigo,ee.label_es estado_label,ee.color_hex estado_color,
+             e.fecha_creacion,e.fecha_actualizacion,
              CAST(ISNULL(SUM(o.pct_avance_actual * o.peso_pct) / 100.0,0) AS decimal(7,2)) pct_avance,
              CAST(ISNULL((SUM(o.pct_avance_actual * o.peso_pct) / 100.0) * e.peso_pct / 100.0,0) AS decimal(7,2)) aporte_proyecto
       FROM EtapaOperacion e
       JOIN VersionPlan vp ON vp.version_id=e.version_id AND vp.es_activa=1
+      JOIN estado_etapa ee ON ee.estado_id=e.estado_id
       LEFT JOIN Operacion o ON o.etapa_id=e.etapa_id AND o.archivada=0
       WHERE e.proyecto_id=@proyecto_id
-      GROUP BY e.etapa_id,e.codigo,e.nombre,e.orden,e.peso_pct
+      GROUP BY e.etapa_id,e.proyecto_id,e.version_id,e.estado_id,e.codigo,e.nombre,e.orden,e.peso_pct,
+               ee.codigo,ee.label_es,ee.color_hex,e.fecha_creacion,e.fecha_actualizacion
       ORDER BY e.orden;
     `);
     if (!result.recordsets[0].length) return res.status(404).json({ message: 'Proyecto no encontrado' });
@@ -238,17 +253,20 @@ const actualizarOperacion = async (req, res) => {
   const secuencia = Number(req.body.secuencia);
   const nombre = String(req.body.nombre || '').trim();
   const duracion = Number(req.body.duracion_hs);
+  const peso = Number(req.body.peso_pct);
+  const desfaseInicio = Number(req.body.desfase_inicio_hs || 0);
   const instrucciones = String(req.body.descripcion || '').trim() || null;
   const dependencias = [...new Set((req.body.dependencias || []).map(Number).filter(Number.isInteger))];
-  if (!Number.isInteger(id) || !Number.isInteger(secuencia) || !nombre || !(duracion > 0))
-    return res.status(400).json({ message: 'Secuencia, nombre y duración válida son obligatorios' });
+  if (!Number.isInteger(id) || !Number.isInteger(secuencia) || !nombre || !(duracion > 0) ||
+      !Number.isFinite(peso) || peso < 0 || peso > 100 || !Number.isInteger(desfaseInicio) || desfaseInicio < 0)
+    return res.status(400).json({ message: 'Secuencia, nombre, duración, peso y desfase de inicio válidos son obligatorios' });
   let tx;
   try {
     const pool = await conectarDB();
     tx = new sql.Transaction(pool);
     await tx.begin();
     const actual = await new sql.Request(tx).input('id', sql.BigInt, id).query(`
-      SELECT operacion_id,proyecto_id,version_id,secuencia,nombre,duracion_hs,descripcion,pct_avance_actual
+      SELECT operacion_id,proyecto_id,version_id,etapa_id,secuencia,nombre,duracion_hs,desfase_inicio_hs,descripcion,peso_pct,pct_avance_actual
       FROM Operacion WHERE operacion_id=@id AND ISNULL(archivada,0)=0
     `);
     if (!actual.recordset.length) {
@@ -259,6 +277,19 @@ const actualizarOperacion = async (req, res) => {
     if (Number(op.pct_avance_actual || 0) !== 0) {
       await tx.rollback();
       return res.status(409).json({ message: 'Solo se pueden editar operaciones con avance en 0%' });
+    }
+    const pesoEtapa = await new sql.Request(tx).input('etapa', sql.BigInt, op.etapa_id)
+      .input('id', sql.BigInt, id).query(`
+        SELECT ISNULL(SUM(peso_pct),0) peso_otros
+        FROM Operacion
+        WHERE etapa_id=@etapa AND operacion_id<>@id AND ISNULL(archivada,0)=0
+      `);
+    const pesoOtros = Number(pesoEtapa.recordset[0].peso_otros || 0);
+    if (pesoOtros + peso > 100.01) {
+      await tx.rollback();
+      return res.status(422).json({
+        message: `El peso excede el 100% de la etapa. Las otras operaciones suman ${pesoOtros.toFixed(2)}%; disponible ${(100 - pesoOtros).toFixed(2)}%`
+      });
     }
     const duplicada = await new sql.Request(tx).input('id', sql.BigInt, id)
       .input('p', sql.BigInt, op.proyecto_id).input('v', sql.BigInt, op.version_id)
@@ -318,8 +349,10 @@ const actualizarOperacion = async (req, res) => {
     }
     await new sql.Request(tx).input('id', sql.BigInt, id).input('s', sql.Int, secuencia)
       .input('n', sql.NVarChar(200), nombre).input('dh', sql.Decimal(8,2), duracion)
+      .input('pe', sql.Decimal(5,2), peso)
+      .input('di', sql.Int, desfaseInicio)
       .input('d', sql.NVarChar(sql.MAX), instrucciones)
-      .query(`UPDATE Operacion SET secuencia=@s,nombre=@n,duracion_hs=@dh,descripcion=@d,
+      .query(`UPDATE Operacion SET secuencia=@s,nombre=@n,duracion_hs=@dh,desfase_inicio_hs=@di,peso_pct=@pe,descripcion=@d,
               fecha_actualizacion=SYSDATETIME() WHERE operacion_id=@id`);
     await new sql.Request(tx).input('id', sql.BigInt, id)
       .query('DELETE FROM OperacionDependencia WHERE operacion_id=@id');
@@ -328,9 +361,11 @@ const actualizarOperacion = async (req, res) => {
         .query('INSERT INTO OperacionDependencia(operacion_id,operacion_predecesora_id,desfase_hs) VALUES(@id,@pred,0)');
     await new sql.Request(tx).input('id', sql.BigInt, id).input('u', sql.BigInt, req.usuario.usuario_id)
       .input('anterior', sql.NVarChar(sql.MAX), JSON.stringify({
-        secuencia: op.secuencia, nombre: op.nombre, duracion_hs: op.duracion_hs, descripcion: op.descripcion
+        secuencia: op.secuencia, nombre: op.nombre, duracion_hs: op.duracion_hs,
+        desfase_inicio_hs: op.desfase_inicio_hs, peso_pct: op.peso_pct, descripcion: op.descripcion
       })).input('nuevo', sql.NVarChar(sql.MAX), JSON.stringify({
-        secuencia, nombre, duracion_hs: duracion, descripcion: instrucciones
+        secuencia, nombre, duracion_hs: duracion, desfase_inicio_hs: desfaseInicio,
+        peso_pct: peso, descripcion: instrucciones
       })).query(`INSERT INTO HistorialOperacion(operacion_id,usuario_id,campo_modificado,valor_anterior,valor_nuevo,motivo)
                  VALUES(@id,@u,'edicion_operacion',@anterior,@nuevo,'Edición manual con avance 0%')`);
     await tx.commit();
@@ -347,11 +382,13 @@ const crearOperacion = async (req, res) => {
   const etapaId = Number(req.body.etapa_id);
   const duracion = Number(req.body.duracion_hs);
   const peso = Number(req.body.peso_pct || 0);
+  const desfaseInicio = Number(req.body.desfase_inicio_hs || 0);
   const nombre = String(req.body.nombre || '').trim();
   const dependencias = [...new Set((req.body.dependencias || []).map(Number).filter(Number.isInteger))];
   if (!Number.isInteger(proyectoId) || !Number.isInteger(secuencia) || !Number.isInteger(etapaId) ||
-      !nombre || !(duracion > 0) || !dependencias.length || peso < 0 || peso > 100)
-    return res.status(400).json({ message: 'Etapa, secuencia, nombre, duración y al menos una predecesora son obligatorios' });
+      !nombre || !(duracion > 0) || !dependencias.length || peso < 0 || peso > 100 ||
+      !Number.isInteger(desfaseInicio) || desfaseInicio < 0)
+    return res.status(400).json({ message: 'Etapa, secuencia, nombre, duración, desfase válido y al menos una predecesora son obligatorios' });
   let tx;
   try {
     const pool = await conectarDB();
@@ -399,13 +436,14 @@ const crearOperacion = async (req, res) => {
         return res.status(400).json({ message: 'Una o más operaciones predecesoras no existen en el plan activo' });
       }
     }
-    const inicio = predecesoras
+    const finPredecesora = predecesoras
       .map(pred => fechaISO(pred.fecha_fin_real || pred.fecha_fin_estimada))
       .filter(Boolean).sort().at(-1);
-    if (!inicio) {
+    if (!finPredecesora) {
       await tx.rollback();
       return res.status(422).json({ message: 'La predecesora no tiene una fecha de finalización válida' });
     }
+    const inicio = sumarDesfaseLaboral(finPredecesora, desfaseInicio, contexto.recordsets[1][0], contexto.recordsets[2]);
     const catalogos = await rq().input('ua', sql.NVarChar(30), String(req.body.unidad_avance || 'PORCENTAJE'))
       .query(`SELECT TOP 1 unidad_avance_id FROM unidad_avance WHERE codigo=@ua;
               SELECT TOP 1 estado_id FROM estado_operacion WHERE codigo='PENDIENTE';
@@ -425,12 +463,13 @@ const crearOperacion = async (req, res) => {
       .input('d', sql.NVarChar(sql.MAX), String(req.body.descripcion || '').trim() || null)
       .input('cc', sql.NVarChar(sql.MAX), String(req.body.criterio_cierre || '').trim() || null)
       .input('dh', sql.Decimal(8,2), duracion).input('cm', sql.Decimal(10,2), req.body.cantidad_meta || null)
+      .input('di', sql.Int, desfaseInicio)
       .input('pe', sql.Decimal(5,2), peso).input('fi', sql.Date, inicio).input('ff', sql.Date, fin)
       .query(`INSERT INTO Operacion(etapa_id,proyecto_id,version_id,responsable_id,estado_id,unidad_avance_id,
-                tipo_restriccion_id,secuencia,nombre,descripcion,criterio_cierre,duracion_hs,cantidad_meta,peso_pct,
+                 tipo_restriccion_id,secuencia,nombre,descripcion,criterio_cierre,duracion_hs,desfase_inicio_hs,cantidad_meta,peso_pct,
                 fecha_inicio_estimada,fecha_fin_estimada,pct_avance_actual,cantidad_acumulada,version_origen)
               OUTPUT INSERTED.operacion_id
-              VALUES(@e,@p,@v,@r,@es,@uaid,@tr,@s,@n,@d,@cc,@dh,@cm,@pe,@fi,@ff,0,0,'MANUAL')`);
+               VALUES(@e,@p,@v,@r,@es,@uaid,@tr,@s,@n,@d,@cc,@dh,@di,@cm,@pe,@fi,@ff,0,0,'MANUAL')`);
     const operacionId = creada.recordset[0].operacion_id;
     for (const pred of predecesoras)
       await rq().input('o', sql.BigInt, operacionId).input('pred', sql.BigInt, pred.operacion_id)
@@ -501,7 +540,81 @@ const eliminarExcepcionCalendario = async (req, res) => {
   }
 };
 
+const guardarEtapa = async (req, res, editar) => {
+  const proyectoId = Number(req.params.id || req.body.proyecto_id);
+  const etapaId = Number(req.params.etapaId || 0);
+  const codigo = String(req.body.codigo || '').trim().toUpperCase();
+  const nombre = String(req.body.nombre || '').trim();
+  const orden = Number(req.body.orden);
+  const peso = Number(req.body.peso_pct);
+  if (!Number.isInteger(proyectoId) || (editar && !Number.isInteger(etapaId)) || !nombre ||
+      (!editar && !codigo) || !Number.isInteger(orden) || orden <= 0 ||
+      !Number.isFinite(peso) || peso < 0 || peso > 100)
+    return res.status(400).json({ message: 'Código, nombre, orden y peso entre 0% y 100% son obligatorios' });
+  let tx;
+  try {
+    const pool = await conectarDB();
+    tx = new sql.Transaction(pool);
+    await tx.begin();
+    const rq = () => new sql.Request(tx);
+    const contexto = await rq().input('p', sql.BigInt, proyectoId).input('e', sql.BigInt, etapaId).query(`
+      SELECT TOP 1 version_id FROM VersionPlan WHERE proyecto_id=@p AND es_activa=1;
+      SELECT etapa_id,codigo,nombre,orden,peso_pct FROM EtapaOperacion
+      WHERE etapa_id=@e AND proyecto_id=@p
+        AND version_id=(SELECT TOP 1 version_id FROM VersionPlan WHERE proyecto_id=@p AND es_activa=1);
+      SELECT ISNULL(SUM(peso_pct),0) peso_otras FROM EtapaOperacion
+      WHERE proyecto_id=@p AND version_id=(SELECT TOP 1 version_id FROM VersionPlan WHERE proyecto_id=@p AND es_activa=1)
+        AND (@e=0 OR etapa_id<>@e);
+    `);
+    if (!contexto.recordsets[0].length) { await tx.rollback(); return res.status(409).json({ message: 'El proyecto no tiene una versión activa' }); }
+    if (editar && !contexto.recordsets[1].length) { await tx.rollback(); return res.status(404).json({ message: 'Etapa no encontrada' }); }
+    const versionId = Number(contexto.recordsets[0][0].version_id);
+    const pesoOtras = Number(contexto.recordsets[2][0].peso_otras || 0);
+    if (pesoOtras + peso > 100.01) {
+      await tx.rollback();
+      return res.status(422).json({ message: `El peso total de las etapas no puede superar el 100%. Disponible: ${(100 - pesoOtras).toFixed(2)}%` });
+    }
+    const duplicada = await rq().input('p', sql.BigInt, proyectoId).input('v', sql.BigInt, versionId)
+      .input('e', sql.BigInt, etapaId).input('c', sql.NVarChar(20), codigo).input('o', sql.SmallInt, orden)
+      .query(`SELECT etapa_id,codigo,orden FROM EtapaOperacion
+              WHERE proyecto_id=@p AND version_id=@v AND etapa_id<>@e
+                AND (orden=@o OR (${editar ? '1=0' : 'codigo=@c'}))`);
+    if (duplicada.recordset.length) {
+      await tx.rollback();
+      const conflicto = duplicada.recordset[0];
+      return res.status(409).json({ message: Number(conflicto.orden) === orden ? `Ya existe una etapa con orden ${orden}` : `Ya existe la etapa ${codigo}` });
+    }
+    let resultado;
+    if (editar) {
+      await rq().input('e', sql.BigInt, etapaId).input('n', sql.NVarChar(200), nombre)
+        .input('o', sql.SmallInt, orden).input('pe', sql.Decimal(5,2), peso)
+        .query(`UPDATE EtapaOperacion SET nombre=@n,orden=@o,peso_pct=@pe,fecha_actualizacion=SYSDATETIME()
+                WHERE etapa_id=@e`);
+      resultado = await rq().input('e', sql.BigInt, etapaId)
+        .query('SELECT * FROM EtapaOperacion WHERE etapa_id=@e');
+    } else {
+      const estado = await rq().query("SELECT TOP 1 estado_id FROM estado_etapa WHERE codigo='PENDIENTE'");
+      if (!estado.recordset.length) { await tx.rollback(); return res.status(500).json({ message: 'Falta el estado PENDIENTE de etapas' }); }
+      resultado = await rq().input('p', sql.BigInt, proyectoId).input('v', sql.BigInt, versionId)
+        .input('es', sql.BigInt, estado.recordset[0].estado_id).input('c', sql.NVarChar(20), codigo)
+        .input('n', sql.NVarChar(200), nombre).input('o', sql.SmallInt, orden).input('pe', sql.Decimal(5,2), peso)
+        .query(`INSERT INTO EtapaOperacion(proyecto_id,version_id,estado_id,codigo,nombre,orden,peso_pct)
+                VALUES(@p,@v,@es,@c,@n,@o,@pe);
+                DECLARE @nueva_id bigint=SCOPE_IDENTITY();
+                SELECT * FROM EtapaOperacion WHERE etapa_id=@nueva_id;`);
+    }
+    await tx.commit();
+    res.status(editar ? 200 : 201).json({ message: `Etapa ${editar ? 'actualizada' : 'agregada'} correctamente`, etapa: resultado.recordset[0] });
+  } catch (error) {
+    if (tx?._aborted === false) try { await tx.rollback(); } catch {}
+    res.status(500).json({ message: `No se pudo ${editar ? 'actualizar' : 'agregar'} la etapa`, error: error.message });
+  }
+};
+const crearEtapa = (req, res) => guardarEtapa(req, res, false);
+const actualizarEtapa = (req, res) => guardarEtapa(req, res, true);
+
 module.exports = {
   getProgramacion, actualizarDuracion, actualizarNmt, actualizarOperacion,
-  crearOperacion, guardarExcepcionCalendario, eliminarExcepcionCalendario
+  crearOperacion, guardarExcepcionCalendario, eliminarExcepcionCalendario,
+  crearEtapa, actualizarEtapa
 };

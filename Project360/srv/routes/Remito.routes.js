@@ -11,7 +11,9 @@ const {
     getMaterialesBomProyecto,
     getRemitoById,
     getRemitosByRegistroCompra,
+    cancelarRemito,
     crearRemito,
+    actualizarRemito,
     liberarRemito
 } = require('../controllers/materiales/Remito.controller');
 
@@ -56,6 +58,10 @@ router.get('/:id', verificarToken, getRemitoById);
 
 router.post('/', verificarToken, crearRemito);
 
+router.put('/:id', verificarToken, actualizarRemito);
+
 router.put('/:id/liberar', verificarToken, liberarRemito);
+
+router.put('/:id/cancelar', verificarToken, cancelarRemito);
 
 module.exports = router;

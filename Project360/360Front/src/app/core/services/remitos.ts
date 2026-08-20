@@ -115,6 +115,10 @@ export class Remitos {
     return this.http.post(this.apiUrl, payload);
   }
 
+  actualizarRemito(id: number, payload: RemitoPayload): Observable<any> {
+    return this.http.put(`${this.apiUrl}/${id}`, payload);
+  }
+
   importarDocumento(file: File): Observable<RemitoImportResponse> {
     const formData = new FormData();
     formData.append('documento', file);
@@ -127,6 +131,10 @@ export class Remitos {
       `${this.apiUrl}/${id}/liberar`,
       asignaciones ? { asignaciones } : {}
     );
+  }
+
+  cancelarRemito(id: number): Observable<any> {
+    return this.http.put(`${this.apiUrl}/${id}/cancelar`, {});
   }
 
   getMaterialesBomProyecto(proyectoId: number): Observable<MaterialBomProyecto[]> {

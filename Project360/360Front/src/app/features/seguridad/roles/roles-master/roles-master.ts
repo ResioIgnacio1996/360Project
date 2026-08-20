@@ -5,6 +5,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
+import { MatPaginatorModule, PageEvent } from '@angular/material/paginator';
 import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 
 import { RolService } from '../../../../core/services/rol/rol';
@@ -19,6 +20,7 @@ import { Rol } from '../../../../shared/interfaces/rol.interface';
     MatFormFieldModule,
     MatIconModule,
     MatInputModule,
+    MatPaginatorModule,
     MatSlideToggleModule
   ],
   templateUrl: './roles-master.html',
@@ -32,6 +34,9 @@ export class RolesMasterComponent implements OnInit {
   textoBusqueda = '';
   cargando = false;
   error = '';
+  pageIndex = 0;
+  pageSize = 10;
+  readonly pageSizeOptions = [10, 25, 50, 100];
 
   constructor(
     private rolService: RolService,
@@ -59,6 +64,7 @@ export class RolesMasterComponent implements OnInit {
           : response.data || response.roles || [];
 
         this.rolesFiltrados = [...this.roles];
+        this.pageIndex = 0;
 
         this.cargando = false;
       },
@@ -77,6 +83,7 @@ buscar(event: Event): void {
 
   if (!texto) {
     this.rolesFiltrados = [...this.roles];
+    this.pageIndex = 0;
     return;
   }
 
@@ -86,6 +93,7 @@ buscar(event: Event): void {
 
     return nombre.includes(texto) || descripcion.includes(texto);
   });
+  this.pageIndex = 0;
 }
   nuevoRol(): void {
     this.router.navigate(['/seguridad/roles/nuevo']);
@@ -113,5 +121,15 @@ buscar(event: Event): void {
         rol.activo = estadoAnterior;
       }
     });
+  }
+
+  get rolesPagina(): Rol[] {
+    const start = this.pageIndex * this.pageSize;
+    return this.rolesFiltrados.slice(start, start + this.pageSize);
+  }
+
+  cambiarPagina(event: PageEvent): void {
+    this.pageIndex = event.pageIndex;
+    this.pageSize = event.pageSize;
   }
 }

@@ -17,6 +17,7 @@ app.use('/api/clientes', require('./routes/Cliente.routes'));
 app.use('/api/proyectos',require('./routes/Proyecto.routes')); 
 
 app.use('/api/proveedores', require('./routes/Proveedor.routes')); 
+app.use('/api/responsables-cuadrillas', require('./routes/ResponsableOperacion.routes'));
 
 app.use('/api/materiales', require('./routes/materiales.routes'));
 app.use( '/api/registro-compra',require('./routes/RegistroCompra.routes'));

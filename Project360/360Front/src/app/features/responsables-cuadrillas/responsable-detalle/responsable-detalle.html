@@ -1,0 +1,126 @@
+<div class="module-page">
+  <header class="page-header">
+    <div>
+      <span class="breadcrumb">SYSTEM TOOLS / RESPONSABLES Y CUADRILLAS / DETALLE</span>
+      <h1>{{ detalle?.responsable?.nombre || 'Detalle operativo' }}</h1>
+      <p *ngIf="detalle">{{ detalle.responsable.codigo }} - {{ detalle.responsable.tipo }}</p>
+    </div>
+
+    <a class="btn btn-ghost" routerLink="/system-tools/responsables-cuadrillas">
+      <mat-icon>arrow_back</mat-icon>
+      Volver al maestro
+    </a>
+  </header>
+
+  <div class="state-message" *ngIf="cargando">Cargando operaciones asignadas...</div>
+  <div class="error-message" *ngIf="error">{{ error }}</div>
+
+  <ng-container *ngIf="detalle && !cargando">
+    <section class="metrics-grid">
+      <article>
+        <span>Operaciones</span>
+        <strong>{{ detalle.resumen.operaciones }}</strong>
+        <small>{{ detalle.resumen.completadas }} completadas</small>
+      </article>
+
+      <article [class.warning]="detalle.resumen.en_riesgo">
+        <span>En riesgo</span>
+        <strong>{{ detalle.resumen.en_riesgo }}</strong>
+        <small>Proximas al vencimiento</small>
+      </article>
+
+      <article [class.danger]="detalle.resumen.atrasadas">
+        <span>Fuera de termino</span>
+        <strong>{{ detalle.resumen.atrasadas }}</strong>
+        <small>Atrasadas o finalizadas tarde</small>
+      </article>
+    </section>
+
+    <section class="block">
+      <div class="block-header">
+        <h2 class="block-title">Operaciones asignadas</h2>
+        <span class="chip c-blue">{{ operacionesFiltradas.length }} OPERACIONES</span>
+      </div>
+
+      <div class="filters-bar">
+        <mat-form-field appearance="outline">
+          <mat-label>Proyecto</mat-label>
+          <mat-select [(ngModel)]="proyectoFiltro" (ngModelChange)="aplicarFiltros()">
+            <mat-option value="TODOS">Todos</mat-option>
+            <mat-option *ngFor="let proyecto of proyectos; trackBy: trackProyecto" [value]="proyecto.id">
+              {{ proyecto.nombre }}
+            </mat-option>
+          </mat-select>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline">
+          <mat-label>Cumplimiento</mat-label>
+          <mat-select [(ngModel)]="cumplimientoFiltro" (ngModelChange)="aplicarFiltros()">
+            <mat-option value="TODOS">Todos</mat-option>
+            <mat-option value="EN_TERMINO">En termino</mat-option>
+            <mat-option value="EN_RIESGO">En riesgo</mat-option>
+            <mat-option value="ATRASADA">Atrasadas</mat-option>
+            <mat-option value="CUMPLIDA_A_TIEMPO">Cumplidas a tiempo</mat-option>
+            <mat-option value="CUMPLIDA_CON_DEMORA">Cumplidas con demora</mat-option>
+          </mat-select>
+        </mat-form-field>
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Proyecto</th>
+              <th>Operacion</th>
+              <th>Etapa</th>
+              <th>Inicio est.</th>
+              <th>Fin est.</th>
+              <th>Estado</th>
+              <th>Avance</th>
+              <th>Cumplimiento</th>
+            </tr>
+          </thead>
+
+          <tbody>
+            <tr *ngFor="let operacion of operacionesFiltradas; trackBy: trackOperacion">
+              <td><strong>{{ operacion.proyecto_nombre }}</strong></td>
+              <td><span class="tech-value">OP-{{ operacion.secuencia }}</span> {{ operacion.nombre }}</td>
+              <td>{{ operacion.etapa_nombre }}</td>
+              <td>{{ (operacion.fecha_inicio_estimada | date:'dd/MM/yyyy') || '-' }}</td>
+              <td>{{ (operacion.fecha_fin_estimada | date:'dd/MM/yyyy') || '-' }}</td>
+              <td>{{ operacion.estado_nombre }}</td>
+              <td>
+                <div class="progress-cell">
+                  <span>{{ operacion.pct_avance_actual | number:'1.0-0' }}%</span>
+                  <div class="progress-track"><i [style.width.%]="operacion.pct_avance_actual"></i></div>
+                </div>
+              </td>
+              <td>
+                <span [class]="claseCumplimiento(operacion.cumplimiento)">
+                  {{ nombreCumplimiento(operacion.cumplimiento) }}
+                </span>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+
+        <div class="state-message" *ngIf="!operacionesFiltradas.length">No hay operaciones para los filtros seleccionados.</div>
+      </div>
+    </section>
+
+    <section class="block nc-panel">
+      <div class="block-header">
+        <h2 class="block-title">No conformidades</h2>
+        <span class="chip c-gray">PROXIMA ETAPA</span>
+      </div>
+
+      <div class="block-body">
+        <mat-icon>fact_check</mat-icon>
+        <div>
+          <strong>Sin fuente de no conformidades conectada</strong>
+          <p>El panel queda preparado para incorporar NC, responsables, vencimientos y grado de resolucion cuando se defina su registro operativo.</p>
+        </div>
+      </div>
+    </section>
+  </ng-container>
+</div>

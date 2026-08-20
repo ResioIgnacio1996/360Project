@@ -2,6 +2,9 @@
 
 const { conectarDB, sql } = require('../../DB/dbConection');
 
+const limpiarRazonSocial = value => String(value || '').trim().replace(/\s+/g, ' ');
+const expresionRazonNormalizada = `UPPER(REPLACE(REPLACE(REPLACE(REPLACE(LTRIM(RTRIM(razon_social)), '  ', ' '), '  ', ' '), '  ', ' '), '  ', ' ')) COLLATE Latin1_General_CI_AI`;
+
 
 // ======================================================
 // FUNCIÓN PRIVADA - OBTENER O CREAR PROVEEDOR
@@ -45,12 +48,27 @@ const obtenerProveedorId = async (transaction, body) => {
         return proveedorExistente.recordset[0].proveedor_id;
     }
 
-    if (!body.proveedor.razon_social) {
+    const razonSocial = limpiarRazonSocial(body.proveedor.razon_social);
+    if (!razonSocial) {
         throw new Error('La razón social del proveedor es obligatoria para crearlo');
     }
 
+    const proveedorMismaRazon = await new sql.Request(transaction)
+        .input('razon_social_normalizada', sql.NVarChar(150), razonSocial.toUpperCase())
+        .query(`
+            SELECT TOP 1 proveedor_id, razon_social
+            FROM Proveedor WITH (UPDLOCK, HOLDLOCK)
+            WHERE ${expresionRazonNormalizada} = @razon_social_normalizada COLLATE Latin1_General_CI_AI
+        `);
+
+    if (proveedorMismaRazon.recordset.length > 0) {
+        const error = new Error(`Ya existe un proveedor con la razon social ${proveedorMismaRazon.recordset[0].razon_social}`);
+        error.statusCode = 409;
+        throw error;
+    }
+
     const proveedorNuevo = await new sql.Request(transaction)
-        .input('razon_social', sql.VarChar, body.proveedor.razon_social)
+        .input('razon_social', sql.NVarChar(150), razonSocial)
         .input('cuit', sql.VarChar, body.proveedor.cuit)
         .input('telefono', sql.VarChar, body.proveedor.telefono || null)
         .input('email', sql.VarChar, body.proveedor.email || null)
@@ -185,6 +203,43 @@ const getRegistrosCompra = async (req, res) => {
         const pool = await conectarDB();
 console.log('RC.');
         const result = await pool.request().query(`
+            WITH LiberadoPorLinea AS (
+                SELECT
+                    drc.id_oc,
+                    drc.id_detalle_oc,
+                    CAST(drc.cantidad AS DECIMAL(18,2)) AS cantidad_solicitada,
+                    CAST(ISNULL(SUM(CASE
+                        WHEN liberacion.cantidad_liberada IS NOT NULL THEN liberacion.cantidad_liberada
+                        WHEN ISNULL(r.liberado,0)=1 THEN dr.cantidad
+                        ELSE 0
+                    END),0) AS DECIMAL(18,2)) AS cantidad_liberada
+                FROM Detalle_RegistroDeCompra drc
+                LEFT JOIN Materiales material_oc
+                    ON material_oc.id_material=drc.id_material
+                LEFT JOIN Remito r
+                    ON r.idRegistroDeCompra=drc.id_oc
+                   AND ISNULL(r.activo,1)=1
+                LEFT JOIN Detalle_Remito dr
+                    ON dr.remito_id=r.remito_id
+                   AND dbo.fn_NormalizarClave(dr.Descripcion)=dbo.fn_NormalizarClave(COALESCE(drc.Descripcion,material_oc.nombre))
+                   AND dbo.fn_NormalizarClave(dr.UoM)=dbo.fn_NormalizarClave(drc.UoM)
+                OUTER APPLY (
+                    SELECT SUM(l.cantidad) AS cantidad_liberada
+                    FROM LiberacionRemitoDetalle l
+                    WHERE l.detalle_remito_id=dr.detalle_remito_id
+                      AND ISNULL(l.activo,1)=1
+                ) liberacion
+                GROUP BY drc.id_oc,drc.id_detalle_oc,drc.cantidad
+            ), ResumenLiberacion AS (
+                SELECT
+                    id_oc,
+                    COUNT(*) AS cantidad_materiales,
+                    SUM(CASE WHEN cantidad_liberada >= cantidad_solicitada AND cantidad_solicitada > 0 THEN 1 ELSE 0 END) AS materiales_liberados,
+                    SUM(cantidad_solicitada) AS cantidad_total,
+                    SUM(cantidad_liberada) AS cantidad_liberada
+                FROM LiberadoPorLinea
+                GROUP BY id_oc
+            )
             SELECT
                 rc.registro_compra_id,
                 rc.estado_registroDecompra_id AS estado_registroDeCompra_id,
@@ -194,6 +249,18 @@ console.log('RC.');
                 rc.fecha_entrega,
                 rc.observaciones,
                 rc.activo,
+                ISNULL(rl.cantidad_materiales,0) AS cantidad_materiales,
+                ISNULL(rl.materiales_liberados,0) AS materiales_liberados,
+                ISNULL(rl.cantidad_total,0) AS cantidad_total,
+                ISNULL(rl.cantidad_liberada,0) AS cantidad_liberada,
+                CASE
+                    WHEN ISNULL(rl.cantidad_liberada,0)<=0 THEN 'PENDIENTE'
+                    WHEN rl.materiales_liberados=rl.cantidad_materiales THEN 'LIBERADO'
+                    ELSE 'PARCIAL'
+                END AS estado_liberacion,
+                (SELECT COUNT(*) FROM Remito r
+                 WHERE r.idRegistroDeCompra=rc.registro_compra_id
+                   AND ISNULL(r.activo,1)=1) AS cantidad_remitos_activos,
 
                 p.proveedor_id,
                 p.razon_social,
@@ -205,6 +272,8 @@ console.log('RC.');
                 ON p.proveedor_id = rc.proveedor_id
             LEFT JOIN estado_registroDecompra e
                 ON e.estado_registroDecompra_id = rc.estado_registroDecompra_id
+            LEFT JOIN ResumenLiberacion rl
+                ON rl.id_oc=rc.registro_compra_id
             ORDER BY rc.estado_registroDecompra_id DESC
         `);
 
@@ -257,16 +326,75 @@ const getRegistroCompraById = async (req, res) => {
         const detalle = await pool.request()
             .input('id_oc', sql.BigInt, id)
             .query(`
+        WITH RemitadoPorLinea AS (
+            SELECT
+                drc.id_detalle_oc,
+                CAST(ISNULL(SUM(dr.cantidad),0) AS DECIMAL(18,2)) AS cantidad_en_remitos
+            FROM Detalle_RegistroDeCompra drc
+            LEFT JOIN Materiales material_oc
+                ON material_oc.id_material=drc.id_material
+            LEFT JOIN Remito r
+                ON r.idRegistroDeCompra=drc.id_oc
+               AND ISNULL(r.activo,1)=1
+            LEFT JOIN Detalle_Remito dr
+                ON dr.remito_id=r.remito_id
+               AND dbo.fn_NormalizarClave(dr.Descripcion)=dbo.fn_NormalizarClave(COALESCE(drc.Descripcion,material_oc.nombre))
+               AND dbo.fn_NormalizarClave(dr.UoM)=dbo.fn_NormalizarClave(drc.UoM)
+            WHERE drc.id_oc=@id_oc
+            GROUP BY drc.id_detalle_oc
+        ), LiberadoPorLinea AS (
+            SELECT
+                drc.id_detalle_oc,
+                CAST(ISNULL(SUM(CASE
+                    WHEN liberacion.cantidad_liberada IS NOT NULL THEN liberacion.cantidad_liberada
+                    WHEN ISNULL(r.liberado,0)=1 THEN dr.cantidad
+                    ELSE 0
+                END),0) AS DECIMAL(18,2)) AS cantidad_liberada
+            FROM Detalle_RegistroDeCompra drc
+            LEFT JOIN Materiales material_oc
+                ON material_oc.id_material=drc.id_material
+            LEFT JOIN Remito r
+                ON r.idRegistroDeCompra=drc.id_oc
+               AND ISNULL(r.activo,1)=1
+            LEFT JOIN Detalle_Remito dr
+                ON dr.remito_id=r.remito_id
+               AND dbo.fn_NormalizarClave(dr.Descripcion)=dbo.fn_NormalizarClave(COALESCE(drc.Descripcion,material_oc.nombre))
+               AND dbo.fn_NormalizarClave(dr.UoM)=dbo.fn_NormalizarClave(drc.UoM)
+            OUTER APPLY (
+                SELECT SUM(l.cantidad) AS cantidad_liberada
+                FROM LiberacionRemitoDetalle l
+                WHERE l.detalle_remito_id=dr.detalle_remito_id
+                  AND ISNULL(l.activo,1)=1
+            ) liberacion
+            WHERE drc.id_oc=@id_oc
+            GROUP BY drc.id_detalle_oc
+        )
         SELECT
             drc.id_detalle_oc,
             drc.id_oc,
             drc.id_material,
             COALESCE(drc.Descripcion,m.nombre) AS material,
             drc.cantidad,
-            drc.UoM
+            drc.UoM,
+            ISNULL(rem.cantidad_en_remitos,0) AS cantidad_en_remitos,
+            ISNULL(lib.cantidad_liberada,0) AS cantidad_liberada,
+            CASE
+                WHEN ISNULL(rem.cantidad_en_remitos,0)>ISNULL(lib.cantidad_liberada,0)
+                    THEN rem.cantidad_en_remitos-lib.cantidad_liberada
+                ELSE 0
+            END AS cantidad_pendiente_liberar,
+            CASE
+                WHEN ISNULL(lib.cantidad_liberada,0)<=0 THEN 'PENDIENTE'
+                WHEN lib.cantidad_liberada>=drc.cantidad THEN 'LIBERADO'
+                ELSE 'PARCIAL'
+            END AS estado_liberacion
         FROM Detalle_RegistroDeCompra drc
         LEFT JOIN Materiales m
             ON m.id_material = drc.id_material
+        LEFT JOIN RemitadoPorLinea rem
+            ON rem.id_detalle_oc=drc.id_detalle_oc
+        LEFT JOIN LiberadoPorLinea lib
+            ON lib.id_detalle_oc=drc.id_detalle_oc
         WHERE drc.id_oc = @id_oc
        
     `);
@@ -554,30 +682,64 @@ const actualizarRegistroCompra = async (req, res) => {
             });
         }
 
-        if (registro.recordset[0].estado === 'COMPLETADA') {
-            return res.status(400).json({
-                message: 'No se puede editar una registro de compra completada'
+        const estadoActual = String(registro.recordset[0].estado || '').trim().toUpperCase();
+        if (estadoActual !== 'CREADA') {
+            return res.status(409).json({
+                message: `Solo se pueden editar registros de compra en estado CREADA. Estado actual: ${estadoActual || 'SIN ESTADO'}`
             });
         }
 
-        if (registro.recordset[0].estado === 'CANCELADA') {
-            return res.status(400).json({
-                message: 'No se puede editar una registro de compra cancelada'
-            });
-        }
-
-        const remitos = await pool.request()
+        const remitosConLiberaciones = await pool.request()
             .input('idRegistroDeCompra', sql.BigInt, id)
             .query(`
-                SELECT remito_id
-                FROM Remito
-                WHERE idRegistroDeCompra = @idRegistroDeCompra
+                SELECT COUNT(*) AS cantidad
+                FROM Remito r
+                WHERE r.idRegistroDeCompra=@idRegistroDeCompra
+                  AND ISNULL(r.activo,1)=1
+                  AND (ISNULL(r.liberado,0)=1 OR EXISTS(
+                    SELECT 1 FROM Detalle_Remito dr
+                    INNER JOIN LiberacionRemitoDetalle l
+                        ON l.detalle_remito_id=dr.detalle_remito_id
+                    WHERE dr.remito_id=r.remito_id AND ISNULL(l.activo,1)=1
+                  ))
             `);
 
-        if (remitos.recordset.length > 0) {
-            return res.status(400).json({
-                message: 'No se puede editar una registro de compra con remitos asociados'
+        if (Number(remitosConLiberaciones.recordset[0]?.cantidad || 0) > 0) {
+            return res.status(409).json({
+                message: 'No se puede editar la OC porque tiene uno o más remitos con liberaciones.'
             });
+        }
+
+        const cantidadesEnRemitos = await pool.request()
+            .input('idRegistroDeCompra', sql.BigInt, id)
+            .query(`
+                SELECT
+                    COALESCE(dr.Descripcion,m.nombre) AS material,
+                    dr.UoM,
+                    SUM(dr.cantidad) AS cantidad
+                FROM Remito r
+                INNER JOIN Detalle_Remito dr ON dr.remito_id=r.remito_id
+                LEFT JOIN Materiales m ON m.id_material=dr.id_material
+                WHERE r.idRegistroDeCompra=@idRegistroDeCompra
+                  AND ISNULL(r.activo,1)=1
+                GROUP BY COALESCE(dr.Descripcion,m.nombre),dr.UoM
+            `);
+
+        const detalleNuevo = new Map();
+        for (const item of detalle) {
+            const nombre = item.nombre || item.descripcion;
+            const clave = `${normalizarNombreMaterial(nombre)}|${normalizarUom(item.UoM)}`;
+            detalleNuevo.set(clave, Number(detalleNuevo.get(clave) || 0) + Number(item.cantidad || 0));
+        }
+        for (const item of cantidadesEnRemitos.recordset) {
+            const clave = `${normalizarNombreMaterial(item.material)}|${normalizarUom(item.UoM)}`;
+            const cantidadOcNueva = Number(detalleNuevo.get(clave) || 0);
+            const cantidadRemitada = Number(item.cantidad || 0);
+            if (cantidadOcNueva < cantidadRemitada) {
+                return res.status(409).json({
+                    message: `No se puede reducir o quitar ${item.material}: hay ${cantidadRemitada} ${normalizarUom(item.UoM)} cargados en remitos pendientes.`
+                });
+            }
         }
 
         transaction = new sql.Transaction(pool);
@@ -670,13 +832,77 @@ const actualizarRegistroCompra = async (req, res) => {
 // PUT - CANCELAR REGISTRO DE COMPRA
 // ======================================================
 
+const obtenerImpactoCancelacion = async (req, res) => {
+    const registroCompraId = Number(req.params.id);
+    if (!Number.isInteger(registroCompraId) || registroCompraId <= 0) {
+        return res.status(400).json({ message: 'Registro de compra invalido' });
+    }
+    try {
+        const pool = await conectarDB();
+        const result = await pool.request()
+            .input('registro_compra_id', sql.BigInt, registroCompraId)
+            .query(`
+                SELECT rc.registro_compra_id,rc.numero,rc.tipo,e.nombre AS estado,
+                    (SELECT COUNT(*) FROM Remito r
+                     WHERE r.idRegistroDeCompra=rc.registro_compra_id
+                       AND ISNULL(r.activo,1)=1) AS remitos_activos,
+                    (SELECT COUNT(*) FROM Remito r
+                     WHERE r.idRegistroDeCompra=rc.registro_compra_id
+                       AND ISNULL(r.activo,1)=1
+                       AND (ISNULL(r.liberado,0)=1 OR EXISTS(
+                           SELECT 1 FROM Detalle_Remito dr
+                           INNER JOIN LiberacionRemitoDetalle l
+                               ON l.detalle_remito_id=dr.detalle_remito_id
+                           WHERE dr.remito_id=r.remito_id AND ISNULL(l.activo,1)=1
+                       ))) AS remitos_con_liberaciones,
+                    (SELECT COUNT(*) FROM Remito r
+                     WHERE r.idRegistroDeCompra=rc.registro_compra_id
+                       AND ISNULL(r.activo,1)=1 AND ISNULL(r.liberado,0)=0
+                       AND NOT EXISTS(
+                           SELECT 1 FROM Detalle_Remito dr
+                           INNER JOIN LiberacionRemitoDetalle l
+                               ON l.detalle_remito_id=dr.detalle_remito_id
+                           WHERE dr.remito_id=r.remito_id AND ISNULL(l.activo,1)=1
+                       )) AS remitos_a_desactivar
+                FROM registroDecompra rc
+                LEFT JOIN estado_registroDecompra e ON e.estado_registroDecompra_id=rc.estado_registroDecompra_id
+                WHERE rc.registro_compra_id=@registro_compra_id
+            `);
+        if (!result.recordset.length) return res.status(404).json({ message: 'Registro de compra no encontrado' });
+        const remitos = await pool.request()
+            .input('registro_compra_id', sql.BigInt, registroCompraId)
+            .query(`
+                SELECT
+                    r.remito_id,
+                    r.numero,
+                    CASE WHEN ISNULL(r.liberado,0)=1 OR EXISTS(
+                        SELECT 1
+                        FROM Detalle_Remito dr
+                        INNER JOIN LiberacionRemitoDetalle l
+                            ON l.detalle_remito_id=dr.detalle_remito_id
+                        WHERE dr.remito_id=r.remito_id AND ISNULL(l.activo,1)=1
+                    ) THEN 'LIBERADO' ELSE 'PENDIENTE' END AS estado_liberacion
+                FROM Remito r
+                WHERE r.idRegistroDeCompra=@registro_compra_id
+                  AND ISNULL(r.activo,1)=1
+                ORDER BY r.remito_id
+            `);
+        res.json({ ...result.recordset[0], remitos: remitos.recordset });
+    } catch (error) {
+        console.error('Error al calcular impacto de cancelacion:', error);
+        res.status(500).json({ message: 'No se pudo calcular el impacto de la cancelacion', error: error.message });
+    }
+};
+
 const cancelarRegistroCompra = async (req, res) => {
+    let transaction;
     try {
         const { id } = req.params;
 
         const pool = await conectarDB();
-console.log(id)
-        const registro = await pool.request()
+        transaction = new sql.Transaction(pool);
+        await transaction.begin(sql.ISOLATION_LEVEL.SERIALIZABLE);
+        const registro = await new sql.Request(transaction)
             .input('registro_compra_id', sql.BigInt, id)
             .query(`
                 SELECT
@@ -690,24 +916,21 @@ console.log(id)
             `);
 
         if (registro.recordset.length === 0) {
+            await transaction.rollback();
             return res.status(404).json({
                 message: 'Registro de compra no encontrado'
             });
         }
 
-        if (registro.recordset[0].estado === 'COMPLETADA') {
-            return res.status(400).json({
-                message: 'No se puede cancelar una registro de compra completada'
+        const estadoActual = String(registro.recordset[0].estado || '').trim().toUpperCase();
+        if (estadoActual !== 'CREADA') {
+            await transaction.rollback();
+            return res.status(409).json({
+                message: `Solo se pueden cancelar registros de compra en estado CREADA. Estado actual: ${estadoActual || 'SIN ESTADO'}`
             });
         }
 
-        if (registro.recordset[0].estado === 'CANCELADA') {
-            return res.status(400).json({
-                message: 'La registro de compra ya se encuentra cancelada'
-            });
-        }
-
-        const estadoCancelada = await pool.request()
+        const estadoCancelada = await new sql.Request(transaction)
             .input('nombre', sql.VarChar, 'CANCELADA')
             .query(`
                 SELECT estado_registroDecompra_id AS estado_registroDeCompra_id
@@ -715,7 +938,9 @@ console.log(id)
                 WHERE nombre = @nombre
             `);
 
-        await pool.request()
+        if (!estadoCancelada.recordset.length) throw new Error('No existe el estado CANCELADA');
+
+        await new sql.Request(transaction)
             .input('registro_compra_id', sql.BigInt, id)
             .input('estado_cancelada_id', sql.Int, estadoCancelada.recordset[0].estado_registroDeCompra_id)
             .query(`
@@ -724,11 +949,30 @@ console.log(id)
                 WHERE registro_compra_id = @registro_compra_id
             `);
 
+        const remitos = await new sql.Request(transaction)
+            .input('registro_compra_id', sql.BigInt, id)
+            .query(`
+                UPDATE r SET activo=0
+                FROM Remito r
+                WHERE r.idRegistroDeCompra=@registro_compra_id
+                  AND ISNULL(r.activo,1)=1
+                  AND ISNULL(r.liberado,0)=0
+                  AND NOT EXISTS(
+                    SELECT 1 FROM LiberacionRemitoDetalle l
+                    INNER JOIN Detalle_Remito dl ON dl.detalle_remito_id=l.detalle_remito_id
+                    WHERE dl.remito_id=r.remito_id AND ISNULL(l.activo,1)=1
+                  )
+            `);
+
+        await transaction.commit();
+
         res.json({
-            message: 'Registro de compra cancelado correctamente'
+            message: 'Registro de compra cancelado correctamente',
+            remitos_desactivados: remitos.rowsAffected[0] || 0
         });
 
     } catch (error) {
+        if (transaction) try { await transaction.rollback(); } catch {}
         res.status(500).json({
             message: 'Error al cancelar registro de compra',
             error: error.message
@@ -742,5 +986,6 @@ module.exports = {
     getRegistroCompraById,
     crearRegistroCompra,
     actualizarRegistroCompra,
+    obtenerImpactoCancelacion,
     cancelarRegistroCompra
 };

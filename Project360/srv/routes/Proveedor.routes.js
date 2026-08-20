@@ -5,6 +5,7 @@ const {
     getProveedores,
     getProveedorById,
     getRubrosProveedor,
+    createRubroProveedor,
     createProveedor,
     updateProveedor,
     deleteProveedor
@@ -14,6 +15,7 @@ const { verificarToken } = require('../middlewares/auth.middleware');
 
 router.get('/', verificarToken, getProveedores);
 router.get('/rubros/lista', verificarToken, getRubrosProveedor);
+router.post('/rubros', verificarToken, createRubroProveedor);
 router.get('/:id', verificarToken, getProveedorById);
 
 router.post('/', verificarToken, createProveedor);

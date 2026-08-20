@@ -1,7 +1,6 @@
 import { CommonModule } from '@angular/common';
 import { Component, OnInit } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
-import { forkJoin } from 'rxjs';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatTabsModule } from '@angular/material/tabs';
@@ -45,7 +44,16 @@ export class RegistroCompraDetalle implements OnInit {
   registro: RegistroCompra | null = null;
   remitos: Remito[] = [];
   stockLiberado: StockLiberadoLinea[] = [];
-  detalleColumns = ['material', 'descripcion', 'cantidad', 'unidad'];
+  detalleColumns = [
+    'material',
+    'descripcion',
+    'cantidad',
+    'enRemitos',
+    'liberado',
+    'pendienteLiberar',
+    'unidad',
+    'estadoLiberacion'
+  ];
   remitosColumns = ['numero', 'fecha', 'estado', 'acciones'];
   cargando = false;
   cargandoRemitos = false;
@@ -77,7 +85,7 @@ export class RegistroCompraDetalle implements OnInit {
         this.cargando = false;
         this.registro = registro;
         this.cargarRemitos(id);
-        this.cargarStockLiberado(id, registro.detalle ?? []);
+        this.cargarStockLiberado(registro.detalle ?? []);
       },
       error: error => {
         this.cargando = false;
@@ -105,61 +113,16 @@ export class RegistroCompraDetalle implements OnInit {
     });
   }
 
-  cargarStockLiberado(idRegistro: number, detalleRegistro: DetalleRegistroCompra[]): void {
-    this.stockLiberado = this.crearStockEsperado(detalleRegistro, new Map());
-    this.cargandoStock = true;
-
-    this.remitosService.getRemitosByRegistroCompra(idRegistro).subscribe({
-      next: remitos => {
-        const remitosLiberados = remitos.filter(remito => remito.liberado);
-
-        if (remitosLiberados.length === 0) {
-          this.cargandoStock = false;
-          return;
-        }
-
-        forkJoin(remitosLiberados.map(remito => this.remitosService.getRemitoById(remito.idRemito))).subscribe({
-          next: remitosDetalle => {
-            const liberadoPorMaterial = new Map<number, number>();
-
-            remitosDetalle.flatMap(remito => remito.detalle ?? []).forEach(item => {
-              const idMaterial = Number(item.idMaterial);
-
-              if (!idMaterial) {
-                return;
-              }
-
-              liberadoPorMaterial.set(
-                idMaterial,
-                (liberadoPorMaterial.get(idMaterial) ?? 0) + Number(item.cantidad ?? 0)
-              );
-            });
-
-            this.stockLiberado = this.crearStockEsperado(detalleRegistro, liberadoPorMaterial);
-            this.cargandoStock = false;
-          },
-          error: () => {
-            this.cargandoStock = false;
-            this.snackBar.open('Error al calcular stock liberado del registro.', 'Cerrar', {
-              duration: 3500
-            });
-          }
-        });
-      },
-      error: () => {
-        this.cargandoStock = false;
-        this.snackBar.open('Error al cargar remitos del registro.', 'Cerrar', {
-          duration: 3500
-        });
-      }
-    });
+  cargarStockLiberado(detalleRegistro: DetalleRegistroCompra[]): void {
+    this.stockLiberado = this.crearStockEsperado(detalleRegistro);
+    this.cargandoStock = false;
   }
 
-  crearStockEsperado(detalleRegistro: DetalleRegistroCompra[], liberadoPorMaterial: Map<number, number>): StockLiberadoLinea[] {
+  crearStockEsperado(detalleRegistro: DetalleRegistroCompra[]): StockLiberadoLinea[] {
     return detalleRegistro.map(item => {
       const idMaterial = Number(item.idMaterial);
       const esperado = Number(item.cantidadSolicitada ?? item.cantidad ?? 0);
-      const liberado = idMaterial ? Number(liberadoPorMaterial.get(idMaterial) ?? 0) : 0;
+      const liberado = Number(item.cantidadRecibida ?? 0);
       const pendiente = Math.max(esperado - liberado, 0);
 
       return {
@@ -203,7 +166,24 @@ export class RegistroCompraDetalle implements OnInit {
   }
 
   estadoRemito(remito: Remito): string {
-    return remito.liberado ? 'LIBERADO' : 'PENDIENTE';
+    return remito.estadoLiberacion || (remito.liberado ? 'LIBERADO' : 'PENDIENTE');
+  }
+
+  pendienteLiberarDetalle(item: DetalleRegistroCompra): number {
+    return Number(item.cantidadPendienteLiberar ?? Math.max(
+      Number(item.cantidadEnRemitos ?? 0) - Number(item.cantidadRecibida ?? 0), 0
+    ));
+  }
+
+  get estadoLiberacionRegistro(): string {
+    if (!this.stockLiberado.length) return 'PENDIENTE';
+    if (this.stockLiberado.every(item => item.estado === 'COMPLETO')) return 'LIBERADO';
+    if (this.stockLiberado.some(item => item.liberado > 0)) return 'PARCIAL';
+    return 'PENDIENTE';
+  }
+
+  get materialesLiberadosResumen(): number {
+    return this.stockLiberado.filter(item => item.estado === 'COMPLETO').length;
   }
 
   formatearFecha(fecha?: string | null): string {

@@ -37,7 +37,7 @@ export class Login {
   console.log('LOGIN OK EN FRONT:', response);
   console.log('TOKEN STORAGE:', localStorage.getItem('token'));
 
-  const resultado = await this.router.navigateByUrl('/dashboard');
+  const resultado = await this.router.navigateByUrl('/dashboard', { replaceUrl: true });
 
   console.log('RESULTADO NAVEGACION:', resultado);
 },

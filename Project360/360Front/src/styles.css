@@ -25,27 +25,30 @@ html[data-theme="dark"] {
   --blue-2: #3b82f6;
   --orange: #f97316;
   --purple: #8b5cf6;
+  --table-row: #111a2c;
+  --table-row-alt: #152137;
+  --table-hover: #223050;
   --shadow: 0 18px 42px rgba(0,0,0,.28);
 }
 
 html[data-theme="light"] {
   color-scheme: light;
-  --bg: #f3f7fb;
-  --surface-nav: #ffffff;
-  --surface-sidebar: #ffffff;
-  --surface-card: #ffffff;
-  --surface-card-2: #eef5fb;
-  --surface-hover: #ddebf8;
+  --bg: #e6edf4;
+  --surface-nav: #f6f9fc;
+  --surface-sidebar: #f4f8fb;
+  --surface-card: #f7fafc;
+  --surface-card-2: #e2ebf3;
+  --surface-hover: #cbd9e6;
   --primary: #00b89b;
   --primary-hover: #00997f;
   --primary-dark: #007a6a;
   --on-primary: #03130f;
-  --text: #102033;
-  --text-secondary: #53657a;
-  --text-muted: #7a8da3;
-  --border: rgba(16,32,51,.10);
-  --border-2: rgba(16,32,51,.16);
-  --border-3: rgba(16,32,51,.24);
+  --text: #0b1726;
+  --text-secondary: #405166;
+  --text-muted: #66788d;
+  --border: rgba(11,23,38,.13);
+  --border-2: rgba(11,23,38,.20);
+  --border-3: rgba(11,23,38,.30);
   --green: #16a34a;
   --red: #dc2626;
   --yellow: #d97706;
@@ -53,7 +56,10 @@ html[data-theme="light"] {
   --blue-2: #3b82f6;
   --orange: #ea580c;
   --purple: #7c3aed;
-  --shadow: 0 16px 34px rgba(16,32,51,.10);
+  --table-row: #f2f6fa;
+  --table-row-alt: #eaf1f7;
+  --table-hover: #d5e2ee;
+  --shadow: 0 16px 34px rgba(16,32,51,.12);
 }
 
 :root {
@@ -599,7 +605,17 @@ table {
 
 thead,
 .mat-mdc-header-row {
-  background: var(--surface-card) !important;
+  background: var(--surface-card-2) !important;
+}
+
+tbody tr,
+.mat-mdc-row {
+  background: var(--table-row) !important;
+}
+
+tbody tr:nth-child(even),
+.mat-mdc-row:nth-child(even) {
+  background: var(--table-row-alt) !important;
 }
 
 th,
@@ -620,6 +636,7 @@ td,
 .mat-mdc-cell {
   color: var(--text) !important;
   font-size: 12px;
+  background: inherit !important;
 }
 
 html[data-theme="dark"] table th,
@@ -650,7 +667,7 @@ td,
 
 tr:hover,
 .mat-mdc-row:hover {
-  background: color-mix(in srgb, var(--surface-hover) 72%, transparent) !important;
+  background: var(--table-hover) !important;
 }
 
 td:first-child,
@@ -666,13 +683,16 @@ td:first-child,
 }
 
 .tile {
-  min-height: 166px;
+  min-height: 128px;
   background: var(--surface-card);
   border: 1px solid var(--border);
   border-radius: 8px;
   padding: 18px;
   cursor: pointer;
   box-shadow: none;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
   transition: transform .18s ease, filter .18s ease, border-color .18s ease;
 }
 

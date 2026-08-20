@@ -69,6 +69,11 @@
                 </div>
 
                 <div class="readonly-field">
+                  <span>Estado de liberaciÃ³n</span>
+                  <strong>{{ estadoLiberacionRegistro }}</strong>
+                </div>
+
+                <div class="readonly-field">
                   <span>CUIT</span>
                   <strong>{{ registro.proveedor.cuit || '-' }}</strong>
                 </div>
@@ -117,6 +122,36 @@
                     <td mat-cell *matCellDef="let item">{{ item.unidad }}</td>
                   </ng-container>
 
+                  <ng-container matColumnDef="liberado">
+                    <th mat-header-cell *matHeaderCellDef>Liberado</th>
+                    <td mat-cell *matCellDef="let item" class="tech-value">
+                      {{ item.cantidadRecibida || 0 }}
+                    </td>
+                  </ng-container>
+
+                  <ng-container matColumnDef="enRemitos">
+                    <th mat-header-cell *matHeaderCellDef>En remitos</th>
+                    <td mat-cell *matCellDef="let item" class="tech-value">
+                      {{ item.cantidadEnRemitos || 0 }}
+                    </td>
+                  </ng-container>
+
+                  <ng-container matColumnDef="pendienteLiberar">
+                    <th mat-header-cell *matHeaderCellDef>Pend. liberar</th>
+                    <td mat-cell *matCellDef="let item" class="tech-value">
+                      {{ pendienteLiberarDetalle(item) }}
+                    </td>
+                  </ng-container>
+
+                  <ng-container matColumnDef="estadoLiberacion">
+                
+                    <td mat-cell *matCellDef="let item">
+                      <span class="estado-badge" [ngClass]="(item.estadoLiberacion || 'PENDIENTE').toLowerCase()">
+                        {{ item.estadoLiberacion || 'PENDIENTE' }}
+                      </span>
+                    </td>
+                  </ng-container>
+
                   <tr mat-header-row *matHeaderRowDef="detalleColumns"></tr>
                   <tr mat-row *matRowDef="let row; columns: detalleColumns;" class="data-row"></tr>
                 </table>
@@ -133,7 +168,9 @@
                   <span class="block-title">Stock y liberaciones</span>
                 </mat-panel-title>
                 <mat-panel-description>
-                  <span class="chip chip-no-dot chip-teal">{{ stockLiberado.length }} MATERIALES</span>
+                  <span class="chip chip-no-dot chip-teal">
+                    {{ estadoLiberacionRegistro }} Â· {{ materialesLiberadosResumen }}/{{ stockLiberado.length }} MATERIALES LIBERADOS
+                  </span>
                 </mat-panel-description>
               </mat-expansion-panel-header>
 

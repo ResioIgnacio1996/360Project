@@ -58,7 +58,19 @@ export class ProveedorForm implements OnInit {
       direccion: [''],
       ubicacion: [''],
       rubro_id: ['', [Validators.required]],
+      nuevo_rubro: [''],
       activo: [true]
+    });
+
+    this.proveedorForm.get('rubro_id')?.valueChanges.subscribe(value => {
+      const nuevoRubro = this.proveedorForm.get('nuevo_rubro');
+      if (value === 'OTRO') {
+        nuevoRubro?.setValidators([Validators.required, Validators.maxLength(100)]);
+      } else {
+        nuevoRubro?.clearValidators();
+        nuevoRubro?.setValue('', { emitEvent: false });
+      }
+      nuevoRubro?.updateValueAndValidity({ emitEvent: false });
     });
   }
 
@@ -115,6 +127,21 @@ export class ProveedorForm implements OnInit {
 
     this.guardando = true;
 
+    if (this.esOtroRubro()) {
+      this.proveedorService.crearRubroProveedor(this.proveedorForm.value.nuevo_rubro.trim()).subscribe({
+        next: ({ rubro }) => this.guardarProveedor(rubro.rubro_id),
+        error: (err) => {
+          this.error = err?.error?.message || 'Error al crear el rubro';
+          this.guardando = false;
+        }
+      });
+      return;
+    }
+
+    this.guardarProveedor(Number(this.proveedorForm.value.rubro_id));
+  }
+
+  guardarProveedor(rubroId: number): void {
     const proveedor = {
       razon_social: this.proveedorForm.value.razon_social,
       cuit: this.proveedorForm.value.cuit,
@@ -122,7 +149,7 @@ export class ProveedorForm implements OnInit {
       email: this.proveedorForm.value.email,
       direccion: this.proveedorForm.value.direccion,
       ubicacion: this.proveedorForm.value.ubicacion,
-      rubro_id: Number(this.proveedorForm.value.rubro_id),
+      rubro_id: rubroId,
       activo: this.proveedorForm.value.activo
     };
 
@@ -153,6 +180,10 @@ export class ProveedorForm implements OnInit {
         this.guardando = false;
       }
     });
+  }
+
+  esOtroRubro(): boolean {
+    return this.proveedorForm.get('rubro_id')?.value === 'OTRO';
   }
 
   cancelar(): void {

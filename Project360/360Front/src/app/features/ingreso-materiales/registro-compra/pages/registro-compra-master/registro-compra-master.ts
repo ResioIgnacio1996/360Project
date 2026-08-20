@@ -122,8 +122,14 @@ export class RegistroCompraMaster implements OnInit {
     fechaHasta: [null as Date | null]
   });
 
-  @ViewChild(MatPaginator) paginator!: MatPaginator;
+  private paginator?: MatPaginator;
   private sort?: MatSort;
+
+  @ViewChild(MatPaginator)
+  set matPaginator(paginator: MatPaginator | undefined) {
+    this.paginator = paginator;
+    this.conectarPaginador();
+  }
 
   @ViewChild(MatSort)
   set matSort(sort: MatSort | undefined) {
@@ -171,7 +177,7 @@ export class RegistroCompraMaster implements OnInit {
 
         this.registros = data;
         this.dataSource = new MatTableDataSource<RegistroCompra>([]);
-        this.dataSource.paginator = this.paginator;
+        this.conectarPaginador();
         this.configurarOrdenamiento();
         this.aplicarFiltros(false);
       },
@@ -223,8 +229,10 @@ export class RegistroCompraMaster implements OnInit {
 
     this.dataSource.data = filtrados;
 
-    if (resetPage && this.dataSource.paginator) {
-      this.dataSource.paginator.firstPage();
+    this.conectarPaginador();
+
+    if (resetPage && this.paginator) {
+      this.paginator.firstPage();
     }
   }
 
@@ -378,12 +386,41 @@ export class RegistroCompraMaster implements OnInit {
   }
 
   cancelar(registro: RegistroCompra): void {
-    const confirmado = confirm(`¿Seguro que querés cancelar el registro ${registro.numero}?`);
-
-    if (!confirmado) {
+    if (!this.puedeCancelar(registro)) {
+      this.snackBar.open('Solo se pueden cancelar registros de compra en estado CREADA.', 'Cerrar', {
+        duration: 3500
+      });
       return;
     }
+    this.registroCompraService.obtenerImpactoCancelacion(registro.idRegistroCompra).subscribe({
+      next: impacto => {
+        const pendientes = Number(impacto?.remitos_a_desactivar || 0);
+        const liberados = Number(impacto?.remitos_con_liberaciones || 0);
+        const remitos = Array.isArray(impacto?.remitos) ? impacto.remitos : [];
+        let aviso = `¿Seguro que querés cancelar el registro ${registro.numero}?`;
+        if (pendientes > 0) aviso += `\n\n${pendientes} remito(s) pendiente(s) se cancelarán y dejarán de verse en el sistema.`;
+        if (liberados > 0) aviso += `\n\n${liberados} remito(s) con liberaciones permanecerán visibles por trazabilidad.`;
+        if (remitos.length) {
+          aviso += '\n\nRemitos vinculados:';
+          for (const remito of remitos) {
+            aviso += `\n- ${remito.numero} (${remito.estado_liberacion || 'PENDIENTE'})`;
+          }
+        } else {
+          aviso += '\n\nNo tiene remitos activos vinculados.';
+        }
+        if (confirm(aviso)) this.confirmarCancelacion(registro);
+      },
+      error: error => this.snackBar.open(
+        error?.error?.error
+          || error?.error?.message
+          || `No se pudo verificar el impacto de la cancelación (HTTP ${error?.status || 'desconocido'}).`,
+        'Cerrar',
+        { duration: 4000 }
+      )
+    });
+  }
 
+  private confirmarCancelacion(registro: RegistroCompra): void {
     this.registroCompraService.cancelarRegistro(registro.idRegistroCompra).subscribe({
       next: () => {
         this.snackBar.open('Registro de compra cancelado correctamente.', 'Cerrar', {
@@ -391,8 +428,8 @@ export class RegistroCompraMaster implements OnInit {
         });
         this.cargarRegistros();
       },
-      error: () => {
-        this.snackBar.open('Error al cancelar el registro de compra.', 'Cerrar', {
+      error: error => {
+        this.snackBar.open(error?.error?.message || error?.error?.error || 'Error al cancelar el registro de compra.', 'Cerrar', {
           duration: 3500
         });
       }
@@ -427,13 +464,23 @@ export class RegistroCompraMaster implements OnInit {
   }
 
   puedeEditar(registro: RegistroCompra): boolean {
-    const estado = this.getEstadoCodigo(registro);
-    return estado === 'CREADA';
+    return this.getEstadoCodigo(registro) === 'CREADA';
+  }
+
+  tooltipEditar(registro: RegistroCompra): string {
+    return this.puedeEditar(registro)
+      ? 'Editar OC creada'
+      : 'Solo se puede editar cuando el estado es CREADA';
   }
 
   puedeCancelar(registro: RegistroCompra): boolean {
-    const estado = this.getEstadoCodigo(registro);
-    return estado !== 'COMPLETADA' && estado !== 'CANCELADA';
+    return this.getEstadoCodigo(registro) === 'CREADA';
+  }
+
+  tooltipCancelar(registro: RegistroCompra): string {
+    return this.puedeCancelar(registro)
+      ? 'Cancelar registro de compra'
+      : 'Solo se puede cancelar cuando el estado es CREADA';
   }
 
   formatearFecha(fecha?: string | null): string {
@@ -450,6 +497,11 @@ export class RegistroCompraMaster implements OnInit {
   }
 
   getPorcentajeRecibido(registro: RegistroCompra): number {
+    if (Number(registro.cantidadTotal || 0) > 0) {
+      return Math.min(100, Math.round(
+        (Number(registro.cantidadLiberada || 0) / Number(registro.cantidadTotal)) * 100
+      ));
+    }
     const detalle = registro.detalle ?? [];
 
     const solicitado = detalle.reduce((total, item) =>
@@ -466,6 +518,7 @@ export class RegistroCompraMaster implements OnInit {
   }
 
   getCantidadRemitos(registro: RegistroCompra): number {
+    if (registro.cantidadRemitosActivos !== undefined) return Number(registro.cantidadRemitosActivos || 0);
     const anyRegistro = registro as any;
     const remitos = anyRegistro.remitos ?? anyRegistro.remitosAsociados ?? [];
 
@@ -474,6 +527,14 @@ export class RegistroCompraMaster implements OnInit {
     }
 
     return Number(anyRegistro.cantidadRemitos ?? 0);
+  }
+
+  getEstadoLiberacion(registro: RegistroCompra): string {
+    return registro.estadoLiberacion || 'PENDIENTE';
+  }
+
+  getResumenMaterialesLiberados(registro: RegistroCompra): string {
+    return `${Number(registro.materialesLiberados || 0)}/${Number(registro.cantidadMateriales || 0)}`;
   }
 
   private configurarOrdenamiento(): void {
@@ -504,6 +565,12 @@ export class RegistroCompraMaster implements OnInit {
 
     if (this.sort) {
       this.dataSource.sort = this.sort;
+    }
+  }
+
+  private conectarPaginador(): void {
+    if (this.paginator) {
+      this.dataSource.paginator = this.paginator;
     }
   }
 

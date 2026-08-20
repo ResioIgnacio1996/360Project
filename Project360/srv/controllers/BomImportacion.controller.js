@@ -108,11 +108,69 @@ async function obtenerOCrearMaterialBom(transaction, descripcion, uomId) {
   return { id: insertado.recordset[0].id_material, creado: true };
 }
 
+const crearHttpError = (message, statusCode) => Object.assign(new Error(message), { statusCode });
+const numeroEnteroPositivo = value => Number.isInteger(Number(value)) && Number(value) > 0;
+
+async function prepararLineaManual(transaction, proyectoId, body, bomId = null) {
+  const operacionId = Number(body.operacion_id);
+  const numeroLinea = Number(body.numero_linea ?? body.nro_linea);
+  const cantidad = Number(body.cantidad_teorica);
+  const uomId = Number(body.uom_id);
+  const descripcion = String(body.descripcion_libre || '').trim().replace(/\s+/g, ' ');
+  const materialIdSolicitado = Number(body.material_id || 0);
+
+  if (!numeroEnteroPositivo(operacionId)) throw crearHttpError('La operacion es obligatoria', 400);
+  if (!numeroEnteroPositivo(numeroLinea)) throw crearHttpError('El numero de linea debe ser un entero mayor a cero', 400);
+  if (!descripcion) throw crearHttpError('La descripcion del material es obligatoria', 400);
+  if (!(cantidad > 0)) throw crearHttpError('La cantidad teorica debe ser mayor a cero', 400);
+  if (!numeroEnteroPositivo(uomId)) throw crearHttpError('La unidad de medida es obligatoria', 400);
+
+  const contexto = await new sql.Request(transaction)
+    .input('proyecto', sql.BigInt, proyectoId)
+    .input('operacion', sql.BigInt, operacionId)
+    .input('uom', sql.BigInt, uomId)
+    .query(`
+      SELECT o.operacion_id
+      FROM Operacion o
+      JOIN VersionPlan v ON v.version_id=o.version_id AND v.es_activa=1
+      WHERE o.operacion_id=@operacion AND o.proyecto_id=@proyecto AND ISNULL(o.archivada,0)=0;
+      SELECT uom_id,nombre FROM UoM WHERE uom_id=@uom;
+    `);
+  if (!contexto.recordsets[0].length) throw crearHttpError('La operacion no pertenece al plan activo del proyecto', 400);
+  if (!contexto.recordsets[1].length) throw crearHttpError('La unidad de medida no existe', 400);
+
+  const duplicada = await new sql.Request(transaction)
+    .input('proyecto', sql.BigInt, proyectoId)
+    .input('operacion', sql.BigInt, operacionId)
+    .input('linea', sql.SmallInt, numeroLinea)
+    .input('bom', sql.BigInt, bomId)
+    .query(`
+      SELECT bom_id FROM BomOperacion WITH (UPDLOCK,HOLDLOCK)
+      WHERE proyecto_id=@proyecto AND operacion_id=@operacion AND numero_linea=@linea
+        AND (@bom IS NULL OR bom_id<>@bom)
+    `);
+  if (duplicada.recordset.length) throw crearHttpError(`La linea ${numeroLinea} ya existe para la operacion seleccionada`, 409);
+
+  let material;
+  if (numeroEnteroPositivo(materialIdSolicitado)) {
+    const existente = await new sql.Request(transaction).input('material', sql.BigInt, materialIdSolicitado)
+      .query('SELECT id_material,nombre,uom_id FROM Materiales WHERE id_material=@material');
+    if (!existente.recordset.length) throw crearHttpError('El material seleccionado no existe', 400);
+    if (Number(existente.recordset[0].uom_id) !== uomId)
+      throw crearHttpError('La unidad de medida no coincide con el material seleccionado', 409);
+    material = { id: existente.recordset[0].id_material, creado: false };
+  } else {
+    material = await obtenerOCrearMaterialBom(transaction, descripcion, uomId);
+  }
+  return { operacionId, numeroLinea, cantidad, uomId, descripcion, materialId: Number(material.id) };
+}
+
 const listar = async (req, res) => {
   try {
     const pool = await conectarDB();
     const result = await pool.request().input('proyecto', sql.BigInt, req.params.id).query(`
-      SELECT b.bom_id,b.material_id,b.numero_linea,COALESCE(m.nombre,b.descripcion_libre) descripcion_libre,b.cantidad_teorica,u.nombre unidad,
+      SELECT b.bom_id,b.material_id,b.numero_linea,COALESCE(m.nombre,b.descripcion_libre) descripcion_libre,b.cantidad_teorica,u.uom_id,u.nombre unidad,
+             (SELECT COUNT(*) FROM ConsumoMaterialOperacion c WHERE c.bom_id=b.bom_id) consumos_registrados,
              o.operacion_id,o.secuencia,o.nombre operacion_nombre,e.codigo etapa_codigo
       FROM BomOperacion b
       JOIN Operacion o ON o.operacion_id=b.operacion_id
@@ -125,6 +183,130 @@ const listar = async (req, res) => {
     res.json(result.recordset);
   } catch (error) {
     res.status(500).json({ message: 'No se pudo cargar el BOM', error: error.message });
+  }
+};
+
+const contextoEdicion = async (req, res) => {
+  try {
+    const pool = await conectarDB();
+    const contexto = await contextoProyecto(pool, req.params.id);
+    if (!contexto.recordsets[0].length) return res.status(404).json({ message: 'Proyecto no encontrado' });
+    res.json({
+      proyecto: contexto.recordsets[0][0],
+      operaciones: contexto.recordsets[1],
+      unidades: contexto.recordsets[2],
+      materiales: (await pool.request().query(`
+        SELECT id_material,nombre,descripcion,uom_id
+        FROM Materiales
+        ORDER BY nombre
+      `)).recordset
+    });
+  } catch (error) {
+    res.status(500).json({ message: 'No se pudo cargar el contexto del BOM', error: error.message });
+  }
+};
+
+const crearLinea = async (req, res) => {
+  let tx;
+  try {
+    const pool = await conectarDB();
+    tx = new sql.Transaction(pool);
+    await tx.begin(sql.ISOLATION_LEVEL.SERIALIZABLE);
+    const linea = await prepararLineaManual(tx, req.params.id, req.body);
+    const insertada = await new sql.Request(tx)
+      .input('operacion', sql.BigInt, linea.operacionId)
+      .input('proyecto', sql.BigInt, req.params.id)
+      .input('uom', sql.BigInt, linea.uomId)
+      .input('linea', sql.SmallInt, linea.numeroLinea)
+      .input('material', sql.BigInt, linea.materialId)
+      .input('descripcion', sql.NVarChar(200), linea.descripcion)
+      .input('cantidad', sql.Decimal(12, 3), linea.cantidad)
+      .query(`
+        INSERT INTO BomOperacion(operacion_id,proyecto_id,uom_id,numero_linea,material_id,descripcion_libre,cantidad_teorica,sin_codigo)
+        OUTPUT INSERTED.bom_id
+        VALUES(@operacion,@proyecto,@uom,@linea,@material,@descripcion,@cantidad,0)
+      `);
+    await tx.commit();
+    res.status(201).json({ message: 'Material agregado al BOM', bom_id: insertada.recordset[0].bom_id });
+  } catch (error) {
+    if (tx) try { await tx.rollback(); } catch {}
+    res.status(error.statusCode || 500).json({ message: error.message || 'No se pudo agregar el material al BOM' });
+  }
+};
+
+const actualizarLinea = async (req, res) => {
+  const bomId = Number(req.params.bomId);
+  if (!numeroEnteroPositivo(bomId)) return res.status(400).json({ message: 'Linea BOM invalida' });
+  let tx;
+  try {
+    const pool = await conectarDB();
+    tx = new sql.Transaction(pool);
+    await tx.begin(sql.ISOLATION_LEVEL.SERIALIZABLE);
+    const actual = await new sql.Request(tx)
+      .input('bom', sql.BigInt, bomId)
+      .input('proyecto', sql.BigInt, req.params.id)
+      .query(`
+        SELECT b.bom_id,b.operacion_id,b.material_id,b.uom_id,
+               (SELECT COUNT(*) FROM ConsumoMaterialOperacion c WHERE c.bom_id=b.bom_id) consumos
+        FROM BomOperacion b WITH (UPDLOCK,HOLDLOCK)
+        WHERE b.bom_id=@bom AND b.proyecto_id=@proyecto
+      `);
+    if (!actual.recordset.length) throw crearHttpError('Linea BOM no encontrada', 404);
+
+    const linea = await prepararLineaManual(tx, req.params.id, req.body, bomId);
+    const anterior = actual.recordset[0];
+    if (Number(anterior.consumos) > 0 && (
+      Number(anterior.operacion_id) !== linea.operacionId ||
+      Number(anterior.material_id) !== linea.materialId ||
+      Number(anterior.uom_id) !== linea.uomId
+    )) throw crearHttpError('La linea tiene consumos registrados; solo se puede modificar su cantidad teorica o numero de linea dentro de la misma operacion', 409);
+
+    await new sql.Request(tx)
+      .input('bom', sql.BigInt, bomId)
+      .input('operacion', sql.BigInt, linea.operacionId)
+      .input('uom', sql.BigInt, linea.uomId)
+      .input('linea', sql.SmallInt, linea.numeroLinea)
+      .input('material', sql.BigInt, linea.materialId)
+      .input('descripcion', sql.NVarChar(200), linea.descripcion)
+      .input('cantidad', sql.Decimal(12, 3), linea.cantidad)
+      .query(`
+        UPDATE BomOperacion SET operacion_id=@operacion,uom_id=@uom,numero_linea=@linea,
+          material_id=@material,descripcion_libre=@descripcion,cantidad_teorica=@cantidad,
+          sin_codigo=0,fecha_actualizacion=SYSDATETIME()
+        WHERE bom_id=@bom
+      `);
+    await tx.commit();
+    res.json({ message: 'Linea BOM actualizada correctamente' });
+  } catch (error) {
+    if (tx) try { await tx.rollback(); } catch {}
+    res.status(error.statusCode || 500).json({ message: error.message || 'No se pudo actualizar la linea BOM' });
+  }
+};
+
+const eliminarLinea = async (req, res) => {
+  const bomId = Number(req.params.bomId);
+  if (!numeroEnteroPositivo(bomId)) return res.status(400).json({ message: 'Linea BOM invalida' });
+  let tx;
+  try {
+    const pool = await conectarDB();
+    tx = new sql.Transaction(pool);
+    await tx.begin(sql.ISOLATION_LEVEL.SERIALIZABLE);
+    const linea = await new sql.Request(tx)
+      .input('bom', sql.BigInt, bomId)
+      .input('proyecto', sql.BigInt, req.params.id)
+      .query(`
+        SELECT b.bom_id,(SELECT COUNT(*) FROM ConsumoMaterialOperacion c WHERE c.bom_id=b.bom_id) consumos
+        FROM BomOperacion b WITH (UPDLOCK,HOLDLOCK)
+        WHERE b.bom_id=@bom AND b.proyecto_id=@proyecto
+      `);
+    if (!linea.recordset.length) throw crearHttpError('Linea BOM no encontrada', 404);
+    if (Number(linea.recordset[0].consumos) > 0) throw crearHttpError('No se puede eliminar una linea BOM con consumos registrados', 409);
+    await new sql.Request(tx).input('bom', sql.BigInt, bomId).query('DELETE FROM BomOperacion WHERE bom_id=@bom');
+    await tx.commit();
+    res.json({ message: 'Linea BOM eliminada correctamente' });
+  } catch (error) {
+    if (tx) try { await tx.rollback(); } catch {}
+    res.status(error.statusCode || 500).json({ message: error.message || 'No se pudo eliminar la linea BOM' });
   }
 };
 
@@ -208,4 +390,4 @@ const importar = async (req, res) => {
   }
 };
 
-module.exports = { listar, previsualizar, importar };
+module.exports = { listar, contextoEdicion, crearLinea, actualizarLinea, eliminarLinea, previsualizar, importar };
