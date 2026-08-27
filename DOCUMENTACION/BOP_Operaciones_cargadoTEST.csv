@@ -1,0 +1,62 @@
+etapa;secuencia;nombre;depende_de;desfase_inicio_hs;responsable;duracion_hs;unidad_avance;cantidad_meta;peso_pct;criterio_cierre;descripcion;cant_materiales
+E1;100;ExcavaciÛn de cimientos.;;;RESP-A;8;PORCENTAJE;;25.00;;;2
+E1;200;Armado y llenado de cimientos.;100;;RESP-A;16;PORCENTAJE;;25.00;;;3
+E1;300;Armadura de estructura portante (perfileria metalica y cabios de madera).;200;;RESP-A;24;PORCENTAJE;;25.00;;;2
+E1;400;Armadura de cubierta.;300;72;RESP-A;16;PORCENTAJE;;25.00;;;2
+E2;500;Mamposteria de cimiento/muros de contencion.;400;;RESP-B;24;PORCENTAJE;;20.00;;;3
+E2;600;Replanteo y encofrado.;500;;RESP-B;12;PORCENTAJE;;10.00;;;2
+E2;700;Instalaciones Bajo Losa.;600;;RESP-B;8;PORCENTAJE;;5.00;;;2
+E2;800;Barrera de Vapor.;700;;RESP-B;4;PORCENTAJE;;10.00;;;1
+E2;900;Estructura (Armadura).;800;;RESP-B;32;PORCENTAJE;;25.00;;;3
+E2;1000;Hormigonado de platea.;900;;RESP-B;16;PORCENTAJE;;25.00;;;2
+E2;1100;Curado.;1000;;RESP-B;168;PORCENTAJE;;5.00;;;1
+E3;1200;Muros exteriores;1100;;RESP-C;60;PORCENTAJE;;40.00;;;3
+E3;1300;Muros interiores.;1200;;RESP-C;48;PORCENTAJE;;40.00;;;2
+E3;1400;Viga dintel sobre puertas interiores y exteriores.;1300;;RESP-C;16;PORCENTAJE;;20.00;;;2
+E4;1500;Revoque grueso en baÒos,cocina y lavadero.;1400;;RESP-D;24;PORCENTAJE;;20.00;;;2
+E4;1600;Revoque grueso en baÒos,cocina y lavadero.;1401;;RESP-D;40;PORCENTAJE;;80.00;;;1
+E5;1700;Revoque grueso en baÒos,cocina y lavadero.;1402;;RESP-D;48;PORCENTAJE;;80.00;;;3
+E5;1800;Revoque grueso en baÒos,cocina y lavadero.;1403;;RESP-D;12;PORCENTAJE;;20.00;;;2
+E6;1900;Estructura sector publico + privado;1800;;RESP-A;40;PORCENTAJE;;40.00;;;2
+E6;2000;Estructura galeria.;1900;;RESP-A;16;PORCENTAJE;;20.00;;;1
+E6;2100;Preinstalacion electrica.;2000;;RESP-A;8;PORCENTAJE;;10.00;;;2
+E6;2200;Aislamiento e impermeabilizacion + Recubrimiento final + Zingueria y detalles.;2100;;RESP-A;32;PORCENTAJE;;30.00;;;3
+E7;2300;Estructura + parapetos.;2200;;RESP-D;24;PORCENTAJE;;30.00;;;2
+E7;2400;Preinstalacion electrica.;2300;;RESP-D;6;PORCENTAJE;;5.00;;;1
+E7;2500;Aislamiento e impermeabilizacion + Capa de proteccion;2400;;RESP-D;16;PORCENTAJE;;15.00;;;1
+E7;2600;Encofrado.;2500;;RESP-D;20;PORCENTAJE;;25.00;;;2
+E7;2700;Colado de hormigÛn, vibrado, curado y desencofrado.;2600;;RESP-D;24;PORCENTAJE;;25.00;;;1
+E8;2800;Contrapisos (sector publico + privado + galeria) y banquinas + pasada de caÒerias sanitarias.;2700;;RESP-B;40;PORCENTAJE;;100.00;;;2
+E9;2900;Amure de premarcos de aberturas de aluminio.;2800;;RESP-D;8;PORCENTAJE;;33.33;;;2
+E9;3000;Amure puertas interiores.;2900;;RESP-D;6;PORCENTAJE;;33.33;;;1
+E9;3100;Amure puerta de ingreso.;3000;;RESP-D;4;PORCENTAJE;;33.33;;;1
+E10;3200;Instalacion de baldosas ceramicas y/o porcelanatos en pisos (sector publico + privado + galeria si es que necesita).;3100;;RESP-E;40;PORCENTAJE;;55.00;;;2
+E10;3300;Colocacion de zocalos.;3200;;RESP-E;12;PORCENTAJE;;10.00;;;1
+E10;3400;AplicaciÛn de azulejos o cer·micos en muros de cocinas, baÒos y antebaÒos.;3300;;RESP-E;24;PORCENTAJE;;35.00;;;2
+E11;3500;Instalacion cloacal (red de desague y ventilacion).;3400;;RESP-F;16;PORCENTAJE;;30.00;;;2
+E11;3600;Instalacion de agua.;3500;;RESP-F;16;PORCENTAJE;;30.00;;;2
+E11;3700;Instalacion pluvial.;3600;;RESP-F;12;PORCENTAJE;;30.00;;;1
+E11;3800;Pruebas de funcionalidad.;3700;;RESP-F;4;PORCENTAJE;;10.00;;;0
+E12;3900;Tablero general.;3800;;RESP-G;8;PORCENTAJE;;20.00;;;1
+E12;4000;Canalizaciones y tubos.;3900;;RESP-G;20;PORCENTAJE;;20.00;;;1
+E12;4100;Cableado.;4000;;RESP-G;24;PORCENTAJE;;20.00;;;2
+E12;4200;Mecanismos y Terminales (montaje de interruptores, tomacorrientes (enchufes) y puntos de luz).;4100;;RESP-G;16;PORCENTAJE;;20.00;;;2
+E12;4300;Pruebas de funcionalidad.;4200;;RESP-G;4;PORCENTAJE;;20.00;;;0
+E13;4400;InstalaciÛn de CaÒerÌ≠as (Montaje): Tendido de tuberÌ≠as desde el distribuidor hasta los puntos de consumo, ya sea enterradas o a la vista.;4300;;RESP-F;16;PORCENTAJE;;20.00;;;1
+E13;4500;Instalacion de llaves de pasos de cada artefacto.;4400;;RESP-F;6;PORCENTAJE;;20.00;;;1
+E13;4600;Instalacion de rejillas de ventilacion.;4500;;RESP-F;4;PORCENTAJE;;20.00;;;1
+E13;4700;Pruebas de presion.;4600;;RESP-F;4;PORCENTAJE;;20.00;;;0
+E14;4800;Artefactos Sanitarios y BaÒos: ColocaciÛn de inodoros, bidets, lavamanos y duchas. Incluye el sellado con silicona, fijaciÛn al piso/pared y conexiÛn a las piletas de patio (sifones) para evitar olores.;4700;;RESP-E;16;PORCENTAJE;;33.33;;;3
+E14;4900;InstalaciÛn de griferÌ≠as en baÒos y cocina.;4800;;RESP-E;8;PORCENTAJE;;33.33;;;2
+E14;5000;ConexiÛn de artefactos (cocina, calefÛn, termotanque) y verificaciÛn de seguridad, incluyendo pruebas de hermeticidad para evitar fugas.;4900;;RESP-E;8;PORCENTAJE;;33.33;;;1
+E15;5100;Armado de estructura.;5000;;RESP-H;12;PORCENTAJE;;50.00;;;2
+E15;5200;Emplacado, masillado y lijado.;5100;;RESP-H;16;PORCENTAJE;;50.00;;;3
+E16;5300;Imprimacion y/o sellado.;5200;;RESP-E;16;PORCENTAJE;;33.33;;;1
+E16;5400;AplicaciÛn de pintura.;5300;;RESP-E;20;PORCENTAJE;;33.33;;;1
+E16;5500;Acabado y proteccion.;5400;;RESP-E;8;PORCENTAJE;;33.33;;;1
+E17;5600;Limpieza de detalles.;5500;;RESP-I;6;PORCENTAJE;;16.66;;;0
+E17;5700;Aspirado y Limpieza de Polvo.;5600;;RESP-I;4;PORCENTAJE;;16.66;;;0
+E17;5800;Limpieza de Superficies Altas y Bajas.;5700;;RESP-I;4;PORCENTAJE;;16.66;;;0
+E17;5900;SanitizaciÛn de ÌÅreas H˙medas.;5800;;RESP-I;4;PORCENTAJE;;16.66;;;1
+E17;6000;Retiro de Escombros Ligeros.;5900;;RESP-I;6;PORCENTAJE;;16.66;;;0
+E17;6100;RevisiÛn Final.;6000;;RESP-I;4;PORCENTAJE;;16.66;;;0

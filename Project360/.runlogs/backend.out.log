@@ -1,0 +1,670 @@
+
+> srv@1.0.0 dev
+> nodemon index.js
+
+[33m[nodemon] 3.1.14[39m
+[33m[nodemon] to restart at any time, enter `rs`[39m
+[33m[nodemon] watching path(s): *.*[39m
+[33m[nodemon] watching extensions: js,mjs,cjs,json[39m
+[32m[nodemon] starting `node index.js`[39m
+◇ injected env (10) from .env // tip: ⌘ enable debugging { debug: true }
+Servidor corriendo en puerto 3000
+[32m[nodemon] clean exit - waiting for changes before restart[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node index.js`[39m
+◇ injected env (10) from .env // tip: ◈ secrets for agents [www.dotenvx.com]
+Servidor corriendo en puerto 3000
+[32m[nodemon] clean exit - waiting for changes before restart[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node index.js`[39m
+[32m[nodemon] restarting due to changes...[39m
+◇ injected env (10) from .env // tip: ⌘ suppress logs { quiet: true }
+[32m[nodemon] starting `node index.js`[39m
+◇ injected env (10) from .env // tip: ⌘ enable debugging { debug: true }
+Servidor corriendo en puerto 3000
+[32m[nodemon] clean exit - waiting for changes before restart[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node index.js`[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] restarting due to changes...[39m
+◇ injected env (10) from .env // tip: ⌘ multiple files { path: ['.env.local', '.env'] }
+[32m[nodemon] starting `node index.js`[39m
+◇ injected env (10) from .env // tip: ⌘ custom filepath { path: '/custom/path/.env' }
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node index.js`[39m
+◇ injected env (10) from .env // tip: ⌁ auth for agents [www.vestauth.com]
+Servidor corriendo en puerto 3000
+RC.
+RC.
+RC.
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node index.js`[39m
+◇ injected env (10) from .env // tip: ◈ encrypted .env [www.dotenvx.com]
+Servidor corriendo en puerto 3000
+[32m[nodemon] clean exit - waiting for changes before restart[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node index.js`[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] restarting due to changes...[39m
+◇ injected env (10) from .env // tip: ⌘ override existing { override: true }
+[32m[nodemon] starting `node index.js`[39m
+◇ injected env (10) from .env // tip: ◈ encrypted .env [www.dotenvx.com]
+Servidor corriendo en puerto 3000
+[32m[nodemon] clean exit - waiting for changes before restart[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node index.js`[39m
+◇ injected env (10) from .env // tip: ⌘ enable debugging { debug: true }
+Servidor corriendo en puerto 3000
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node index.js`[39m
+◇ injected env (10) from .env // tip: ⌘ multiple files { path: ['.env.local', '.env'] }
+Servidor corriendo en puerto 3000
+[32m[nodemon] clean exit - waiting for changes before restart[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node index.js`[39m
+◇ injected env (10) from .env // tip: ⌘ custom filepath { path: '/custom/path/.env' }
+Servidor corriendo en puerto 3000
+[32m[nodemon] clean exit - waiting for changes before restart[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node index.js`[39m
+◇ injected env (10) from .env // tip: ⌁ auth for agents [www.vestauth.com]
+Servidor corriendo en puerto 3000
+[32m[nodemon] clean exit - waiting for changes before restart[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node index.js`[39m
+◇ injected env (10) from .env // tip: ⌘ override existing { override: true }
+Servidor corriendo en puerto 3000
+[32m[nodemon] clean exit - waiting for changes before restart[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node index.js`[39m
+◇ injected env (10) from .env // tip: ⌘ custom filepath { path: '/custom/path/.env' }
+Servidor corriendo en puerto 3000
+[32m[nodemon] clean exit - waiting for changes before restart[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node index.js`[39m
+◇ injected env (10) from .env // tip: ⌘ suppress logs { quiet: true }
+Servidor corriendo en puerto 3000
+[32m[nodemon] clean exit - waiting for changes before restart[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node index.js`[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] restarting due to changes...[39m
+◇ injected env (10) from .env // tip: ◈ encrypted .env [www.dotenvx.com]
+[32m[nodemon] starting `node index.js`[39m
+◇ injected env (10) from .env // tip: ⌘ enable debugging { debug: true }
+Servidor corriendo en puerto 3000
+[32m[nodemon] clean exit - waiting for changes before restart[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node index.js`[39m
+◇ injected env (10) from .env // tip: ⌘ enable debugging { debug: true }
+Servidor corriendo en puerto 3000
+[32m[nodemon] clean exit - waiting for changes before restart[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node index.js`[39m
+◇ injected env (10) from .env // tip: ◈ encrypted .env [www.dotenvx.com]
+Servidor corriendo en puerto 3000
+[32m[nodemon] clean exit - waiting for changes before restart[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node index.js`[39m
+◇ injected env (10) from .env // tip: ◈ encrypted .env [www.dotenvx.com]
+Servidor corriendo en puerto 3000
+[32m[nodemon] clean exit - waiting for changes before restart[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node index.js`[39m
+◇ injected env (10) from .env // tip: ⌘ suppress logs { quiet: true }
+Servidor corriendo en puerto 3000
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node index.js`[39m
+◇ injected env (10) from .env // tip: ⌘ enable debugging { debug: true }
+[32m[nodemon] restarting due to changes...[39m
+Servidor corriendo en puerto 3000
+[32m[nodemon] starting `node index.js`[39m
+◇ injected env (10) from .env // tip: ⌘ override existing { override: true }
+Servidor corriendo en puerto 3000
+[32m[nodemon] clean exit - waiting for changes before restart[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node index.js`[39m
+◇ injected env (10) from .env // tip: ⌘ override existing { override: true }
+Servidor corriendo en puerto 3000
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node index.js`[39m
+◇ injected env (10) from .env // tip: ⌘ custom filepath { path: '/custom/path/.env' }
+Servidor corriendo en puerto 3000
+[32m[nodemon] clean exit - waiting for changes before restart[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node index.js`[39m
+◇ injected env (10) from .env // tip: ⌘ override existing { override: true }
+Servidor corriendo en puerto 3000
+[32m[nodemon] clean exit - waiting for changes before restart[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node index.js`[39m
+◇ injected env (10) from .env // tip: ⌘ override existing { override: true }
+Servidor corriendo en puerto 3000
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node index.js`[39m
+◇ injected env (10) from .env // tip: ⌘ enable debugging { debug: true }
+Servidor corriendo en puerto 3000
+[32m[nodemon] clean exit - waiting for changes before restart[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node index.js`[39m
+◇ injected env (10) from .env // tip: ⌘ override existing { override: true }
+Servidor corriendo en puerto 3000
+[32m[nodemon] clean exit - waiting for changes before restart[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node index.js`[39m
+◇ injected env (10) from .env // tip: ◈ secrets for agents [www.dotenvx.com]
+Servidor corriendo en puerto 3000
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node index.js`[39m
+◇ injected env (10) from .env // tip: ◈ encrypted .env [www.dotenvx.com]
+Servidor corriendo en puerto 3000
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node index.js`[39m
+◇ injected env (10) from .env // tip: ⌘ override existing { override: true }
+Servidor corriendo en puerto 3000
+[32m[nodemon] clean exit - waiting for changes before restart[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node index.js`[39m
+[32m[nodemon] restarting due to changes...[39m
+◇ injected env (10) from .env // tip: ⌘ custom filepath { path: '/custom/path/.env' }
+[32m[nodemon] starting `node index.js`[39m
+◇ injected env (10) from .env // tip: ◈ encrypted .env [www.dotenvx.com]
+Servidor corriendo en puerto 3000
+[32m[nodemon] clean exit - waiting for changes before restart[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node index.js`[39m
+[32m[nodemon] restarting due to changes...[39m
+◇ injected env (10) from .env // tip: ⌘ enable debugging { debug: true }
+[32m[nodemon] starting `node index.js`[39m
+◇ injected env (10) from .env // tip: ◈ secrets for agents [www.dotenvx.com]
+Servidor corriendo en puerto 3000
+[32m[nodemon] clean exit - waiting for changes before restart[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node index.js`[39m
+[32m[nodemon] restarting due to changes...[39m
+◇ injected env (10) from .env // tip: ⌘ multiple files { path: ['.env.local', '.env'] }
+[32m[nodemon] starting `node index.js`[39m
+◇ injected env (10) from .env // tip: ⌘ custom filepath { path: '/custom/path/.env' }
+Servidor corriendo en puerto 3000
+[32m[nodemon] clean exit - waiting for changes before restart[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node index.js`[39m
+◇ injected env (10) from .env // tip: ⌁ auth for agents [www.vestauth.com]
+Servidor corriendo en puerto 3000
+[32m[nodemon] clean exit - waiting for changes before restart[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node index.js`[39m
+◇ injected env (10) from .env // tip: ⌁ auth for agents [www.vestauth.com]
+Servidor corriendo en puerto 3000
+[32m[nodemon] clean exit - waiting for changes before restart[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node index.js`[39m
+◇ injected env (10) from .env // tip: ⌘ suppress logs { quiet: true }
+Servidor corriendo en puerto 3000
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node index.js`[39m
+◇ injected env (10) from .env // tip: ⌁ auth for agents [www.vestauth.com]
+Servidor corriendo en puerto 3000
+[32m[nodemon] clean exit - waiting for changes before restart[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node index.js`[39m
+◇ injected env (10) from .env // tip: ⌘ multiple files { path: ['.env.local', '.env'] }
+Servidor corriendo en puerto 3000
+[32m[nodemon] clean exit - waiting for changes before restart[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node index.js`[39m
+[32m[nodemon] restarting due to changes...[39m
+◇ injected env (10) from .env // tip: ⌘ multiple files { path: ['.env.local', '.env'] }
+[32m[nodemon] starting `node index.js`[39m
+◇ injected env (10) from .env // tip: ◈ secrets for agents [www.dotenvx.com]
+Servidor corriendo en puerto 3000
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node index.js`[39m
+◇ injected env (10) from .env // tip: ⌘ suppress logs { quiet: true }
+Servidor corriendo en puerto 3000
+[32m[nodemon] clean exit - waiting for changes before restart[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node index.js`[39m
+[32m[nodemon] restarting due to changes...[39m
+◇ injected env (10) from .env // tip: ◈ encrypted .env [www.dotenvx.com]
+[32m[nodemon] starting `node index.js`[39m
+◇ injected env (10) from .env // tip: ⌁ auth for agents [www.vestauth.com]
+Servidor corriendo en puerto 3000
+[32m[nodemon] clean exit - waiting for changes before restart[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node index.js`[39m
+◇ injected env (10) from .env // tip: ⌘ custom filepath { path: '/custom/path/.env' }
+Servidor corriendo en puerto 3000
+[32m[nodemon] clean exit - waiting for changes before restart[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node index.js`[39m
+[32m[nodemon] restarting due to changes...[39m
+◇ injected env (10) from .env // tip: ⌘ custom filepath { path: '/custom/path/.env' }
+[32m[nodemon] starting `node index.js`[39m
+◇ injected env (10) from .env // tip: ◈ encrypted .env [www.dotenvx.com]
+Servidor corriendo en puerto 3000
+[32m[nodemon] clean exit - waiting for changes before restart[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node index.js`[39m
+[32m[nodemon] restarting due to changes...[39m
+◇ injected env (10) from .env // tip: ⌘ suppress logs { quiet: true }
+[32m[nodemon] starting `node index.js`[39m
+◇ injected env (10) from .env // tip: ⌘ suppress logs { quiet: true }
+Servidor corriendo en puerto 3000
+[32m[nodemon] clean exit - waiting for changes before restart[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node index.js`[39m
+[32m[nodemon] restarting due to changes...[39m
+◇ injected env (10) from .env // tip: ⌘ override existing { override: true }
+[32m[nodemon] starting `node index.js`[39m
+◇ injected env (10) from .env // tip: ⌘ override existing { override: true }
+Servidor corriendo en puerto 3000
+[31m[nodemon] app crashed - waiting for file changes before starting...[39m
+efore restart[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node index.js`[39m
+◇ injected env (10) from .env // tip: ◈ secrets for agents [www.dotenvx.com]
+Servidor corriendo en puerto 3000
+[32m[nodemon] clean exit - waiting for changes before restart[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node index.js`[39m
+◇ injected env (10) from .env // tip: ⌘ suppress logs { quiet: true }
+Servidor corriendo en puerto 3000
+[32m[nodemon] clean exit - waiting for changes before restart[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node index.js`[39m
+◇ injected env (10) from .env // tip: ⌘ multiple files { path: ['.env.local', '.env'] }
+Servidor corriendo en puerto 3000
+[32m[nodemon] clean exit - waiting for changes before restart[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node index.js`[39m
+◇ injected env (10) from .env // tip: ⌘ suppress logs { quiet: true }
+Servidor corriendo en puerto 3000
+[32m[nodemon] clean exit - waiting for changes before restart[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node index.js`[39m
+◇ injected env (10) from .env // tip: ◈ encrypted .env [www.dotenvx.com]
+Servidor corriendo en puerto 3000
+[32m[nodemon] clean exit - waiting for changes before restart[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node index.js`[39m
+[32m[nodemon] restarting due to changes...[39m
+◇ injected env (10) from .env // tip: ⌘ override existing { override: true }
+[32m[nodemon] starting `node index.js`[39m
+◇ injected env (10) from .env // tip: ◈ secrets for agents [www.dotenvx.com]
+Servidor corriendo en puerto 3000
+[32m[nodemon] clean exit - waiting for changes before restart[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node index.js`[39m
+◇ injected env (10) from .env // tip: ⌘ multiple files { path: ['.env.local', '.env'] }
+Servidor corriendo en puerto 3000
+[32m[nodemon] clean exit - waiting for changes before restart[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node index.js`[39m
+[32m[nodemon] restarting due to changes...[39m
+◇ injected env (10) from .env // tip: ◈ encrypted .env [www.dotenvx.com]
+[32m[nodemon] starting `node index.js`[39m
+◇ injected env (10) from .env // tip: ⌘ enable debugging { debug: true }
+Servidor corriendo en puerto 3000
+[32m[nodemon] clean exit - waiting for changes before restart[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node index.js`[39m
+◇ injected env (10) from .env // tip: ⌘ override existing { override: true }
+Servidor corriendo en puerto 3000
+[32m[nodemon] clean exit - waiting for changes before restart[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node index.js`[39m
+[32m[nodemon] restarting due to changes...[39m
+◇ injected env (10) from .env // tip: ◈ secrets for agents [www.dotenvx.com]
+[32m[nodemon] starting `node index.js`[39m
+◇ injected env (10) from .env // tip: ⌘ suppress logs { quiet: true }
+Servidor corriendo en puerto 3000
+[32m[nodemon] clean exit - waiting for changes before restart[39m
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         [32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node index.js`[39m
+◇ injected env (10) from .env // tip: ⌘ enable debugging { debug: true }
+Servidor corriendo en puerto 3000
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node index.js`[39m
+◇ injected env (10) from .env // tip: ⌘ custom filepath { path: '/custom/path/.env' }
+Servidor corriendo en puerto 3000
+[32m[nodemon] clean exit - waiting for changes before restart[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node index.js`[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] restarting due to changes...[39m
+◇ injected env (10) from .env // tip: ⌘ override existing { override: true }
+[32m[nodemon] starting `node index.js`[39m
+◇ injected env (10) from .env // tip: ⌘ override existing { override: true }
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node index.js`[39m
+◇ injected env (10) from .env // tip: ⌘ custom filepath { path: '/custom/path/.env' }
+Servidor corriendo en puerto 3000
+[32m[nodemon] clean exit - waiting for changes before restart[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node index.js`[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] restarting due to changes...[39m
+◇ injected env (10) from .env // tip: ⌘ custom filepath { path: '/custom/path/.env' }
+[32m[nodemon] starting `node index.js`[39m
+◇ injected env (10) from .env // tip: ⌁ auth for agents [www.vestauth.com]
+Servidor corriendo en puerto 3000
+[32m[nodemon] clean exit - waiting for changes before restart[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node index.js`[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] restarting due to changes...[39m
+◇ injected env (10) from .env // tip: ◈ encrypted .env [www.dotenvx.com]
+[32m[nodemon] starting `node index.js`[39m
+◇ injected env (10) from .env // tip: ⌘ custom filepath { path: '/custom/path/.env' }
+Servidor corriendo en puerto 3000
+[32m[nodemon] clean exit - waiting for changes before restart[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node index.js`[39m
+◇ injected env (10) from .env // tip: ⌁ auth for agents [www.vestauth.com]
+Servidor corriendo en puerto 3000
+[32m[nodemon] clean exit - waiting for changes before restart[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node index.js`[39m
+◇ injected env (10) from .env // tip: ◈ encrypted .env [www.dotenvx.com]
+Servidor corriendo en puerto 3000
+[32m[nodemon] clean exit - waiting for changes before restart[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node index.js`[39m
+◇ injected env (10) from .env // tip: ⌘ suppress logs { quiet: true }
+Servidor corriendo en puerto 3000
+[32m[nodemon] clean exit - waiting for changes before restart[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node index.js`[39m
+◇ injected env (10) from .env // tip: ⌘ multiple files { path: ['.env.local', '.env'] }
+Servidor corriendo en puerto 3000
+[32m[nodemon] clean exit - waiting for changes before restart[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node index.js`[39m
+◇ injected env (10) from .env // tip: ⌘ override existing { override: true }
+Servidor corriendo en puerto 3000
+[32m[nodemon] clean exit - waiting for changes before restart[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node index.js`[39m
+◇ injected env (10) from .env // tip: ◈ secrets for agents [www.dotenvx.com]
+Servidor corriendo en puerto 3000
+[32m[nodemon] clean exit - waiting for changes before restart[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node index.js`[39m
+◇ injected env (10) from .env // tip: ⌘ suppress logs { quiet: true }
+Servidor corriendo en puerto 3000
+[32m[nodemon] clean exit - waiting for changes before restart[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node index.js`[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] restarting due to changes...[39m
+◇ injected env (10) from .env // tip: ⌘ enable debugging { debug: true }
+[32m[nodemon] starting `node index.js`[39m
+◇ injected env (10) from .env // tip: ⌘ multiple files { path: ['.env.local', '.env'] }
+Servidor corriendo en puerto 3000
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node index.js`[39m
+◇ injected env (10) from .env // tip: ⌁ auth for agents [www.vestauth.com]
+Servidor corriendo en puerto 3000
+[32m[nodemon] clean exit - waiting for changes before restart[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node index.js`[39m
+◇ injected env (10) from .env // tip: ⌘ suppress logs { quiet: true }
+Servidor corriendo en puerto 3000
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node index.js`[39m
+◇ injected env (10) from .env // tip: ◈ encrypted .env [www.dotenvx.com]
+Servidor corriendo en puerto 3000
+[32m[nodemon] clean exit - waiting for changes before restart[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node index.js`[39m
+◇ injected env (10) from .env // tip: ⌘ enable debugging { debug: true }
+Servidor corriendo en puerto 3000
+[32m[nodemon] clean exit - waiting for changes before restart[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node index.js`[39m
+◇ injected env (10) from .env // tip: ◈ encrypted .env [www.dotenvx.com]
+Servidor corriendo en puerto 3000
+[32m[nodemon] clean exit - waiting for changes before restart[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node index.js`[39m
+◇ injected env (10) from .env // tip: ⌘ custom filepath { path: '/custom/path/.env' }
+Servidor corriendo en puerto 3000
+[32m[nodemon] clean exit - waiting for changes before restart[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node index.js`[39m
+◇ injected env (10) from .env // tip: ⌘ custom filepath { path: '/custom/path/.env' }
+Servidor corriendo en puerto 3000
+[32m[nodemon] clean exit - waiting for changes before restart[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node index.js`[39m
+◇ injected env (10) from .env // tip: ◈ secrets for agents [www.dotenvx.com]
+Servidor corriendo en puerto 3000
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node index.js`[39m
+◇ injected env (10) from .env // tip: ◈ encrypted .env [www.dotenvx.com]
+Servidor corriendo en puerto 3000
+[32m[nodemon] clean exit - waiting for changes before restart[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node index.js`[39m
+◇ injected env (10) from .env // tip: ⌘ custom filepath { path: '/custom/path/.env' }
+Servidor corriendo en puerto 3000
+[32m[nodemon] clean exit - waiting for changes before restart[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node index.js`[39m
+◇ injected env (10) from .env // tip: ⌘ custom filepath { path: '/custom/path/.env' }
+Servidor corriendo en puerto 3000
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node index.js`[39m
+◇ injected env (10) from .env // tip: ⌘ override existing { override: true }
+Servidor corriendo en puerto 3000
+[32m[nodemon] clean exit - waiting for changes before restart[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node index.js`[39m
+◇ injected env (10) from .env // tip: ⌘ suppress logs { quiet: true }
+Servidor corriendo en puerto 3000
+[32m[nodemon] clean exit - waiting for changes before restart[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node index.js`[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] restarting due to changes...[39m
+◇ injected env (10) from .env // tip: ⌘ custom filepath { path: '/custom/path/.env' }
+[32m[nodemon] starting `node index.js`[39m
+◇ injected env (10) from .env // tip: ⌁ auth for agents [www.vestauth.com]
+Servidor corriendo en puerto 3000
+[32m[nodemon] clean exit - waiting for changes before restart[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node index.js`[39m
+◇ injected env (10) from .env // tip: ◈ secrets for agents [www.dotenvx.com]
+Servidor corriendo en puerto 3000
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node index.js`[39m
+◇ injected env (10) from .env // tip: ⌘ custom filepath { path: '/custom/path/.env' }
+Servidor corriendo en puerto 3000
+[32m[nodemon] clean exit - waiting for changes before restart[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node index.js`[39m
+◇ injected env (10) from .env // tip: ⌁ auth for agents [www.vestauth.com]
+Servidor corriendo en puerto 3000
+[32m[nodemon] clean exit - waiting for changes before restart[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node index.js`[39m
+◇ injected env (10) from .env // tip: ⌘ suppress logs { quiet: true }
+Servidor corriendo en puerto 3000
+[32m[nodemon] clean exit - waiting for changes before restart[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node index.js`[39m
+◇ injected env (10) from .env // tip: ⌘ enable debugging { debug: true }
+Servidor corriendo en puerto 3000
+[32m[nodemon] clean exit - waiting for changes before restart[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node index.js`[39m
+◇ injected env (10) from .env // tip: ⌘ enable debugging { debug: true }
+Servidor corriendo en puerto 3000
+[32m[nodemon] clean exit - waiting for changes before restart[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node index.js`[39m
+◇ injected env (10) from .env // tip: ◈ encrypted .env [www.dotenvx.com]
+Servidor corriendo en puerto 3000
+[32m[nodemon] clean exit - waiting for changes before restart[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node index.js`[39m
+◇ injected env (10) from .env // tip: ⌘ enable debugging { debug: true }
+Servidor corriendo en puerto 3000
+[32m[nodemon] clean exit - waiting for changes before restart[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node index.js`[39m
+◇ injected env (10) from .env // tip: ◈ encrypted .env [www.dotenvx.com]
+Servidor corriendo en puerto 3000
+[32m[nodemon] clean exit - waiting for changes before restart[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node index.js`[39m
+◇ injected env (10) from .env // tip: ⌘ override existing { override: true }
+Servidor corriendo en puerto 3000
+[32m[nodemon] clean exit - waiting for changes before restart[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node index.js`[39m
+[32m[nodemon] restarting due to changes...[39m
+◇ injected env (10) from .env // tip: ◈ secrets for agents [www.dotenvx.com]
+[32m[nodemon] starting `node index.js`[39m
+◇ injected env (10) from .env // tip: ⌘ override existing { override: true }
+Servidor corriendo en puerto 3000
+[32m[nodemon] clean exit - waiting for changes before restart[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node index.js`[39m
+[32m[nodemon] restarting due to changes...[39m
+◇ injected env (10) from .env // tip: ⌘ suppress logs { quiet: true }
+[32m[nodemon] starting `node index.js`[39m
+◇ injected env (10) from .env // tip: ⌘ multiple files { path: ['.env.local', '.env'] }
+Servidor corriendo en puerto 3000
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node index.js`[39m
+◇ injected env (10) from .env // tip: ⌘ enable debugging { debug: true }
+Servidor corriendo en puerto 3000
+[32m[nodemon] clean exit - waiting for changes before restart[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node index.js`[39m
+[32m[nodemon] restarting due to changes...[39m
+◇ injected env (10) from .env // tip: ⌘ multiple files { path: ['.env.local', '.env'] }
+[32m[nodemon] starting `node index.js`[39m
+◇ injected env (10) from .env // tip: ⌘ multiple files { path: ['.env.local', '.env'] }
+Servidor corriendo en puerto 3000
+[32m[nodemon] clean exit - waiting for changes before restart[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node index.js`[39m
+[32m[nodemon] restarting due to changes...[39m
+◇ injected env (10) from .env // tip: ⌘ suppress logs { quiet: true }
+[32m[nodemon] starting `node index.js`[39m
+◇ injected env (10) from .env // tip: ⌁ auth for agents [www.vestauth.com]
+Servidor corriendo en puerto 3000
+[32m[nodemon] clean exit - waiting for changes before restart[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node index.js`[39m
+[32m[nodemon] restarting due to changes...[39m
+◇ injected env (10) from .env // tip: ⌘ enable debugging { debug: true }
+[32m[nodemon] starting `node index.js`[39m
+◇ injected env (10) from .env // tip: ⌁ auth for agents [www.vestauth.com]
+Servidor corriendo en puerto 3000
+[32m[nodemon] clean exit - waiting for changes before restart[39m
+ue to changes...[39m
+[32m[nodemon] starting `node index.js`[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] restarting due to changes...[39m
+◇ injected env (10) from .env // tip: ◈ secrets for agents [www.dotenvx.com]
+[32m[nodemon] starting `node index.js`[39m
+◇ injected env (10) from .env // tip: ⌘ suppress logs { quiet: true }
+Servidor corriendo en puerto 3000
+[32m[nodemon] clean exit - waiting for changes before restart[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node index.js`[39m
+◇ injected env (10) from .env // tip: ⌘ override existing { override: true }
+Servidor corriendo en puerto 3000
+[32m[nodemon] clean exit - waiting for changes before restart[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node index.js`[39m
+[32m[nodemon] restarting due to changes...[39m
+◇ injected env (10) from .env // tip: ⌘ enable debugging { debug: true }
+[32m[nodemon] starting `node index.js`[39m
+◇ injected env (10) from .env // tip: ⌁ auth for agents [www.vestauth.com]
+Servidor corriendo en puerto 3000
+[32m[nodemon] clean exit - waiting for changes before restart[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node index.js`[39m
+◇ injected env (10) from .env // tip: ◈ encrypted .env [www.dotenvx.com]
+Servidor corriendo en puerto 3000
+[32m[nodemon] clean exit - waiting for changes before restart[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node index.js`[39m
+◇ injected env (10) from .env // tip: ⌘ override existing { override: true }
+Servidor corriendo en puerto 3000
+[32m[nodemon] clean exit - waiting for changes before restart[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node index.js`[39m
+◇ injected env (10) from .env // tip: ◈ encrypted .env [www.dotenvx.com]
+Servidor corriendo en puerto 3000
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node index.js`[39m
+◇ injected env (10) from .env // tip: ⌘ multiple files { path: ['.env.local', '.env'] }
+Servidor corriendo en puerto 3000
+[32m[nodemon] clean exit - waiting for changes before restart[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node index.js`[39m
+◇ injected env (10) from .env // tip: ⌘ suppress logs { quiet: true }
+Servidor corriendo en puerto 3000
+[32m[nodemon] clean exit - waiting for changes before restart[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node index.js`[39m
+◇ injected env (10) from .env // tip: ⌘ override existing { override: true }
+Servidor corriendo en puerto 3000
+[32m[nodemon] clean exit - waiting for changes before restart[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node index.js`[39m
+◇ injected env (10) from .env // tip: ◈ secrets for agents [www.dotenvx.com]
+Servidor corriendo en puerto 3000
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node index.js`[39m
+◇ injected env (10) from .env // tip: ⌘ override existing { override: true }
+Servidor corriendo en puerto 3000
+[32m[nodemon] clean exit - waiting for changes before restart[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node index.js`[39m
+[32m[nodemon] restarting due to changes...[39m
+◇ injected env (10) from .env // tip: ⌘ multiple files { path: ['.env.local', '.env'] }
+[32m[nodemon] starting `node index.js`[39m
+◇ injected env (10) from .env // tip: ⌘ enable debugging { debug: true }
+Servidor corriendo en puerto 3000
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node index.js`[39m
+◇ injected env (10) from .env // tip: ⌘ multiple files { path: ['.env.local', '.env'] }
+[32m[nodemon] restarting due to changes...[39m
+Servidor corriendo en puerto 3000
+[32m[nodemon] starting `node index.js`[39m
+◇ injected env (10) from .env // tip: ⌘ custom filepath { path: '/custom/path/.env' }
+Servidor corriendo en puerto 3000
+[32m[nodemon] clean exit - waiting for changes before restart[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node index.js`[39m
+◇ injected env (10) from .env // tip: ⌘ override existing { override: true }
+Servidor corriendo en puerto 3000
+[32m[nodemon] clean exit - waiting for changes before restart[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node index.js`[39m
+◇ injected env (10) from .env // tip: ⌘ multiple files { path: ['.env.local', '.env'] }
+Servidor corriendo en puerto 3000
+[32m[nodemon] clean exit - waiting for changes before restart[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node index.js`[39m
+◇ injected env (10) from .env // tip: ◈ encrypted .env [www.dotenvx.com]
+Servidor corriendo en puerto 3000
+[32m[nodemon] clean exit - waiting for changes before restart[39m
