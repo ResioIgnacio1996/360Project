@@ -29,7 +29,7 @@ export class AvanceOperaciones implements OnInit {
   porcentaje = 0; cantidadHoy: number | null = null; nota = ''; fecha = this.fechaMaxima;
   consumosHoy: Record<number, number | null> = {}; fotoNombre = ''; fotoPreview = '';
   gestionFecha: 'iniciar' | 'editar-inicio' | 'finalizar' | 'editar-fin' | null = null;
-  fechaGestion = ''; motivoGestion = '';
+  fechaGestion = ''; motivoGestion = ''; errorGestionFecha = '';
   confirmacionConsumo = false;
 
   constructor(
@@ -145,11 +145,12 @@ export class AvanceOperaciones implements OnInit {
     if (!this.seleccionada) return;
     this.gestionFecha = tipo;
     this.motivoGestion = '';
+    this.errorGestionFecha = '';
     this.fechaGestion = tipo.includes('inicio')
       ? (this.seleccionada.fecha_inicio_real || this.fecha)
       : (this.seleccionada.fecha_fin_real || this.fecha);
   }
-  cerrarGestionFecha(): void { this.gestionFecha = null; }
+  cerrarGestionFecha(): void { this.gestionFecha = null; this.errorGestionFecha = ''; }
   confirmarGestionFecha(): void {
     if (!this.seleccionada || !this.gestionFecha || !this.fechaGestion) return;
     const id = this.seleccionada.operacion_id;
@@ -163,8 +164,21 @@ export class AvanceOperaciones implements OnInit {
       if (!this.motivoGestion.trim()) return;
       peticion = this.service.modificarFin(id, { fecha_fin_real: this.fechaGestion, motivo: this.motivoGestion });
     }
-    this.gestionFecha = null;
-    this.ejecutar(peticion);
+    this.guardando = true;
+    this.errorGestionFecha = '';
+    peticion.subscribe({
+      next: (r: any) => {
+        this.guardando = false;
+        this.gestionFecha = null;
+        this.mensaje = r.message;
+        this.cargar();
+        setTimeout(() => this.mensaje = '', 3500);
+      },
+      error: (e: any) => {
+        this.guardando = false;
+        this.errorGestionFecha = this.mensajeError(e, 'No se pudo guardar la fecha de la operación');
+      }
+    });
   }
   guardarAvance(): void {
     if (!this.seleccionada) return;
@@ -248,8 +262,15 @@ export class AvanceOperaciones implements OnInit {
     this.guardando = true; this.error = '';
     peticion.subscribe({
       next: (r: any) => { this.guardando = false; this.mensaje = r.message; this.cargar(); setTimeout(() => this.mensaje = '', 3500); },
-      error: (e: any) => { this.guardando = false; this.error = e?.error?.message || 'No se pudo guardar'; }
+      error: (e: any) => { this.guardando = false; this.error = this.mensajeError(e, 'No se pudo guardar'); }
     });
+  }
+  private mensajeError(e: any, fallback: string): string {
+    if (typeof e?.error?.message === 'string' && e.error.message.trim()) return e.error.message;
+    if (typeof e?.error?.detail === 'string' && e.error.detail.trim()) return e.error.detail;
+    if (typeof e?.error?.error === 'string' && e.error.error.trim()) return e.error.error;
+    if (e?.status === 0 || e?.status === 530) return 'No se pudo conectar con el servidor. Verificá que el backend y el túnel estén activos';
+    return fallback;
   }
   seleccionarFoto(event: Event): void {
     const input = event.target as HTMLInputElement; const archivo = input.files?.[0];

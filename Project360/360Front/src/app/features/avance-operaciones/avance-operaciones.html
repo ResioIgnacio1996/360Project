@@ -208,6 +208,7 @@
     <label *ngIf="gestionFecha === 'editar-inicio' || gestionFecha === 'editar-fin'">MOTIVO DE LA CORRECCIÓN
       <textarea rows="3" [(ngModel)]="motivoGestion" name="motivoGestion" required placeholder="Justificación auditable del cambio"></textarea>
     </label>
+    <div class="date-warning danger" *ngIf="errorGestionFecha"><mat-icon>error_outline</mat-icon>{{ errorGestionFecha }}</div>
     <div class="date-warning" *ngIf="gestionFecha === 'finalizar'">La operación pasará a COMPLETA con avance 100% y se registrará la fecha final real.</div>
     <div class="date-rule"><mat-icon>account_tree</mat-icon><span>La fecha debe respetar la operación anterior y no puede superar el inicio real de una operación sucesora.</span></div>
     <footer>

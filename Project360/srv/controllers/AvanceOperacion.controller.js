@@ -2,6 +2,10 @@ const { conectarDB, sql } = require('../DB/dbConection');
 
 const idValido = value => Number.isInteger(Number(value)) && Number(value) > 0;
 const fechaISO = value => value ? new Date(value).toISOString().slice(0, 10) : null;
+const fechaLegible = value => {
+  const partes = String(fechaISO(value) || '').split('-');
+  return partes.length === 3 ? `${partes[2]}/${partes[1]}/${partes[0]}` : '-';
+};
 const hoyISO = () => {
   const fecha = new Date();
   const parte = valor => String(valor).padStart(2, '0');
@@ -24,7 +28,7 @@ const validarFechaEntreDependencias = async (tx, operacionId, fecha, tipo) => {
     WHERE d.operacion_predecesora_id=@id AND s.fecha_inicio_real IS NOT NULL
     ORDER BY s.fecha_inicio_real,s.secuencia;
 
-    SELECT COUNT(*) pendientes
+    SELECT COUNT(*) pendientes,STRING_AGG(CONVERT(varchar(20),p.secuencia),', ') secuencias
     FROM OperacionDependencia d
     JOIN Operacion p ON p.operacion_id=d.operacion_predecesora_id
     WHERE d.operacion_id=@id AND p.fecha_fin_real IS NULL;
@@ -33,11 +37,11 @@ const validarFechaEntreDependencias = async (tx, operacionId, fecha, tipo) => {
   const siguiente = limites.recordsets[1][0];
   const pendientes = Number(limites.recordsets[2][0]?.pendientes || 0);
   if (tipo === 'inicio' && pendientes > 0)
-    return 'No se puede iniciar: todas las operaciones predecesoras deben tener fecha de fin real';
+    return `No se puede guardar la fecha de inicio: ${pendientes === 1 ? 'la predecesora' : 'las predecesoras'} ${limites.recordsets[2][0]?.secuencias || ''} ${pendientes === 1 ? 'todavía no tiene' : 'todavía no tienen'} fecha de finalización real`;
   if (tipo === 'inicio' && anterior?.fecha_fin_real && fecha < fechaISO(anterior.fecha_fin_real))
-    return `El inicio no puede ser anterior al fin de la predecesora ${anterior.secuencia} (${fechaISO(anterior.fecha_fin_real)})`;
+    return `No se puede guardar el inicio del ${fechaLegible(fecha)}: la predecesora ${anterior.secuencia} finalizó el ${fechaLegible(anterior.fecha_fin_real)}`;
   if (siguiente?.fecha_inicio_real && fecha > fechaISO(siguiente.fecha_inicio_real))
-    return `La fecha no puede ser posterior al inicio de la sucesora ${siguiente.secuencia} (${fechaISO(siguiente.fecha_inicio_real)})`;
+    return `No se puede guardar la fecha del ${fechaLegible(fecha)}: la operación sucesora ${siguiente.secuencia} inició el ${fechaLegible(siguiente.fecha_inicio_real)}`;
   return null;
 };
 const sumarDiasLaborales = (inicio, horas, calendario, excepciones) => {
