@@ -1,0 +1,224 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="2600" height="2450" viewBox="0 0 2600 2450"><defs><filter id="sh"><feDropShadow dx="0" dy="3" stdDeviation="4" flood-opacity=".16"/></filter><marker id="a" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto"><path d="M0 0L0 6L9 3z" fill="#526476"/></marker><style>text{font-family:Segoe UI,Arial}.t{font-size:36px;font-weight:700;fill:#12355b}.st{font-size:18px;fill:#526476}.mh{font-size:21px;font-weight:700;fill:white}.mn{font-size:16px;fill:#26374a}.eh{font-size:19px;font-weight:700;fill:white}.at{font-size:15px;fill:#26374a}.rl{font-size:13px;font-weight:700;fill:#33485c}.num{font-size:13px;font-weight:700;fill:white}</style></defs><rect width="100%" height="100%" fill="#f6f9fb"/>
+<text x="45" y="55" class="t">OBRA360 - Mapa de datos amigable</text><text x="45" y="88" class="st">Arriba: vision general por modulos. Abajo: relaciones detalladas del nuevo modulo financiero.</text>
+<rect x="45" y="125" width="2510" height="630" rx="24" fill="#fff" stroke="#d8e1e8"/><text x="75" y="170" class="st" font-weight="700">NIVEL 1 - COMO SE CONECTAN LOS MODULOS</text>
+<g filter="url(#sh)"><rect x="75" y="205" width="760" height="205" rx="18" fill="white" stroke="#5B5BD6" stroke-width="2"/><rect x="75" y="205" width="760" height="48" rx="18" fill="#5B5BD6"/><rect x="75" y="233" width="760" height="20" fill="#5B5BD6"/><text x="93" y="237" class="mh">1. Seguridad</text>
+<text x="95" y="287" class="mn">• Usuario</text>
+<text x="460" y="287" class="mn">• Rol</text>
+<text x="95" y="321" class="mn">• Entidad</text>
+<text x="460" y="321" class="mn">• Accion</text>
+<text x="95" y="355" class="mn">• Accion_Rol</text>
+<text x="460" y="355" class="mn">• Usuario_Proyecto</text>
+</g>
+<g filter="url(#sh)"><rect x="905" y="205" width="760" height="205" rx="18" fill="white" stroke="#147D92" stroke-width="2"/><rect x="905" y="205" width="760" height="48" rx="18" fill="#147D92"/><rect x="905" y="233" width="760" height="20" fill="#147D92"/><text x="923" y="237" class="mh">2. Proyectos</text>
+<text x="925" y="287" class="mn">• Cliente</text>
+<text x="1290" y="287" class="mn">• Proyecto</text>
+<text x="925" y="321" class="mn">• ResponsableOperacion</text>
+<text x="1290" y="321" class="mn">• Proveedor</text>
+<text x="925" y="355" class="mn">• Rubro</text>
+</g>
+<g filter="url(#sh)"><rect x="1735" y="205" width="760" height="205" rx="18" fill="white" stroke="#2C8C5A" stroke-width="2"/><rect x="1735" y="205" width="760" height="48" rx="18" fill="#2C8C5A"/><rect x="1735" y="233" width="760" height="20" fill="#2C8C5A"/><text x="1753" y="237" class="mh">3. Programacion</text>
+<text x="1755" y="287" class="mn">• VersionPlan</text>
+<text x="2120" y="287" class="mn">• EtapaOperacion</text>
+<text x="1755" y="321" class="mn">• Operacion</text>
+<text x="2120" y="321" class="mn">• Dependencias</text>
+<text x="1755" y="355" class="mn">• Calendario</text>
+<text x="2120" y="355" class="mn">• Avance e historiales</text>
+</g>
+<g filter="url(#sh)"><rect x="75" y="460" width="760" height="205" rx="18" fill="white" stroke="#C47A13" stroke-width="2"/><rect x="75" y="460" width="760" height="48" rx="18" fill="#C47A13"/><rect x="75" y="488" width="760" height="20" fill="#C47A13"/><text x="93" y="492" class="mh">4. Compras y stock</text>
+<text x="95" y="542" class="mn">• Materiales</text>
+<text x="460" y="542" class="mn">• UoM</text>
+<text x="95" y="576" class="mn">• RegistroCompra</text>
+<text x="460" y="576" class="mn">• Remito</text>
+<text x="95" y="610" class="mn">• StockGeneral</text>
+<text x="460" y="610" class="mn">• Container</text>
+<text x="95" y="644" class="mn">• BOM y consumos</text>
+</g>
+<g filter="url(#sh)"><rect x="905" y="460" width="760" height="205" rx="18" fill="white" stroke="#B3425A" stroke-width="2"/><rect x="905" y="460" width="760" height="48" rx="18" fill="#B3425A"/><rect x="905" y="488" width="760" height="20" fill="#B3425A"/><text x="923" y="492" class="mh">5. Costos y certificados</text>
+<text x="925" y="542" class="mn">• Precios por operacion</text>
+<text x="1290" y="542" class="mn">• Certificados cliente</text>
+<text x="925" y="576" class="mn">• Certificados contratista</text>
+<text x="1290" y="576" class="mn">• Cobros</text>
+<text x="925" y="610" class="mn">• Pagos</text>
+<text x="1290" y="610" class="mn">• Movimientos libres</text>
+</g>
+<g filter="url(#sh)"><rect x="1735" y="460" width="760" height="205" rx="18" fill="white" stroke="#7651A6" stroke-width="2"/><rect x="1735" y="460" width="760" height="48" rx="18" fill="#7651A6"/><rect x="1735" y="488" width="760" height="20" fill="#7651A6"/><text x="1753" y="492" class="mh">6. Plan e indicadores</text>
+<text x="1755" y="542" class="mn">• Planes cliente/contratista</text>
+<text x="2120" y="542" class="mn">• Importacion CSV</text>
+<text x="1755" y="576" class="mn">• Saldos</text>
+<text x="2120" y="576" class="mn">• Caja real</text>
+<text x="1755" y="610" class="mn">• Curva S</text>
+</g>
+<path d="M835 307L905 307" stroke="#718096" stroke-width="4" marker-end="url(#a)"/>
+<path d="M1665 307L1735 307" stroke="#718096" stroke-width="4" marker-end="url(#a)"/>
+<path d="M455 410L455 460" stroke="#718096" stroke-width="4" marker-end="url(#a)"/>
+<path d="M1285 410L1285 460" stroke="#718096" stroke-width="4" marker-end="url(#a)"/>
+<path d="M2115 410L2115 460" stroke="#718096" stroke-width="4" marker-end="url(#a)"/>
+<path d="M835 562L905 562" stroke="#718096" stroke-width="4" marker-end="url(#a)"/>
+<path d="M1665 562L1735 562" stroke="#718096" stroke-width="4" marker-end="url(#a)"/>
+<text x="45" y="835" class="st" font-weight="700">NIVEL 2 - CIRCUITO DE COSTOS Y CERTIFICACIONES</text><text x="45" y="870" class="st">Lectura recomendada: datos base → plan → certificados → movimientos → indicadores. Las lineas estan numeradas y cada FK tambien aparece dentro de su entidad.</text>
+<rect x="35" y="900" width="380" height="1490" rx="18" fill="#147D92" fill-opacity=".055" stroke="#147D92"/><text x="53" y="938" class="rl" fill="#147D92">DATOS BASE</text>
+<rect x="480" y="900" width="425" height="1490" rx="18" fill="#7651A6" fill-opacity=".055" stroke="#7651A6"/><text x="498" y="938" class="rl" fill="#7651A6">PLAN</text>
+<rect x="995" y="900" width="450" height="1490" rx="18" fill="#B3425A" fill-opacity=".055" stroke="#B3425A"/><text x="1013" y="938" class="rl" fill="#B3425A">CERTIFICADOS</text>
+<rect x="1550" y="900" width="430" height="1490" rx="18" fill="#D15C72" fill-opacity=".055" stroke="#D15C72"/><text x="1568" y="938" class="rl" fill="#D15C72">DINERO REAL</text>
+<rect x="2100" y="900" width="460" height="1490" rx="18" fill="#7651A6" fill-opacity=".055" stroke="#7651A6"/><text x="2118" y="938" class="rl" fill="#7651A6">RESULTADOS</text>
+<path d="M220 1133 L220 1133 L220 1445 L220 1445" fill="none" stroke="#526476" stroke-opacity=".58" stroke-width="2" marker-end="url(#a)"/><circle cx="220" cy="1289" r="12" fill="#526476"/><text x="220" y="1294" text-anchor="middle" class="num">1</text><text x="214" y="1127" text-anchor="end" class="rl">1</text><text x="226" y="1439" text-anchor="start" class="rl">N</text>
+<path d="M220 1382 L220 1382 L220 1445 L220 1445" fill="none" stroke="#526476" stroke-opacity=".58" stroke-width="2" marker-end="url(#a)"/><circle cx="220" cy="1413.5" r="12" fill="#526476"/><text x="220" y="1418.5" text-anchor="middle" class="num">2</text><text x="214" y="1376" text-anchor="end" class="rl">1</text><text x="226" y="1439" text-anchor="start" class="rl">N</text>
+<path d="M220 1661 L220 1661 L220 1750 L220 1750" fill="none" stroke="#526476" stroke-opacity=".58" stroke-width="2" marker-end="url(#a)"/><circle cx="220" cy="1705.5" r="12" fill="#526476"/><text x="220" y="1710.5" text-anchor="middle" class="num">3</text><text x="214" y="1655" text-anchor="end" class="rl">1</text><text x="226" y="1744" text-anchor="start" class="rl">N</text>
+<path d="M385 1049 L442.5 1049 L442.5 1073 L500 1073" fill="none" stroke="#526476" stroke-opacity=".58" stroke-width="2" marker-end="url(#a)"/><circle cx="442.5" cy="1061" r="12" fill="#526476"/><text x="442.5" y="1066" text-anchor="middle" class="num">4</text><text x="391" y="1043" text-anchor="start" class="rl">1</text><text x="494" y="1067" text-anchor="end" class="rl">N</text>
+<path d="M385 1049 L442.5 1049 L442.5 1408 L500 1408" fill="none" stroke="#526476" stroke-opacity=".58" stroke-width="2" marker-end="url(#a)"/><circle cx="442.5" cy="1228.5" r="12" fill="#526476"/><text x="442.5" y="1233.5" text-anchor="middle" class="num">5</text><text x="391" y="1043" text-anchor="start" class="rl">1</text><text x="494" y="1402" text-anchor="end" class="rl">N</text>
+<path d="M692.5 1516 L692.5 1516 L692.5 1640 L692.5 1640" fill="none" stroke="#526476" stroke-opacity=".58" stroke-width="2" marker-end="url(#a)"/><circle cx="692.5" cy="1578" r="12" fill="#526476"/><text x="692.5" y="1583" text-anchor="middle" class="num">6</text><text x="686.5" y="1510" text-anchor="end" class="rl">1</text><text x="698.5" y="1634" text-anchor="start" class="rl">N</text>
+<path d="M385 1553 L442.5 1553 L442.5 1700 L500 1700" fill="none" stroke="#526476" stroke-opacity=".58" stroke-width="2" marker-end="url(#a)"/><circle cx="442.5" cy="1626.5" r="12" fill="#526476"/><text x="442.5" y="1631.5" text-anchor="middle" class="num">7</text><text x="391" y="1547" text-anchor="start" class="rl">1</text><text x="494" y="1694" text-anchor="end" class="rl">N</text>
+<path d="M885 1073 L950 1073 L950 1085 L1015 1085" fill="none" stroke="#526476" stroke-opacity=".58" stroke-width="2" marker-end="url(#a)"/><circle cx="950" cy="1079" r="12" fill="#526476"/><text x="950" y="1084" text-anchor="middle" class="num">8</text><text x="891" y="1067" text-anchor="start" class="rl">1</text><text x="1009" y="1079" text-anchor="end" class="rl">N</text>
+<path d="M885 1408 L950 1408 L950 1773 L1015 1773" fill="none" stroke="#526476" stroke-opacity=".58" stroke-width="2" marker-end="url(#a)"/><circle cx="950" cy="1590.5" r="12" fill="#526476"/><text x="950" y="1595.5" text-anchor="middle" class="num">9</text><text x="891" y="1402" text-anchor="start" class="rl">1</text><text x="1009" y="1767" text-anchor="end" class="rl">N</text>
+<path d="M1220 1205 L1220 1205 L1220 1300 L1220 1300" fill="none" stroke="#526476" stroke-opacity=".58" stroke-width="2" marker-end="url(#a)"/><circle cx="1220" cy="1252.5" r="12" fill="#526476"/><text x="1220" y="1257.5" text-anchor="middle" class="num">10</text><text x="1214" y="1199" text-anchor="end" class="rl">1</text><text x="1226" y="1294" text-anchor="start" class="rl">N</text>
+<path d="M385 1553 L700 1553 L700 1408 L1015 1408" fill="none" stroke="#526476" stroke-opacity=".58" stroke-width="2" marker-end="url(#a)"/><circle cx="700" cy="1480.5" r="12" fill="#526476"/><text x="700" y="1485.5" text-anchor="middle" class="num">11</text><text x="391" y="1547" text-anchor="start" class="rl">1</text><text x="1009" y="1402" text-anchor="end" class="rl">N</text>
+<path d="M1220 1881 L1220 1881 L1220 2020 L1220 2020" fill="none" stroke="#526476" stroke-opacity=".58" stroke-width="2" marker-end="url(#a)"/><circle cx="1220" cy="1950.5" r="12" fill="#526476"/><text x="1220" y="1955.5" text-anchor="middle" class="num">12</text><text x="1214" y="1875" text-anchor="end" class="rl">1</text><text x="1226" y="2014" text-anchor="start" class="rl">N</text>
+<path d="M385 1553 L700 1553 L700 2128 L1015 2128" fill="none" stroke="#526476" stroke-opacity=".58" stroke-width="2" marker-end="url(#a)"/><circle cx="700" cy="1840.5" r="12" fill="#526476"/><text x="700" y="1845.5" text-anchor="middle" class="num">13</text><text x="391" y="1547" text-anchor="start" class="rl">1</text><text x="1009" y="2122" text-anchor="end" class="rl">N</text>
+<path d="M1425 1085 L1497.5 1085 L1497.5 1061 L1570 1061" fill="none" stroke="#526476" stroke-opacity=".58" stroke-width="2" marker-end="url(#a)"/><circle cx="1497.5" cy="1073" r="12" fill="#526476"/><text x="1497.5" y="1078" text-anchor="middle" class="num">14</text><text x="1431" y="1079" text-anchor="start" class="rl">1</text><text x="1564" y="1055" text-anchor="end" class="rl">N</text>
+<path d="M1425 1773 L1497.5 1773 L1497.5 1446 L1570 1446" fill="none" stroke="#526476" stroke-opacity=".58" stroke-width="2" marker-end="url(#a)"/><circle cx="1497.5" cy="1609.5" r="12" fill="#526476"/><text x="1497.5" y="1614.5" text-anchor="middle" class="num">15</text><text x="1431" y="1767" text-anchor="start" class="rl">1</text><text x="1564" y="1440" text-anchor="end" class="rl">N</text>
+<path d="M385 1049 L977.5 1049 L977.5 1843 L1570 1843" fill="none" stroke="#526476" stroke-opacity=".58" stroke-width="2" marker-end="url(#a)"/><circle cx="977.5" cy="1446" r="12" fill="#526476"/><text x="977.5" y="1451" text-anchor="middle" class="num">16</text><text x="391" y="1043" text-anchor="start" class="rl">1</text><text x="1564" y="1837" text-anchor="end" class="rl">N</text>
+<path d="M1960 1061 L2040 1061 L2040 1037 L2120 1037" fill="none" stroke="#526476" stroke-opacity=".58" stroke-width="2" marker-end="url(#a)"/><circle cx="2040" cy="1049" r="12" fill="#526476"/><text x="2040" y="1054" text-anchor="middle" class="num">17</text><text x="1966" y="1055" text-anchor="start" class="rl">N</text><text x="2114" y="1031" text-anchor="end" class="rl">1</text>
+<path d="M1960 1446 L2040 1446 L2040 1342 L2120 1342" fill="none" stroke="#526476" stroke-opacity=".58" stroke-width="2" marker-end="url(#a)"/><circle cx="2040" cy="1394" r="12" fill="#526476"/><text x="2040" y="1399" text-anchor="middle" class="num">18</text><text x="1966" y="1440" text-anchor="start" class="rl">N</text><text x="2114" y="1336" text-anchor="end" class="rl">1</text>
+<path d="M1960 1061 L2040 1061 L2040 1647 L2120 1647" fill="none" stroke="#526476" stroke-opacity=".58" stroke-width="2" marker-end="url(#a)"/><circle cx="2040" cy="1354" r="12" fill="#526476"/><text x="2040" y="1359" text-anchor="middle" class="num">19</text><text x="1966" y="1055" text-anchor="start" class="rl">N</text><text x="2114" y="1641" text-anchor="end" class="rl">1</text>
+<path d="M1960 1446 L2040 1446 L2040 1647 L2120 1647" fill="none" stroke="#526476" stroke-opacity=".58" stroke-width="2" marker-end="url(#a)"/><circle cx="2040" cy="1546.5" r="12" fill="#526476"/><text x="2040" y="1551.5" text-anchor="middle" class="num">20</text><text x="1966" y="1440" text-anchor="start" class="rl">N</text><text x="2114" y="1641" text-anchor="end" class="rl">1</text>
+<path d="M1960 1843 L2040 1843 L2040 1647 L2120 1647" fill="none" stroke="#526476" stroke-opacity=".58" stroke-width="2" marker-end="url(#a)"/><circle cx="2040" cy="1745" r="12" fill="#526476"/><text x="2040" y="1750" text-anchor="middle" class="num">21</text><text x="1966" y="1837" text-anchor="start" class="rl">N</text><text x="2114" y="1641" text-anchor="end" class="rl">1</text>
+<path d="M885 1073 L1502.5 1073 L1502.5 1964 L2120 1964" fill="none" stroke="#526476" stroke-opacity=".58" stroke-width="2" marker-end="url(#a)"/><circle cx="1502.5" cy="1518.5" r="12" fill="#526476"/><text x="1502.5" y="1523.5" text-anchor="middle" class="num">22</text><text x="891" y="1067" text-anchor="start" class="rl">N</text><text x="2114" y="1958" text-anchor="end" class="rl">1</text>
+<path d="M1425 1085 L1772.5 1085 L1772.5 1964 L2120 1964" fill="none" stroke="#526476" stroke-opacity=".58" stroke-width="2" marker-end="url(#a)"/><circle cx="1772.5" cy="1524.5" r="12" fill="#526476"/><text x="1772.5" y="1529.5" text-anchor="middle" class="num">23</text><text x="1431" y="1079" text-anchor="start" class="rl">N</text><text x="2114" y="1958" text-anchor="end" class="rl">1</text>
+<path d="M1960 1061 L2040 1061 L2040 1964 L2120 1964" fill="none" stroke="#526476" stroke-opacity=".58" stroke-width="2" marker-end="url(#a)"/><circle cx="2040" cy="1512.5" r="12" fill="#526476"/><text x="2040" y="1517.5" text-anchor="middle" class="num">24</text><text x="1966" y="1055" text-anchor="start" class="rl">N</text><text x="2114" y="1958" text-anchor="end" class="rl">1</text>
+<path d="M1960 1446 L2040 1446 L2040 1964 L2120 1964" fill="none" stroke="#526476" stroke-opacity=".58" stroke-width="2" marker-end="url(#a)"/><circle cx="2040" cy="1705" r="12" fill="#526476"/><text x="2040" y="1710" text-anchor="middle" class="num">25</text><text x="1966" y="1440" text-anchor="start" class="rl">N</text><text x="2114" y="1958" text-anchor="end" class="rl">1</text>
+<path d="M1960 1843 L2040 1843 L2040 1964 L2120 1964" fill="none" stroke="#526476" stroke-opacity=".58" stroke-width="2" marker-end="url(#a)"/><circle cx="2040" cy="1903.5" r="12" fill="#526476"/><text x="2040" y="1908.5" text-anchor="middle" class="num">26</text><text x="1966" y="1837" text-anchor="start" class="rl">N</text><text x="2114" y="1958" text-anchor="end" class="rl">1</text>
+<g filter="url(#sh)"><rect x="55" y="965" width="330" height="168" rx="12" fill="white" stroke="#147D92" stroke-width="2"/><rect x="55" y="965" width="330" height="42" rx="12" fill="#147D92"/><rect x="55" y="989" width="330" height="18" fill="#147D92"/><text x="69" y="993" class="eh">Proyecto</text>
+<text x="70" y="1033" class="at">PK proyecto_id</text>
+<text x="70" y="1057" class="at">FK cliente_id</text>
+<text x="70" y="1081" class="at">nombre</text>
+<text x="70" y="1105" class="at">estado</text>
+</g>
+<g filter="url(#sh)"><rect x="55" y="1190" width="330" height="192" rx="12" fill="white" stroke="#147D92" stroke-width="2"/><rect x="55" y="1190" width="330" height="42" rx="12" fill="#147D92"/><rect x="55" y="1214" width="330" height="18" fill="#147D92"/><text x="69" y="1218" class="eh">ResponsableOperacion</text>
+<text x="70" y="1258" class="at">PK responsable_id</text>
+<text x="70" y="1282" class="at">codigo</text>
+<text x="70" y="1306" class="at">nombre</text>
+<text x="70" y="1330" class="at">tipo</text>
+<text x="70" y="1354" class="at">activo</text>
+</g>
+<g filter="url(#sh)"><rect x="55" y="1445" width="330" height="216" rx="12" fill="white" stroke="#2C8C5A" stroke-width="2"/><rect x="55" y="1445" width="330" height="42" rx="12" fill="#2C8C5A"/><rect x="55" y="1469" width="330" height="18" fill="#2C8C5A"/><text x="69" y="1473" class="eh">Operacion</text>
+<text x="70" y="1513" class="at">PK operacion_id</text>
+<text x="70" y="1537" class="at">FK proyecto_id</text>
+<text x="70" y="1561" class="at">FK responsable_id</text>
+<text x="70" y="1585" class="at">secuencia / avance</text>
+<text x="70" y="1609" class="at">precio_cliente_usd</text>
+<text x="70" y="1633" class="at">costo_contratista_usd</text>
+</g>
+<g filter="url(#sh)"><rect x="55" y="1750" width="330" height="168" rx="12" fill="white" stroke="#2C8C5A" stroke-width="2"/><rect x="55" y="1750" width="330" height="42" rx="12" fill="#2C8C5A"/><rect x="55" y="1774" width="330" height="18" fill="#2C8C5A"/><text x="69" y="1778" class="eh">AvanceOperacion</text>
+<text x="70" y="1818" class="at">PK avance_id</text>
+<text x="70" y="1842" class="at">FK operacion_id</text>
+<text x="70" y="1866" class="at">fecha_efectiva</text>
+<text x="70" y="1890" class="at">porcentaje_acumulado</text>
+</g>
+<g filter="url(#sh)"><rect x="500" y="965" width="385" height="216" rx="12" fill="white" stroke="#7651A6" stroke-width="2"/><rect x="500" y="965" width="385" height="42" rx="12" fill="#7651A6"/><rect x="500" y="989" width="385" height="18" fill="#7651A6"/><text x="514" y="993" class="eh">PlanCertificacionCliente</text>
+<text x="515" y="1033" class="at">PK plan_cliente_id</text>
+<text x="515" y="1057" class="at">FK proyecto_id</text>
+<text x="515" y="1081" class="at">numero / metodo</text>
+<text x="515" y="1105" class="at">operacion_ancla</text>
+<text x="515" y="1129" class="at">fechas previstas</text>
+<text x="515" y="1153" class="at">monto_esperado_usd</text>
+</g>
+<g filter="url(#sh)"><rect x="500" y="1300" width="385" height="216" rx="12" fill="white" stroke="#7651A6" stroke-width="2"/><rect x="500" y="1300" width="385" height="42" rx="12" fill="#7651A6"/><rect x="500" y="1324" width="385" height="18" fill="#7651A6"/><text x="514" y="1328" class="eh">PlanCertificacionContratista</text>
+<text x="515" y="1368" class="at">PK plan_contratista_id</text>
+<text x="515" y="1392" class="at">FK proyecto_id</text>
+<text x="515" y="1416" class="at">FK responsable_id</text>
+<text x="515" y="1440" class="at">numero</text>
+<text x="515" y="1464" class="at">fechas previstas</text>
+<text x="515" y="1488" class="at">monto_esperado_usd</text>
+</g>
+<g filter="url(#sh)"><rect x="500" y="1640" width="385" height="120" rx="12" fill="white" stroke="#7651A6" stroke-width="2"/><rect x="500" y="1640" width="385" height="42" rx="12" fill="#7651A6"/><rect x="500" y="1664" width="385" height="18" fill="#7651A6"/><text x="514" y="1668" class="eh">PlanContratistaOperacion</text>
+<text x="515" y="1708" class="at">PK/FK plan_contratista_id</text>
+<text x="515" y="1732" class="at">PK/FK operacion_id</text>
+</g>
+<g filter="url(#sh)"><rect x="500" y="1870" width="385" height="168" rx="12" fill="white" stroke="#7651A6" stroke-width="2"/><rect x="500" y="1870" width="385" height="42" rx="12" fill="#7651A6"/><rect x="500" y="1894" width="385" height="18" fill="#7651A6"/><text x="514" y="1898" class="eh">ImportacionPlanFinanciero</text>
+<text x="515" y="1938" class="at">PK importacion_id</text>
+<text x="515" y="1962" class="at">FK proyecto_id</text>
+<text x="515" y="1986" class="at">tipo / archivo / estado</text>
+<text x="515" y="2010" class="at">filas correctas/error</text>
+</g>
+<g filter="url(#sh)"><rect x="1015" y="965" width="410" height="240" rx="12" fill="white" stroke="#B3425A" stroke-width="2"/><rect x="1015" y="965" width="410" height="42" rx="12" fill="#B3425A"/><rect x="1015" y="989" width="410" height="18" fill="#B3425A"/><text x="1029" y="993" class="eh">CertificadoCliente</text>
+<text x="1030" y="1033" class="at">PK certificado_cliente_id</text>
+<text x="1030" y="1057" class="at">FK proyecto_id</text>
+<text x="1030" y="1081" class="at">FK plan_cliente_id?</text>
+<text x="1030" y="1105" class="at">numero / metodo</text>
+<text x="1030" y="1129" class="at">fecha corte/emision</text>
+<text x="1030" y="1153" class="at">total_usd</text>
+<text x="1030" y="1177" class="at">estado documental</text>
+</g>
+<g filter="url(#sh)"><rect x="1015" y="1300" width="410" height="216" rx="12" fill="white" stroke="#B3425A" stroke-width="2"/><rect x="1015" y="1300" width="410" height="42" rx="12" fill="#B3425A"/><rect x="1015" y="1324" width="410" height="18" fill="#B3425A"/><text x="1029" y="1328" class="eh">CertificadoClienteDetalle</text>
+<text x="1030" y="1368" class="at">PK detalle_cliente_id</text>
+<text x="1030" y="1392" class="at">FK certificado_cliente_id</text>
+<text x="1030" y="1416" class="at">FK operacion_id</text>
+<text x="1030" y="1440" class="at">avance referencia</text>
+<text x="1030" y="1464" class="at">pct anterior/actual/delta</text>
+<text x="1030" y="1488" class="at">precio aplicado / importe</text>
+</g>
+<g filter="url(#sh)"><rect x="1015" y="1665" width="410" height="216" rx="12" fill="white" stroke="#B3425A" stroke-width="2"/><rect x="1015" y="1665" width="410" height="42" rx="12" fill="#B3425A"/><rect x="1015" y="1689" width="410" height="18" fill="#B3425A"/><text x="1029" y="1693" class="eh">CertificadoContratista</text>
+<text x="1030" y="1733" class="at">PK certificado_contratista_id</text>
+<text x="1030" y="1757" class="at">FK proyecto_id</text>
+<text x="1030" y="1781" class="at">FK responsable_id</text>
+<text x="1030" y="1805" class="at">FK plan_contratista_id?</text>
+<text x="1030" y="1829" class="at">numero / fechas</text>
+<text x="1030" y="1853" class="at">total / estado</text>
+</g>
+<g filter="url(#sh)"><rect x="1015" y="2020" width="410" height="216" rx="12" fill="white" stroke="#B3425A" stroke-width="2"/><rect x="1015" y="2020" width="410" height="42" rx="12" fill="#B3425A"/><rect x="1015" y="2044" width="410" height="18" fill="#B3425A"/><text x="1029" y="2048" class="eh">CertificadoContratistaDetalle</text>
+<text x="1030" y="2088" class="at">PK detalle_contratista_id</text>
+<text x="1030" y="2112" class="at">FK certificado_contratista_id</text>
+<text x="1030" y="2136" class="at">FK operacion_id</text>
+<text x="1030" y="2160" class="at">avance referencia</text>
+<text x="1030" y="2184" class="at">pct anterior/actual/delta</text>
+<text x="1030" y="2208" class="at">costo aplicado / importe</text>
+</g>
+<g filter="url(#sh)"><rect x="1570" y="965" width="390" height="192" rx="12" fill="white" stroke="#D15C72" stroke-width="2"/><rect x="1570" y="965" width="390" height="42" rx="12" fill="#D15C72"/><rect x="1570" y="989" width="390" height="18" fill="#D15C72"/><text x="1584" y="993" class="eh">CobranzaCertificadoCliente</text>
+<text x="1585" y="1033" class="at">PK cobranza_id</text>
+<text x="1585" y="1057" class="at">FK certificado_cliente_id</text>
+<text x="1585" y="1081" class="at">FK medio_pago_id</text>
+<text x="1585" y="1105" class="at">fecha / importe_usd</text>
+<text x="1585" y="1129" class="at">referencia / estado</text>
+</g>
+<g filter="url(#sh)"><rect x="1570" y="1350" width="390" height="192" rx="12" fill="white" stroke="#D15C72" stroke-width="2"/><rect x="1570" y="1350" width="390" height="42" rx="12" fill="#D15C72"/><rect x="1570" y="1374" width="390" height="18" fill="#D15C72"/><text x="1584" y="1378" class="eh">PagoCertificadoContratista</text>
+<text x="1585" y="1418" class="at">PK pago_id</text>
+<text x="1585" y="1442" class="at">FK certificado_contratista_id</text>
+<text x="1585" y="1466" class="at">FK medio_pago_id</text>
+<text x="1585" y="1490" class="at">fecha / importe_usd</text>
+<text x="1585" y="1514" class="at">referencia / estado</text>
+</g>
+<g filter="url(#sh)"><rect x="1570" y="1735" width="390" height="216" rx="12" fill="white" stroke="#D15C72" stroke-width="2"/><rect x="1570" y="1735" width="390" height="42" rx="12" fill="#D15C72"/><rect x="1570" y="1759" width="390" height="18" fill="#D15C72"/><text x="1584" y="1763" class="eh">MovimientoLibre</text>
+<text x="1585" y="1803" class="at">PK movimiento_libre_id</text>
+<text x="1585" y="1827" class="at">FK proyecto_id</text>
+<text x="1585" y="1851" class="at">FK categoria_id</text>
+<text x="1585" y="1875" class="at">INGRESO / EGRESO</text>
+<text x="1585" y="1899" class="at">fecha / importe_usd</text>
+<text x="1585" y="1923" class="at">OC o Factura opcional</text>
+</g>
+<g filter="url(#sh)"><rect x="1570" y="2070" width="390" height="144" rx="12" fill="white" stroke="#147D92" stroke-width="2"/><rect x="1570" y="2070" width="390" height="42" rx="12" fill="#147D92"/><rect x="1570" y="2094" width="390" height="18" fill="#147D92"/><text x="1584" y="2098" class="eh">Catalogos financieros</text>
+<text x="1585" y="2138" class="at">MedioPago</text>
+<text x="1585" y="2162" class="at">CategoriaMovimiento</text>
+<text x="1585" y="2186" class="at">codigo / nombre / activo</text>
+</g>
+<g filter="url(#sh)"><rect x="2120" y="965" width="420" height="144" rx="12" fill="white" stroke="#7651A6" stroke-width="2"/><rect x="2120" y="965" width="420" height="42" rx="12" fill="#7651A6"/><rect x="2120" y="989" width="420" height="18" fill="#7651A6"/><text x="2134" y="993" class="eh">Saldo cliente [VISTA]</text>
+<text x="2135" y="1033" class="at">certificado / cobrado</text>
+<text x="2135" y="1057" class="at">saldo por cobrar</text>
+<text x="2135" y="1081" class="at">estado calculado</text>
+</g>
+<g filter="url(#sh)"><rect x="2120" y="1270" width="420" height="144" rx="12" fill="white" stroke="#7651A6" stroke-width="2"/><rect x="2120" y="1270" width="420" height="42" rx="12" fill="#7651A6"/><rect x="2120" y="1294" width="420" height="18" fill="#7651A6"/><text x="2134" y="1298" class="eh">Saldo contratista [VISTA]</text>
+<text x="2135" y="1338" class="at">certificado / pagado</text>
+<text x="2135" y="1362" class="at">saldo por pagar</text>
+<text x="2135" y="1386" class="at">estado calculado</text>
+</g>
+<g filter="url(#sh)"><rect x="2120" y="1575" width="420" height="144" rx="12" fill="white" stroke="#7651A6" stroke-width="2"/><rect x="2120" y="1575" width="420" height="42" rx="12" fill="#7651A6"/><rect x="2120" y="1599" width="420" height="18" fill="#7651A6"/><text x="2134" y="1603" class="eh">CajaProyecto [VISTA]</text>
+<text x="2135" y="1643" class="at">cobranzas + ingresos</text>
+<text x="2135" y="1667" class="at">pagos + egresos</text>
+<text x="2135" y="1691" class="at">caja real</text>
+</g>
+<g filter="url(#sh)"><rect x="2120" y="1880" width="420" height="168" rx="12" fill="white" stroke="#7651A6" stroke-width="2"/><rect x="2120" y="1880" width="420" height="42" rx="12" fill="#7651A6"/><rect x="2120" y="1904" width="420" height="18" fill="#7651A6"/><text x="2134" y="1908" class="eh">CurvaS mensual [VISTA]</text>
+<text x="2135" y="1948" class="at">planificado</text>
+<text x="2135" y="1972" class="at">certificado</text>
+<text x="2135" y="1996" class="at">cobrado</text>
+<text x="2135" y="2020" class="at">pagado + egresos</text>
+</g>
+<rect x="45" y="2395" width="2510" height="38" rx="12" fill="#fff7e6" stroke="#e49b22"/><text x="65" y="2421" class="mn">Existente: azul/verde/naranja. Propuesto: rojo/violeta. Las vistas calculan saldos y caja; no duplican movimientos. Los signos ? indican FK opcionales.</text></svg>

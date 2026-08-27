@@ -1,0 +1,346 @@
+<!doctype html><html lang="es"><head><meta charset="utf-8"><title>Prompt Dev - Costos y Certificaciones Fase 1</title><style>
+@page{size:A4;margin:16mm 15mm 18mm;@bottom-right{content:"Pagina " counter(page) " de " counter(pages);font:8pt Arial;color:#687887}}*{box-sizing:border-box}body{margin:0;color:#172033;font:9.7pt/1.42 "Segoe UI",Arial,sans-serif}h1,h2,h3{color:#12355b;break-after:avoid}h1{font-size:24pt;line-height:1.08;margin:0 0 10px}h2{font-size:15pt;margin:21px 0 8px;padding-bottom:4px;border-bottom:1px solid #bfd0dc}h3{font-size:11.5pt;margin:13px 0 4px}p{margin:4px 0 8px}ul,ol{margin:5px 0 10px 21px;padding:0}li{margin:2.5px 0;break-inside:avoid}.cover{height:252mm;display:flex;flex-direction:column;justify-content:center;page-break-after:always}.ey{color:#168aad;font-weight:700;letter-spacing:1.2px}.rule{width:82px;height:5px;background:#19a7a0;margin:20px 0}.sub{font-size:14pt;color:#526476;max-width:620px}.meta{margin-top:42px;color:#657587}.call{padding:10px 12px;margin:9px 0;background:#eef8f7;border-left:4px solid #19a7a0}.warn{background:#fff7e6;border-left-color:#e49b22}.risk{background:#fff0f2;border-left-color:#c4475d}.code{font:8.5pt/1.38 Consolas,monospace;background:#edf2f7;padding:7px 9px;border-radius:4px;margin:6px 0;white-space:pre-line}.page{page-break-before:always}table{width:100%;border-collapse:collapse;margin:8px 0 12px;font-size:9pt}th{background:#12355b;color:#fff;text-align:left}th,td{border:1px solid #ccd8e1;padding:6px;vertical-align:top}tr:nth-child(even)td{background:#f5f8fa}.small{font-size:8.7pt;color:#586978}
+</style></head><body>
+<section class="cover"><div class="ey">OBRA360</div><div class="rule"></div><h1>Prompt funcional integrado para el equipo de desarrollo</h1><p class="sub">Nuevo modulo Costos y Certificaciones - Fase 1. Flujo completo entre Proyecto, Programacion, Avances y Certificacion al Cliente.</p><p class="meta">Requerimientos funcionales autocontenidos y reglas de no regresion<br>Agosto de 2026</p></section>
+
+<h2>1. Objetivo</h2><p>Implementar la primera fase del modulo <b>Costos y Certificaciones</b>. Debe permitir cargar valores economicos en operaciones, auditar cambios, reconstruir avance fisico historico, generar un preview temporal por fecha y emitir certificados al cliente aplicando la regla del delta.</p>
+<div class="call"><b>Principio de alcance:</b> implementar solamente las reglas cerradas. No inventar comportamientos para cobranzas, pagos, certificados a contratistas, plan financiero, anulaciones complejas o Curva S.</div>
+
+<h2>1A. Contexto completo de OBRA360</h2>
+<p>OBRA360 es una aplicacion de gestion de proyectos de obra. El sistema ya posee modulos productivos en funcionamiento. Este trabajo agrega un modulo financiero nuevo encima de ellos; no los reemplaza.</p>
+<table><tr><th>Modulo existente</th><th>Responsabilidad actual</th><th>Uso permitido desde Costos</th></tr>
+<tr><td>Proyectos y Clientes</td><td>Administra la obra, cliente unico, fechas, estado y baja logica.</td><td>Leer proyecto, cliente y estado. Referenciar proyecto_id.</td></tr>
+<tr><td>Programacion</td><td>Versiones del plan, etapas, operaciones, secuencias, dependencias, responsables, calendario y reprogramacion.</td><td>Leer operaciones y sus datos. Agregar campos economicos de forma aditiva. No alterar calculos de programacion.</td></tr>
+<tr><td>Avances</td><td>Registra inicio, finalizacion, porcentaje y consumos asociados a cada operacion.</td><td>Consultar historial para reconstruir avance a una fecha. No cambiar reglas ni eventos.</td></tr>
+<tr><td>Compras y Materiales</td><td>Proveedores, compras, remitos, stock, containers, BOM, liberaciones y consumos.</td><td>No integrar automaticamente en Fase 1. No modificar.</td></tr>
+<tr><td>Usuarios y Seguridad</td><td>Autenticacion, roles, entidades, acciones y permisos por proyecto.</td><td>Reutilizar usuario autenticado y registrar acciones nuevas. No cambiar permisos existentes.</td></tr></table>
+
+<h2>1B. Regla no negociable: modulo nuevo y aislado</h2>
+<div class="call risk"><b>NO MODIFICAR LA LOGICA YA ESTABLECIDA.</b> Costos y Certificaciones es un modulo nuevo. Toda integracion debe ser aditiva, compatible hacia atras y con impacto minimo.</div>
+<p>Queda expresamente prohibido:</p><ul>
+<li>Cambiar formulas de avance, pesos, estados, fechas estimadas o reprogramadas.</li><li>Cambiar el algoritmo de dependencias o calendario de Programacion.</li><li>Cambiar la forma en que el Capataz registra avances.</li><li>Cambiar flujos de compras, remitos, stock, BOM o consumos.</li><li>Renombrar, borrar o reutilizar columnas existentes para otro significado.</li><li>Cambiar endpoints existentes o sus contratos de respuesta.</li><li>Mover logica existente a nuevos controladores salvo pedido expreso.</li><li>Modificar permisos actuales, autenticacion o asignaciones de usuarios.</li><li>Realizar refactors generales “aprovechando” esta implementacion.</li><li>Corregir incidentalmente otros modulos sin autorizacion separada.</li></ul>
+<p>La unica alteracion permitida sobre una entidad existente es agregar, mediante migracion compatible, los campos economicos aprobados en <b>Operacion</b>. Cualquier otra necesidad debe resolverse con tablas nuevas, vistas nuevas, servicios de consulta o una propuesta previa para aprobacion.</p>
+
+<h2>1C. Contrato de integracion</h2>
+<div class="code">Programacion/Operacion  --solo lectura funcional-->  Costos
+AvanceOperacion        --solo lectura historica-->   Certificacion
+Proyecto/Cliente       --solo referencia-->          CertificadoCliente
+Usuario                --solo referencia/auditoria--> Acciones nuevas
+Costos                 --NO escribe-->               Avances, Compras o Stock</div>
+<p>El modulo nuevo puede guardar FK hacia entidades existentes, pero no debe provocar efectos laterales sobre ellas. Emitir un certificado no actualiza avance, estado de operacion, cronograma, stock ni compras.</p>
+
+<h2>1D. Glosario de negocio</h2>
+<table><tr><th>Termino</th><th>Definicion</th></tr>
+<tr><td>Operacion</td><td>Unidad productiva y economica del cronograma.</td></tr>
+<tr><td>Responsable operativo</td><td>Persona, cuadrilla o contratista asignado a ejecutar una operacion.</td></tr>
+<tr><td>Precio cliente</td><td>Valor total que el estudio cobra al cliente por la operacion.</td></tr>
+<tr><td>Costo responsable</td><td>Valor total reconocido para quien ejecuta la operacion.</td></tr>
+<tr><td>Avance fisico</td><td>Trabajo ejecutado registrado en el modulo Avances.</td></tr>
+<tr><td>Porcentaje certificado</td><td>Porcentaje acumulado reconocido economicamente al cliente. No es igual al avance fisico.</td></tr>
+<tr><td>Delta</td><td>Diferencia entre el porcentaje acumulado nuevo y el ultimo certificado.</td></tr>
+<tr><td>Preview</td><td>Calculo temporal, editable y no persistente anterior a la emision.</td></tr>
+<tr><td>Certificado emitido</td><td>Documento persistente e historico compuesto por cabecera y detalles.</td></tr></table>
+
+<h2>Historia funcional: por que existe este modulo</h2>
+<p>Hasta ahora OBRA360 conoce <b>como se planifica y ejecuta una obra</b>. Sabe que un proyecto tiene etapas, que cada etapa contiene operaciones, que las operaciones tienen una secuencia y un responsable, y que el Capataz informa cuanto se avanzo. Esa informacion responde preguntas productivas: que trabajo debia hacerse, quien lo realiza, cuando deberia comenzar y cuanto se ejecuto.</p>
+<p>Pero esa misma informacion no responde una pregunta economica diferente: <b>cuanto del trabajo quiere reconocer y cobrar el estudio al cliente en un momento determinado</b>. Ejecutar trabajo no significa automaticamente que se haya certificado. Puede haber un 70% ejecutado y solo un 60% reconocido por el cliente. Tambien puede acordarse un anticipo y certificar 20% cuando fisicamente la operacion todavia esta en 0%.</p>
+<p>El nuevo modulo nace para conectar esas dos realidades sin confundirlas:</p>
+<div class="code">Realidad productiva: lo que efectivamente se ejecuto
+Realidad economica: lo que se reconocio y valorizo en un certificado</div>
+<p>Programacion y Avances siguen siendo la fuente de verdad productiva. Costos y Certificaciones se convierte en la fuente de verdad economica. Ninguno reemplaza al otro.</p>
+
+<h2>La operacion como puente entre produccion y economia</h2>
+<p>La operacion es el punto de union porque representa una porcion concreta y medible de la obra. Ya tiene nombre, etapa, secuencia, responsable y avance. El nuevo modulo agrega dos valores economicos sin cambiar su comportamiento productivo:</p>
+<ul><li><b>Precio cliente:</b> valor total que el estudio pretende cobrar al cliente cuando esa operacion alcance el 100% certificado.</li><li><b>Costo responsable:</b> valor total reconocido para quien ejecuta la operacion cuando alcance el 100% certificado a ese responsable. Este valor se prepara ahora, pero el circuito de contratistas no se implementa en esta fase.</li></ul>
+<p>Estos valores no son horas, cantidades ni costos de materiales. Son importes globales definidos por el usuario. Por eso pueden valer cero y pueden modificarse con auditoria. Agregarlos a Operacion evita construir un presupuesto paralelo desconectado del cronograma.</p>
+<div class="call"><b>Razon de diseño:</b> el nuevo modulo reutiliza la identidad de la operacion, pero guarda sus propios documentos. Programacion sigue decidiendo como se ejecuta; Costos decide como se valoriza.</div>
+
+<h2>Por que el avance fisico solo es una sugerencia</h2>
+<p>Cuando el usuario prepara un certificado, necesita un punto de partida objetivo. El mejor punto de partida es el avance fisico registrado por el Capataz a la fecha seleccionada. Sin embargo, no debe copiarse automaticamente como decision definitiva, porque la certificacion depende de acuerdos comerciales.</p>
+<p>Por eso el sistema muestra dos valores diferentes:</p>
+<div class="code">Avance fisico de referencia = dato de Avances
+Porcentaje a certificar = decision economica del usuario</div>
+<p>Si ambos coinciden, el certificado sigue el avance real. Si difieren, el sistema muestra la diferencia y exige un motivo. Esa diferencia no corrige el avance ni acusa un error del Capataz: solamente documenta que la decision economica fue distinta.</p>
+
+<h2>Por que se usa el delta</h2>
+<p>Los porcentajes certificados son acumulados. Si una operacion se certifico al 40%, el siguiente certificado no debe volver a cobrar ese 40%. Debe cobrar solamente lo nuevo.</p>
+<div class="code">Delta = porcentaje acumulado nuevo - porcentaje acumulado anterior
+Importe del periodo = precio vigente x delta / 100</div>
+<p>La base del delta no es el avance fisico ni el ultimo preview: es el ultimo porcentaje efectivamente emitido para esa operacion. Esta regla evita duplicar importes y permite que el avance fisico y la certificacion evolucionen en ritmos distintos.</p>
+
+<h2>Caso completo de ejemplo</h2>
+<h3>Situacion inicial</h3>
+<p>El proyecto “Torre Norte” tiene un unico cliente. En Programacion existe:</p>
+<div class="code">OP-600 - Armado de hierro de losa
+Responsable operativo: Cuadrilla Hierro
+Precio cliente: 10.000
+Costo responsable: 6.000</div>
+<p>El Capataz registra avances fisicos: 20% el 5 de junio, 55% el 15 de junio y 75% el 30 de junio.</p>
+<h3>Primer certificado</h3>
+<p>El usuario selecciona fecha 15 de junio. Costos consulta Avances y encuentra 55%. Como nunca se certifico esa operacion, el porcentaje anterior es 0%. El sistema propone:</p>
+<div class="code">Avance de referencia: 55%
+Porcentaje anterior: 0%
+Porcentaje sugerido: 55%
+Delta: 55%
+Importe: 10.000 x 55% = 5.500</div>
+<p>El cliente solo reconoce 50%. El usuario cambia 55% por 50%, escribe “Porcentaje acordado en reunion de obra” y confirma.</p>
+<div class="code">Avance de referencia guardado: 55%
+Porcentaje certificado guardado: 50%
+Diferencia explicada: -5%
+Delta emitido: 50%
+Importe emitido: 5.000</div>
+<p>El avance fisico sigue siendo 55%. El certificado no lo modifica.</p>
+<h3>Segundo certificado</h3>
+<p>El 30 de junio el avance fisico es 75%. El sistema propone 75%, pero toma como anterior el 50% emitido, no el 55% fisico del certificado anterior:</p>
+<div class="code">Anterior: 50%
+Nuevo acumulado: 75%
+Delta: 25%
+Importe: 10.000 x 25% = 2.500</div>
+<p>El total certificado acumulado pasa a 7.500, correspondiente al 75% del valor de la operacion.</p>
+<h3>Cambio posterior de precio</h3>
+<p>Luego se cambia el precio cliente a 12.000 con motivo auditado. Los certificados anteriores continúan mostrando 5.000 y 2.500 porque son documentos historicos. Cuando el acumulado pasa de 75% a 90%, el nuevo delta de 15% utiliza el precio vigente:</p>
+<div class="code">Delta nuevo: 15%
+Precio vigente: 12.000
+Nuevo importe: 1.800</div>
+<p>Este comportamiento explica por que cada detalle guarda el precio aplicado: sin esa fotografia, una consulta futura no podria reproducir lo que realmente se emitio.</p>
+
+<h2>Que significa certificar por fecha</h2>
+<p>La fecha seleccionada no corta por numero de secuencia. Sirve para reconstruir cuanto avance tenia cada operacion en ese momento. El sistema consulta todas las operaciones vigentes del proyecto y, para cada una, busca el ultimo evento de avance cuya fecha efectiva sea menor o igual a la fecha elegida.</p>
+<p>Una operacion posterior en el cronograma puede aparecer si ya tiene avance registrado. Una operacion con 0% tambien aparece en el preview, pero no genera importe. Las archivadas o eliminadas se excluyen.</p>
+<p>Si la fecha es futura, el sistema no inventa una proyeccion: usa unicamente eventos realmente registrados que tengan fecha efectiva aplicable.</p>
+
+<h2>Por que el preview no se guarda</h2>
+<p>El preview es un espacio de trabajo. Permite revisar y simular sin crear un documento financiero. Guardarlo como borrador agregaria estados, bloqueos y conflictos que no fueron definidos para esta fase.</p>
+<p>Al emitir, el servidor repite las consultas porque entre el preview y la confirmacion alguien pudo registrar un avance, cambiar un precio o emitir otro certificado. Si detecta un cambio, no intenta acomodarlo silenciosamente: informa que el preview quedo desactualizado y obliga a regenerarlo.</p>
+
+<h2>Por que el certificado es una fotografia historica</h2>
+<p>Una vez emitido, el certificado debe explicar exactamente que se reconocio en ese momento. Por eso cada detalle conserva:</p>
+<ul><li>Operacion y secuencia utilizada.</li><li>Avance fisico que sirvio como referencia.</li><li>Porcentaje anterior.</li><li>Porcentaje acumulado certificado.</li><li>Delta.</li><li>Precio aplicado.</li><li>Importe.</li><li>Indicacion y motivo de modificacion manual.</li></ul>
+<p>Guardar esta fotografia no duplica innecesariamente la operacion. Preserva evidencia. La operacion puede cambiar; el documento emitido no.</p>
+
+<h2>Por que no se modifica la logica existente</h2>
+<p>Programacion, Avances y Compras ya resuelven problemas diferentes y tienen usuarios, reglas y transacciones propias. Mezclar la emision de certificados con esas escrituras generaria efectos dificiles de controlar: certificar podria cambiar el avance, una correccion economica podria reprogramar la obra o un fallo financiero podria afectar stock.</p>
+<p>La arquitectura aditiva evita ese acoplamiento. El nuevo modulo consulta los datos productivos y escribe unicamente en sus tablas. La unica ampliacion autorizada sobre Operacion son los valores economicos y su marca de auditoria.</p>
+
+<h2>Resultado esperado para el usuario</h2>
+<p>Al finalizar la Fase 1, un usuario autorizado debe poder entrar en una obra activa y comprender, sin cálculos externos:</p>
+<ul><li>Que valor economico tiene cada operacion.</li><li>Cuanto avance fisico tenia en una fecha.</li><li>Cuanto ya se habia certificado.</li><li>Cuanto se propone certificar ahora.</li><li>Que parte es nueva y cuanto dinero representa.</li><li>Por que una decision manual difirio del avance.</li><li>Quien emitio el documento y con que valores.</li></ul>
+<div class="call"><b>Idea rectora para el equipo:</b> el modulo no copia Programacion ni convierte avance en dinero automaticamente. Toma la obra ejecutada como referencia y construye, de manera explicable y auditable, una historia economica independiente.</div>
+
+<h2>1E. Vision integrada del nuevo modulo</h2>
+<p>Costos y Certificaciones no funciona de forma aislada del negocio: recibe la estructura productiva de Programacion, consulta la ejecucion real de Avances y transforma esa informacion en documentos economicos propios. La union funcional es la siguiente:</p>
+<div class="code">PROYECTO Y CLIENTE
+  definen para quien y dentro de que obra se certifica
+          |
+          v
+PROGRAMACION
+  aporta etapas, operaciones, secuencia y responsable
+          |
+          v
+AVANCES
+  aporta el porcentaje fisico registrado a una fecha
+          |
+          v
+COSTOS - PREVIEW
+  combina avance + precio + ultimo porcentaje certificado
+          |
+          v
+CERTIFICADO AL CLIENTE
+  congela porcentajes, delta, precio aplicado e importe
+          |
+          v
+CONSULTA HISTORICA
+  explica que se certifico, cuando, sobre que avance y con que valor</div>
+<p>La integracion es de lectura y referencia. Costos consume datos existentes, pero sus decisiones economicas se guardan exclusivamente en las tablas nuevas. El avance fisico no se modifica al certificar y un certificado no cambia la programacion.</p>
+
+<h2>1F. Actores de esta fase</h2>
+<table><tr><th>Actor</th><th>Responsabilidad</th><th>Acciones</th></tr>
+<tr><td>Programador / usuario autorizado</td><td>Administra la economia de las operaciones y prepara la certificacion.</td><td>Cargar o editar precio/costo, consultar historial, generar preview, ajustar porcentaje y emitir.</td></tr>
+<tr><td>Capataz</td><td>Registra avance fisico desde el modulo ya existente.</td><td>No carga informacion adicional para Costos y no modifica certificados.</td></tr>
+<tr><td>Administrador</td><td>Configura acciones y permisos usando el sistema existente.</td><td>Otorga acceso al nuevo modulo; no altera datos financieros directamente salvo permiso.</td></tr>
+<tr><td>Cliente</td><td>Contraparte externa del certificado.</td><td>No opera la aplicacion en esta fase.</td></tr></table>
+
+<h2>1G. Recorrido funcional de punta a punta</h2>
+<h3>Momento 1 - Preparacion economica</h3><ol><li>El usuario ingresa a un proyecto activo.</li><li>Desde Programacion o la seccion Economia consulta sus operaciones existentes.</li><li>Para cada operacion visualiza etapa, secuencia, responsable, avance, precio cliente y costo responsable.</li><li>Carga o modifica precio y costo.</li><li>Si modifica, informa motivo.</li><li>El sistema actualiza el valor y registra auditoria sin alterar fechas, avance, peso, responsable o dependencias.</li></ol>
+<h3>Momento 2 - Registro productivo</h3><ol><li>El Capataz utiliza Avances como lo hace actualmente.</li><li>Cada evento conserva fecha efectiva y porcentaje acumulado.</li><li>Costos no participa en esa escritura.</li></ol>
+<h3>Momento 3 - Preparacion del certificado</h3><ol><li>El usuario abre Costos y Certificaciones dentro del proyecto.</li><li>Selecciona Nueva certificacion al cliente.</li><li>Selecciona una fecha de certificacion.</li><li>El sistema consulta las operaciones vigentes y su avance historico a esa fecha.</li><li>Consulta el ultimo porcentaje certificado de cada operacion.</li><li>Calcula sugerencia, delta e importe.</li><li>Muestra un preview temporal sin escribir en base.</li></ol>
+<h3>Momento 4 - Revision y emision</h3><ol><li>El usuario revisa las lineas.</li><li>Puede modificar un porcentaje acumulado dentro de los limites de Fase 1.</li><li>Si lo modifica, debe justificarlo.</li><li>Confirma emision.</li><li>El servidor vuelve a consultar y calcular todos los valores.</li><li>Si la base cambio, cancela la emision y solicita regenerar preview.</li><li>Si todo es valido, crea cabecera y detalles en una transaccion.</li></ol>
+<h3>Momento 5 - Consulta</h3><ol><li>El usuario consulta el listado de certificados.</li><li>Abre un documento y ve sus operaciones.</li><li>Cada linea explica avance de referencia, anterior, actual, delta, precio aplicado e importe.</li><li>Modificar despues la operacion no cambia el documento historico.</li></ol>
+
+<h2>1H. Requerimientos funcionales integrados</h2>
+<table><tr><th>ID</th><th>Requerimiento</th><th>Origen / integracion</th></tr>
+<tr><td>RF-001</td><td>El modulo debe operar dentro de un proyecto seleccionado y activo.</td><td>Proyecto</td></tr>
+<tr><td>RF-002</td><td>Debe obtener el cliente desde el proyecto sin duplicarlo en maestros nuevos.</td><td>Proyecto + Cliente</td></tr>
+<tr><td>RF-003</td><td>Debe listar operaciones respetando el plan activo y exclusiones actuales.</td><td>Programacion</td></tr>
+<tr><td>RF-004</td><td>Debe mostrar etapa, secuencia, nombre y responsable sin alterar esos datos.</td><td>Programacion</td></tr>
+<tr><td>RF-005</td><td>Debe permitir precio cliente y costo responsable iguales o mayores a cero.</td><td>Operacion + Costos</td></tr>
+<tr><td>RF-006</td><td>Debe exigir motivo al modificar un valor economico.</td><td>Costos</td></tr>
+<tr><td>RF-007</td><td>Debe guardar anterior, nuevo, usuario y fecha de toda modificacion.</td><td>Costos + Usuario</td></tr>
+<tr><td>RF-008</td><td>Debe impedir cambiar responsable si la operacion ya fue certificada.</td><td>Programacion + Certificados</td></tr>
+<tr><td>RF-009</td><td>Debe consultar el avance acumulado vigente a la fecha seleccionada.</td><td>Avances</td></tr>
+<tr><td>RF-010</td><td>Sin avance historico debe considerar 0%.</td><td>Avances</td></tr>
+<tr><td>RF-011</td><td>Debe generar preview sin persistir cabecera ni detalles.</td><td>Costos</td></tr>
+<tr><td>RF-012</td><td>Debe incluir operaciones vigentes aunque su avance o delta sea cero.</td><td>Programacion + Avances</td></tr>
+<tr><td>RF-013</td><td>Debe excluir operaciones archivadas o eliminadas.</td><td>Programacion</td></tr>
+<tr><td>RF-014</td><td>Debe obtener el porcentaje anterior del ultimo certificado vigente.</td><td>Certificados</td></tr>
+<tr><td>RF-015</td><td>Debe calcular delta = porcentaje actual - porcentaje anterior.</td><td>Costos</td></tr>
+<tr><td>RF-016</td><td>Debe calcular importe = precio vigente x delta / 100.</td><td>Operacion + Costos</td></tr>
+<tr><td>RF-017</td><td>Debe permitir modificar manualmente el porcentaje sugerido con motivo.</td><td>Costos</td></tr>
+<tr><td>RF-018</td><td>Debe impedir porcentajes menores al anterior, negativos o superiores a 100%.</td><td>Costos</td></tr>
+<tr><td>RF-019</td><td>Debe impedir emitir un certificado cuyo total completo sea delta cero.</td><td>Costos</td></tr>
+<tr><td>RF-020</td><td>Debe recalcular todo en el servidor al confirmar.</td><td>Backend</td></tr>
+<tr><td>RF-021</td><td>Debe rechazar emision si avance, precio o certificado anterior cambiaron desde el preview.</td><td>Integridad</td></tr>
+<tr><td>RF-022</td><td>Debe emitir cabecera y detalles atomicamente.</td><td>SQL Server</td></tr>
+<tr><td>RF-023</td><td>Debe guardar una fotografia del valor aplicado y porcentajes.</td><td>Certificados</td></tr>
+<tr><td>RF-024</td><td>Un cambio posterior de precio debe afectar solo deltas futuros.</td><td>Operacion + Certificados</td></tr>
+<tr><td>RF-025</td><td>No debe admitir fechas anteriores al ultimo certificado emitido.</td><td>Certificados</td></tr>
+<tr><td>RF-026</td><td>Debe poder consultar listado y detalle historico.</td><td>Costos</td></tr>
+<tr><td>RF-027</td><td>Debe registrar quien emitio y cuando.</td><td>Usuario + Costos</td></tr>
+<tr><td>RF-028</td><td>Debe respetar permisos del sistema en frontend y backend.</td><td>Seguridad</td></tr>
+<tr><td>RF-029</td><td>Debe conservar el estilo y experiencia de Programacion.</td><td>Frontend</td></tr>
+<tr><td>RF-030</td><td>No debe escribir en Avances, Programacion, Compras o Stock.</td><td>Frontera del modulo</td></tr></table>
+
+<h2>1I. Reglas funcionales transversales</h2><ul>
+<li><b>Separacion de dimensiones:</b> avance fisico y porcentaje certificado son independientes.</li>
+<li><b>Inmutabilidad historica:</b> un certificado emitido conserva los valores utilizados.</li>
+<li><b>Origen visible:</b> toda cifra debe poder explicarse desde operacion, avance, porcentaje anterior, delta y precio.</li>
+<li><b>Sin efectos laterales:</b> emitir no modifica avance, fechas, responsable, stock ni compras.</li>
+<li><b>Servidor autoritativo:</b> el frontend nunca define importes definitivos.</li>
+<li><b>Compatibilidad:</b> una operacion existente con valores economicos cero sigue funcionando en Programacion.</li>
+<li><b>Acceso controlado:</b> todos los endpoints requieren autenticacion y permiso.</li></ul>
+
+<h2>2. Tecnologia y arquitectura</h2><ul><li>Backend Node.js + Express.</li><li>SQL Server mediante <code>mssql</code>.</li><li>Frontend Angular.</li><li>Autenticacion y permisos existentes.</li><li>Consultas parametrizadas y transacciones SQL.</li><li>No introducir ORM ni reemplazar tecnologias.</li></ul>
+<p>Revisar antes de modificar: Operacion, AvanceOperacion, Proyecto, ResponsableOperacion, Programacion.controller.js, AvanceOperacion.controller.js, middleware de autenticacion y sistema de acciones/roles.</p>
+
+<h2>3. Directiva visual obligatoria</h2>
+<div class="call"><b>El nuevo modulo debe tomar como referencia visual y de interaccion el modulo de Programacion existente.</b> No crear un lenguaje visual independiente.</div>
+<p>Reutilizar, siempre que sea posible:</p><ul><li>Estructura de encabezados, paneles y tarjetas.</li><li>Paleta de colores y jerarquia tipografica.</li><li>Estilos de tablas, filas, estados y acciones.</li><li>Botones primarios/secundarios y ubicacion de acciones.</li><li>Dialogos, formularios, validaciones y mensajes.</li><li>Espaciados, bordes, sombras y radios.</li><li>Indicadores de carga, vacio y error.</li><li>Comportamiento responsive.</li><li>Convenciones para filtros, busqueda y navegacion dentro del proyecto.</li></ul>
+<p>Antes de desarrollar las pantallas, inspeccionar los componentes HTML, CSS/SCSS y TypeScript del modulo Programacion. Preferir componentes compartidos y estilos existentes. Si se necesita un estilo nuevo, debe ser una extension coherente y documentada.</p>
+<div class="call warn"><b>No copiar defectos estructurales:</b> tomar la apariencia y experiencia del modulo Programacion, pero mantener separacion de responsabilidades, accesibilidad, estados claros y componentes reutilizables.</div>
+
+<h2>4. Alcance confirmado</h2><ul><li>Todo certificado pertenece a un unico proyecto.</li><li>Cada proyecto tiene un unico cliente.</li><li>Solo proyectos activos.</li><li>No migrar historicos financieros.</li><li>Mano de obra y servicios tercerizados.</li><li>Materiales, compras e inventario no participan automaticamente.</li><li>No calcular margen, utilidad o rentabilidad.</li><li>Nombre visible: Costos y Certificaciones.</li></ul>
+
+<h2>5. Valores y moneda</h2><p>No implementar conversiones ni tipos de cambio. Usar nombres neutrales: <code>precio_cliente</code>, <code>costo_responsable</code> e <code>importe</code>. No usar sufijo USD.</p>
+<p>En base usar <code>DECIMAL(19,4)</code>; mostrar un decimal en interfaz. Los valores pueden ser cero, cero es un valor economico real y no admitir negativos.</p>
+
+<h2>6. Economia de Operacion</h2><p>Agregar a Operacion:</p><div class="code">precio_cliente DECIMAL(19,4) NOT NULL DEFAULT 0
+costo_responsable DECIMAL(19,4) NOT NULL DEFAULT 0
+economia_actualizada_por BIGINT NULL
+economia_actualizada_en DATETIME2 NULL
+row_version ROWVERSION</div>
+<ul><li>Se cargan al programar y pueden editarse luego.</li><li>Una operacion puede certificarse al cliente con precio cero.</li><li>responsable_id puede ser NULL.</li><li>Solo un responsable operativo por operacion.</li><li>Si la operacion ya aparece en un certificado emitido, no permitir cambiar responsable.</li><li>Para reemplazarlo se crea una nueva operacion para el trabajo restante.</li></ul>
+
+<h2>7. Historial economico</h2><p>Crear <b>HistorialEconomiaOperacion</b>:</p><div class="code">historial_economia_id BIGINT IDENTITY PRIMARY KEY
+operacion_id BIGINT NOT NULL (FK)
+campo_modificado NVARCHAR(50) NOT NULL
+valor_anterior DECIMAL(19,4) NOT NULL
+valor_nuevo DECIMAL(19,4) NOT NULL
+motivo NVARCHAR(500) NOT NULL
+usuario_id BIGINT NOT NULL (FK)
+fecha_modificacion DATETIME2 NOT NULL</div>
+<p>Modificar valor e insertar historial en la misma transaccion. El motivo es obligatorio. No exponer borrado de historial.</p>
+
+<h2>8. Avance historico</h2><p>Para una operacion y fecha de corte:</p><div class="code">avance_referencia = ultimo porcentaje acumulado vigente
+con fecha_efectiva menor o igual a fecha_corte</div>
+<ul><li>Sin avance previo: 0%.</li><li>Varios eventos el mismo dia: tomar el ultimo por fecha/hora o ID y documentar el criterio.</li><li>Diferenciar fecha_efectiva de fecha_registro.</li><li>Una carga retroactiva puede cambiar previews, nunca certificados emitidos.</li></ul>
+
+<h2>9. CertificadoCliente</h2><div class="code">certificado_cliente_id BIGINT IDENTITY PRIMARY KEY
+proyecto_id BIGINT NOT NULL (FK)
+metodo_corte NVARCHAR(30) NOT NULL
+fecha_certificacion DATE NOT NULL
+total DECIMAL(19,4) NOT NULL
+estado NVARCHAR(30) NOT NULL
+observaciones NVARCHAR(1000) NULL
+creado_por BIGINT NOT NULL (FK)
+fecha_creacion DATETIME2 NOT NULL
+row_version ROWVERSION</div>
+<p>En esta fase metodo = POR_FECHA. Estados preparados: EMITIDO y RECHAZADO. No implementar borrador, numeracion comercial, envio, aceptacion, firma, adjuntos, anulacion ni vinculacion con plan.</p>
+
+<h2>10. CertificadoClienteDetalle</h2><div class="code">detalle_id BIGINT IDENTITY PRIMARY KEY
+certificado_cliente_id BIGINT NOT NULL (FK)
+operacion_id BIGINT NOT NULL (FK)
+secuencia_aplicada INT NOT NULL
+avance_fisico_referencia DECIMAL(7,3) NOT NULL
+porcentaje_anterior DECIMAL(7,3) NOT NULL
+porcentaje_actual DECIMAL(7,3) NOT NULL
+delta DECIMAL(7,3) NOT NULL
+precio_cliente_aplicado DECIMAL(19,4) NOT NULL
+importe DECIMAL(19,4) NOT NULL
+modificado_manualmente BIT NOT NULL DEFAULT 0
+motivo_modificacion NVARCHAR(500) NULL</div>
+<p>Restriccion unica: certificado_cliente_id + operacion_id. El detalle congela los valores usados y no se recalcula por cambios posteriores.</p>
+
+<h2>11. Regla del delta</h2><div class="code">porcentaje_anterior = ultimo porcentaje_actual emitido y vigente
+delta = porcentaje_actual - porcentaje_anterior
+importe = precio_cliente_vigente x delta / 100</div>
+<ul><li>Sin certificado anterior: porcentaje_anterior = 0.</li><li>Sugerencia inicial: avance_fisico_referencia.</li><li>No permitir porcentaje inferior al anterior.</li><li>No permitir delta negativo ni superar 100%.</li><li>Permitir delta cero en preview.</li><li>Si todo el certificado tiene delta cero, impedir emision.</li></ul>
+
+<h2>12. Cambio de precio</h2><p>Los certificados anteriores conservan precio aplicado e importe. El siguiente certificado conserva el porcentaje anterior y valoriza solo el nuevo delta con el precio vigente.</p><div class="code">Precio anterior: 1.000 - certificado: 40% - importe: 400
+Precio nuevo: 1.500 - nuevo acumulado: 70%
+Delta: 30% - nuevo importe: 450</div>
+
+<h2>13. Preview temporal</h2><p>Endpoint sugerido:</p><div class="code">POST /api/proyectos/:proyectoId/certificados-cliente/preview-fecha
+Body: { "fecha_certificacion": "YYYY-MM-DD" }</div>
+<p>Respuesta por operacion: ID, secuencia, nombre, avance de referencia, porcentaje anterior, porcentaje sugerido, delta, precio e importe.</p>
+<ul><li>No escribir en base.</li><li>Proyecto activo.</li><li>Excluir operaciones eliminadas o archivadas.</li><li>Incluir vigentes aunque tengan avance cero.</li><li>No usar secuencia como filtro del metodo por fecha.</li><li>Una fecha futura no predice avance; solo utiliza eventos ya registrados con fecha efectiva aplicable.</li></ul>
+
+<h2>14. Modificacion manual</h2><p>Permitir editar porcentaje actual en preview. Mostrar avance fisico, anterior, nuevo, diferencia, delta, precio e importe. Si se modifica: advertencia, motivo obligatorio y <code>modificado_manualmente=true</code>.</p><p>El frontend calcula solo para previsualizar. El backend recalcula todo al emitir.</p>
+
+<h2>15. Emision transaccional</h2><p>Endpoint sugerido:</p><div class="code">POST /api/proyectos/:proyectoId/certificados-cliente</div><ol><li>Iniciar transaccion.</li><li>Validar proyecto activo.</li><li>Proteger operaciones involucradas contra concurrencia.</li><li>Consultar ultimo porcentaje.</li><li>Consultar precio y avance vigentes.</li><li>Recalcular delta e importe.</li><li>Rechazar si cambio la base desde el preview.</li><li>Insertar cabecera y detalles.</li><li>Total = suma de detalles.</li><li>Confirmar transaccion.</li></ol>
+<p>No confiar en porcentaje anterior, delta, precio, importe o total enviados por el frontend.</p>
+
+<h2>16. Cronologia</h2><p>No permitir fecha anterior al ultimo certificado emitido del proyecto. Permitir misma fecha si no repite porcentaje.</p><div class="code">fecha_nueva >= ultima fecha_certificacion vigente</div>
+
+<h2>17. Pantallas Angular</h2><h3>Economia de operaciones</h3><p>Secuencia, operacion, responsable, avance, precio cliente, costo responsable, editar e historial.</p><h3>Preview cliente</h3><p>Fecha, tabla de operaciones, avance de referencia, anterior, editable, diferencia, delta, precio, importe y total.</p><h3>Listado y detalle</h3><p>ID provisional, proyecto, fecha, total, estado, usuario y detalle completo.</p><p>Todas estas pantallas deben reproducir el estilo y patrones del modulo Programacion.</p>
+
+<h2>18. Organizacion del codigo</h2><div class="code">controllers/ EconomiaOperacion.controller.js
+controllers/ CertificadoCliente.controller.js
+services/ EconomiaOperacion.service.js
+services/ CertificacionCliente.service.js
+routes/ EconomiaOperacion.routes.js
+routes/ CertificadoCliente.routes.js</div><p>Controladores para HTTP; servicios para delta, avance historico, cambios, validaciones y transacciones.</p>
+
+<h2>19. Permisos provisionales</h2><div class="code">COSTOS_VER
+ECONOMIA_OPERACION_EDITAR
+CERTIFICADO_CLIENTE_PREVIEW
+CERTIFICADO_CLIENTE_EMITIR
+CERTIFICADO_CLIENTE_VER</div><p>Validar en backend, no solamente ocultar botones.</p>
+
+<h2>20. Migracion e indices</h2><p>Crear migracion idempotente y transaccional. No borrar ni modificar datos ajenos. Agregar FK, CHECK, UNIQUE e indices:</p><div class="code">Operacion(proyecto_id, archivada)
+AvanceOperacion(operacion_id, fecha_efectiva)
+CertificadoCliente(proyecto_id, fecha_certificacion)
+CertificadoClienteDetalle(operacion_id, certificado_cliente_id)
+HistorialEconomiaOperacion(operacion_id, fecha_modificacion)</div>
+
+<h2>21. Pruebas obligatorias</h2><ol><li>Primera certificacion y certificado posterior.</li><li>Operacion sin avance, responsable o con precio cero.</li><li>Modificacion manual inferior al avance.</li><li>Bloqueo de porcentaje inferior al anterior y superior a 100%.</li><li>Cambio de precio despues de certificacion parcial.</li><li>Inmutabilidad de certificados anteriores.</li><li>Fecha anterior al ultimo certificado.</li><li>Dos emisiones simultaneas.</li><li>Proyecto inactivo y operacion archivada.</li><li>Carga retroactiva de avance.</li><li>Diferencia entre preview y emision.</li><li>Auditoria y rollback completo.</li></ol>
+
+<h2>22. Fuera de alcance</h2><p>Operacion ancla, certificados a contratistas, contraparte financiera, cobranzas, pagos, movimientos libres, anticipos, anulaciones complejas, ajustes, mas de 100%, plan, CSV, plan-real, desvios, caja, Curva S, conversion, impuestos, rentabilidad, adjuntos, PDF firmado y conciliacion.</p>
+
+<h2>23. Entregables</h2><ol><li>Migracion SQL.</li><li>Modelo de tablas.</li><li>Backend y frontend.</li><li>Permisos.</li><li>Pruebas automatizadas.</li><li>Script de verificacion.</li><li>Documentacion de endpoints.</li><li>Pruebas manuales.</li><li>Supuestos.</li><li>Evidencia de no afectar otros modulos.</li><li>Capturas comparativas que demuestren consistencia visual con Programacion.</li></ol>
+
+<h2>23A. Proceso obligatorio antes de codificar</h2><ol>
+<li>Inventariar archivos, rutas, controladores, servicios y tablas que se consultaran.</li>
+<li>Documentar el contrato actual de Programacion y Avances que consumira el modulo.</li>
+<li>Ejecutar las pruebas existentes y guardar una linea base.</li>
+<li>Presentar la migracion propuesta y el DER de las tablas nuevas.</li>
+<li>Confirmar que ningun cambio requiere modificar reglas existentes.</li>
+<li>Solo despues, implementar por incrementos pequenos y verificables.</li></ol>
+
+<h2>23B. Estrategia de implementacion</h2><ol>
+<li><b>Incremento A:</b> migracion economica aditiva e historial, sin UI.</li>
+<li><b>Incremento B:</b> API y pantalla de economia de operaciones.</li>
+<li><b>Incremento C:</b> consulta historica de avance y preview sin persistencia.</li>
+<li><b>Incremento D:</b> emision transaccional de certificado cliente.</li>
+<li><b>Incremento E:</b> listado, detalle, permisos y pruebas de regresion.</li></ol>
+<p>Cada incremento debe poder validarse y revertirse de forma independiente. No acumular toda la implementacion en una unica entrega.</p>
+
+<h2>23C. Pruebas de no regresion</h2><p>Ademas de las pruebas nuevas, demostrar que siguen funcionando:</p><ul>
+<li>Creacion, edicion y consulta de proyectos.</li><li>Importacion y visualizacion de Programacion.</li><li>Calculo de fechas, dependencias, calendario y reprogramacion.</li><li>Registro de inicio, avance y finalizacion de operaciones.</li><li>Asignacion de responsables.</li><li>BOM, consumo de materiales y actualizacion de stock.</li><li>Login, autorizacion, roles y acceso por proyecto.</li></ul>
+<div class="call warn"><b>Criterio de rechazo:</b> si una prueba existente falla o cambia un contrato de API no autorizado, la Fase 1 no se considera entregable aunque Costos funcione.</div>
+
+<h2>23D. Gestion de dudas</h2><p>Cuando una regla no este definida, el equipo debe detener solamente ese caso, documentar la duda y continuar con partes independientes. No asumir reglas financieras. No ampliar alcance por conveniencia tecnica.</p>
+
+<h2>24. Condicion de finalizacion</h2><p>La fase termina cuando se audita economia, se reconstruye avance a fecha, se genera preview, se modifica porcentaje justificadamente, se emite por delta, los precios nuevos afectan solo deltas futuros, el historial es reproducible, no hay duplicacion por concurrencia, las pruebas pasan y el modulo conserva la experiencia visual de Programacion.</p>
+<p>Tambien debe quedar demostrado que Costos y Certificaciones funciona como modulo separado, que no altero la logica ni los contratos de los modulos existentes y que todas sus escrituras se limitan a sus propias tablas mas los campos economicos expresamente autorizados en Operacion.</p>
+<p class="small">Este prompt autoriza solamente la Fase 1 descrita. Cualquier ampliacion requiere una decision funcional adicional.</p>
+</body></html>

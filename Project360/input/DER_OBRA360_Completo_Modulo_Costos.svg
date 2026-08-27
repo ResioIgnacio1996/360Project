@@ -1,0 +1,511 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="3200" height="2685" viewBox="0 0 3200 2685">
+<defs><filter id="shadow"><feDropShadow dx="0" dy="2" stdDeviation="3" flood-opacity=".16"/></filter><marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><path d="M0,0 L0,6 L9,3 z" fill="#718096"/></marker><style>text{font-family:Segoe UI,Arial,sans-serif}.title{font-size:34px;font-weight:700;fill:#12355b}.sub{font-size:17px;fill:#526476}.mod{font-size:19px;font-weight:700;fill:white}.ent{font-size:17px;font-weight:700;fill:white}.attr{font-size:13px;fill:#26374a}.rel{font-size:11px;font-weight:700;fill:#566579}.badge{font-size:11px;font-weight:700}</style></defs>
+<rect width="100%" height="100%" fill="#f5f8fb"/><text x="40" y="55" class="title">OBRA360 - DER integral por modulos</text><text x="40" y="88" class="sub">Entidades existentes + propuesta para Costos, Certificaciones, Cobranzas y Salud Financiera</text>
+<rect x="2260" y="32" width="900" height="75" rx="14" fill="#fff" stroke="#d8e1e8"/><circle cx="2300" cy="58" r="9" fill="#ffffff" stroke="#657587" stroke-width="2"/><text x="2320" y="63" class="sub">Existente</text><circle cx="2460" cy="58" r="9" fill="#fff1f3" stroke="#B3425A" stroke-width="2"/><text x="2480" y="63" class="sub">Propuesta Costos</text><circle cx="2690" cy="58" r="9" fill="#f0eafa" stroke="#7651A6" stroke-width="2"/><text x="2710" y="63" class="sub">Vista calculada</text><text x="2300" y="91" class="sub">PK = clave primaria | FK = clave foranea | 1:N = cardinalidad</text>
+<rect x="40" y="150" width="980" height="529" rx="22" fill="#5B5BD6" fill-opacity=".065" stroke="#5B5BD6" stroke-width="2"/><rect x="40" y="150" width="980" height="48" rx="22" fill="#5B5BD6"/><rect x="40" y="175" width="980" height="23" fill="#5B5BD6"/><text x="62" y="182" class="mod">1. SEGURIDAD Y ACCESO</text>
+<rect x="1060" y="150" width="980" height="761" rx="22" fill="#147D92" fill-opacity=".065" stroke="#147D92" stroke-width="2"/><rect x="1060" y="150" width="980" height="48" rx="22" fill="#147D92"/><rect x="1060" y="175" width="980" height="23" fill="#147D92"/><text x="1082" y="182" class="mod">2. PROYECTOS Y CONTRAPARTES</text>
+<rect x="2080" y="150" width="1080" height="1277" rx="22" fill="#2C8C5A" fill-opacity=".065" stroke="#2C8C5A" stroke-width="2"/><rect x="2080" y="150" width="1080" height="48" rx="22" fill="#2C8C5A"/><rect x="2080" y="175" width="1080" height="23" fill="#2C8C5A"/><text x="2102" y="182" class="mod">3. PROGRAMACION Y AVANCE</text>
+<rect x="40" y="1200" width="980" height="1133" rx="22" fill="#C47A13" fill-opacity=".065" stroke="#C47A13" stroke-width="2"/><rect x="40" y="1200" width="980" height="48" rx="22" fill="#C47A13"/><rect x="40" y="1225" width="980" height="23" fill="#C47A13"/><text x="62" y="1232" class="mod">4. COMPRAS, MATERIALES Y STOCK</text>
+<rect x="1060" y="1330" width="980" height="1175" rx="22" fill="#B3425A" fill-opacity=".065" stroke="#B3425A" stroke-width="2"/><rect x="1060" y="1330" width="980" height="48" rx="22" fill="#B3425A"/><rect x="1060" y="1355" width="980" height="23" fill="#B3425A"/><text x="1082" y="1362" class="mod">5. COSTOS Y CERTIFICACIONES (PROPUESTO)</text>
+<rect x="2080" y="1550" width="1080" height="941" rx="22" fill="#7651A6" fill-opacity=".065" stroke="#7651A6" stroke-width="2"/><rect x="2080" y="1550" width="1080" height="48" rx="22" fill="#7651A6"/><rect x="2080" y="1575" width="1080" height="23" fill="#7651A6"/><text x="2102" y="1582" class="mod">6. PLAN FINANCIERO, IMPORTACION E INDICADORES</text>
+<path d="M1534,318 C1546,318 1546,318 1558,318" fill="none" stroke="#718096" stroke-opacity=".30" stroke-width="1.5" marker-end="url(#arrow)"/><text x="1550" y="315" class="rel" opacity=".70">1:N</text>
+<path d="M2008,318 C2056,318 2056,291 2104,291" fill="none" stroke="#718096" stroke-opacity=".30" stroke-width="1.5" marker-end="url(#arrow)"/><text x="2060" y="301.5" class="rel" opacity=".70">1:N</text>
+<path d="M1558,318 C1036,318 1036,602 514,602" fill="none" stroke="#718096" stroke-opacity=".30" stroke-width="1.5" marker-end="url(#arrow)"/><text x="1040" y="457" class="rel" opacity=".70">1:N</text>
+<path d="M289,344 C289,344 289,567 289,567" fill="none" stroke="#718096" stroke-opacity=".30" stroke-width="1.5" marker-end="url(#arrow)"/><text x="293" y="452.5" class="rel" opacity=".70">1:N</text>
+<path d="M538,282 C526,282 526,309 514,309" fill="none" stroke="#718096" stroke-opacity=".30" stroke-width="1.5" marker-end="url(#arrow)"/><text x="530" y="292.5" class="rel" opacity=".70">1:N</text>
+<path d="M763,317 C763,317 763,504 763,504" fill="none" stroke="#718096" stroke-opacity=".30" stroke-width="1.5" marker-end="url(#arrow)"/><text x="767" y="407.5" class="rel" opacity=".70">1:N</text>
+<path d="M514,478 C526,478 526,539 538,539" fill="none" stroke="#718096" stroke-opacity=".30" stroke-width="1.5" marker-end="url(#arrow)"/><text x="530" y="505.5" class="rel" opacity=".70">1:N</text>
+<path d="M538,415 C526,415 526,478 514,478" fill="none" stroke="#718096" stroke-opacity=".30" stroke-width="1.5" marker-end="url(#arrow)"/><text x="530" y="443.5" class="rel" opacity=".70">1:N</text>
+<path d="M2008,318 C2293,318 2293,318 2578,318" fill="none" stroke="#718096" stroke-opacity=".30" stroke-width="1.5" marker-end="url(#arrow)"/><text x="2297" y="315" class="rel" opacity=".70">1:N</text>
+<path d="M2554,291 C2566,291 2566,318 2578,318" fill="none" stroke="#718096" stroke-opacity=".30" stroke-width="1.5" marker-end="url(#arrow)"/><text x="2570" y="301.5" class="rel" opacity=".70">1:N</text>
+<path d="M2578,318 C2566,318 2566,532 2554,532" fill="none" stroke="#718096" stroke-opacity=".30" stroke-width="1.5" marker-end="url(#arrow)"/><text x="2570" y="422" class="rel" opacity=".70">1:N</text>
+<path d="M1534,514 C1819,514 1819,532 2104,532" fill="none" stroke="#718096" stroke-opacity=".30" stroke-width="1.5" marker-end="url(#arrow)"/><text x="1823" y="520" class="rel" opacity=".70">1:N</text>
+<path d="M2554,532 C2566,532 2566,478 2578,478" fill="none" stroke="#718096" stroke-opacity=".30" stroke-width="1.5" marker-end="url(#arrow)"/><text x="2570" y="502" class="rel" opacity=".70">1:N</text>
+<path d="M2554,532 C2566,532 2566,629 2578,629" fill="none" stroke="#718096" stroke-opacity=".30" stroke-width="1.5" marker-end="url(#arrow)"/><text x="2570" y="577.5" class="rel" opacity=".70">1:N</text>
+<path d="M2329,567 C2329,567 2329,765 2329,765" fill="none" stroke="#718096" stroke-opacity=".30" stroke-width="1.5" marker-end="url(#arrow)"/><text x="2333" y="663" class="rel" opacity=".70">1:N</text>
+<path d="M2329,567 C2566,567 2566,1261 2803,1261" fill="none" stroke="#718096" stroke-opacity=".30" stroke-width="1.5" marker-end="url(#arrow)"/><text x="2570" y="911" class="rel" opacity=".70">1:N</text>
+<path d="M2008,318 C2293,318 2293,976 2578,976" fill="none" stroke="#718096" stroke-opacity=".30" stroke-width="1.5" marker-end="url(#arrow)"/><text x="2297" y="644" class="rel" opacity=".70">1:1</text>
+<path d="M2578,976 C2566,976 2566,987 2554,987" fill="none" stroke="#718096" stroke-opacity=".30" stroke-width="1.5" marker-end="url(#arrow)"/><text x="2570" y="978.5" class="rel" opacity=".70">1:N</text>
+<path d="M1558,514 C1273,514 1273,1474 988,1474" fill="none" stroke="#718096" stroke-opacity=".30" stroke-width="1.5" marker-end="url(#arrow)"/><text x="1277" y="991" class="rel" opacity=".70">1:N</text>
+<path d="M538,1474 C526,1474 526,1501 514,1501" fill="none" stroke="#718096" stroke-opacity=".30" stroke-width="1.5" marker-end="url(#arrow)"/><text x="530" y="1484.5" class="rel" opacity=".70">1:N</text>
+<path d="M763,1509 C763,1509 763,1617 763,1617" fill="none" stroke="#718096" stroke-opacity=".30" stroke-width="1.5" marker-end="url(#arrow)"/><text x="767" y="1560" class="rel" opacity=".70">1:N</text>
+<path d="M538,1652 C526,1652 526,1661 514,1661" fill="none" stroke="#718096" stroke-opacity=".30" stroke-width="1.5" marker-end="url(#arrow)"/><text x="530" y="1653.5" class="rel" opacity=".70">1:N</text>
+<path d="M289,1376 C289,1376 289,1466 289,1466" fill="none" stroke="#718096" stroke-opacity=".30" stroke-width="1.5" marker-end="url(#arrow)"/><text x="293" y="1418" class="rel" opacity=".70">1:N</text>
+<path d="M514,1341 C526,1341 526,1803 538,1803" fill="none" stroke="#718096" stroke-opacity=".30" stroke-width="1.5" marker-end="url(#arrow)"/><text x="530" y="1569" class="rel" opacity=".70">1:N</text>
+<path d="M763,1838 C763,1838 763,1910 763,1910" fill="none" stroke="#718096" stroke-opacity=".30" stroke-width="1.5" marker-end="url(#arrow)"/><text x="767" y="1871" class="rel" opacity=".70">1:N</text>
+<path d="M1783,353 C1273,353 1273,1910 763,1910" fill="none" stroke="#718096" stroke-opacity=".30" stroke-width="1.5" marker-end="url(#arrow)"/><text x="1277" y="1128.5" class="rel" opacity=".70">1:N</text>
+<path d="M538,1945 C526,1945 526,1981 514,1981" fill="none" stroke="#718096" stroke-opacity=".30" stroke-width="1.5" marker-end="url(#arrow)"/><text x="530" y="1960" class="rel" opacity=".70">1:N</text>
+<path d="M2329,567 C1546,567 1546,2070 763,2070" fill="none" stroke="#718096" stroke-opacity=".30" stroke-width="1.5" marker-end="url(#arrow)"/><text x="1550" y="1315.5" class="rel" opacity=".70">1:N</text>
+<path d="M289,1376 C526,1376 526,2070 763,2070" fill="none" stroke="#718096" stroke-opacity=".30" stroke-width="1.5" marker-end="url(#arrow)"/><text x="530" y="1720" class="rel" opacity=".70">1:N</text>
+<path d="M2104,532 C1309,532 1309,2168 514,2168" fill="none" stroke="#718096" stroke-opacity=".30" stroke-width="1.5" marker-end="url(#arrow)"/><text x="1313" y="1347" class="rel" opacity=".70">1:N</text>
+<path d="M538,1945 C526,1945 526,2168 514,2168" fill="none" stroke="#718096" stroke-opacity=".30" stroke-width="1.5" marker-end="url(#arrow)"/><text x="530" y="2053.5" class="rel" opacity=".70">1:N</text>
+<path d="M1783,353 C1546,353 1546,1508 1309,1508" fill="none" stroke="#718096" stroke-opacity=".30" stroke-width="1.5" marker-end="url(#arrow)"/><text x="1550" y="927.5" class="rel" opacity=".70">1:N</text>
+<path d="M1534,1543 C1546,1543 1546,1534 1558,1534" fill="none" stroke="#718096" stroke-opacity=".30" stroke-width="1.5" marker-end="url(#arrow)"/><text x="1550" y="1535.5" class="rel" opacity=".70">1:N</text>
+<path d="M2329,567 C2056,567 2056,1499 1783,1499" fill="none" stroke="#718096" stroke-opacity=".30" stroke-width="1.5" marker-end="url(#arrow)"/><text x="2060" y="1030" class="rel" opacity=".70">1:N</text>
+<path d="M1309,1578 C1309,1578 1309,2053 1309,2053" fill="none" stroke="#718096" stroke-opacity=".30" stroke-width="1.5" marker-end="url(#arrow)"/><text x="1313" y="1812.5" class="rel" opacity=".70">1:N</text>
+<path d="M1783,353 C1783,353 1783,1785 1783,1785" fill="none" stroke="#718096" stroke-opacity=".30" stroke-width="1.5" marker-end="url(#arrow)"/><text x="1787" y="1066" class="rel" opacity=".70">1:N</text>
+<path d="M1309,549 C1546,549 1546,1785 1783,1785" fill="none" stroke="#718096" stroke-opacity=".30" stroke-width="1.5" marker-end="url(#arrow)"/><text x="1550" y="1164" class="rel" opacity=".70">1:N</text>
+<path d="M1558,1820 C1546,1820 1546,1829 1534,1829" fill="none" stroke="#718096" stroke-opacity=".30" stroke-width="1.5" marker-end="url(#arrow)"/><text x="1550" y="1821.5" class="rel" opacity=".70">1:N</text>
+<path d="M2329,567 C1819,567 1819,1794 1309,1794" fill="none" stroke="#718096" stroke-opacity=".30" stroke-width="1.5" marker-end="url(#arrow)"/><text x="1823" y="1177.5" class="rel" opacity=".70">1:N</text>
+<path d="M1783,1855 C1783,1855 1783,2053 1783,2053" fill="none" stroke="#718096" stroke-opacity=".30" stroke-width="1.5" marker-end="url(#arrow)"/><text x="1787" y="1951" class="rel" opacity=".70">1:N</text>
+<path d="M1783,709 C1546,709 1546,2053 1309,2053" fill="none" stroke="#718096" stroke-opacity=".30" stroke-width="1.5" marker-end="url(#arrow)"/><text x="1550" y="1378" class="rel" opacity=".70">1:N</text>
+<path d="M1783,709 C1783,709 1783,2053 1783,2053" fill="none" stroke="#718096" stroke-opacity=".30" stroke-width="1.5" marker-end="url(#arrow)"/><text x="1787" y="1378" class="rel" opacity=".70">1:N</text>
+<path d="M1783,353 C1546,353 1546,2312 1309,2312" fill="none" stroke="#718096" stroke-opacity=".30" stroke-width="1.5" marker-end="url(#arrow)"/><text x="1550" y="1329.5" class="rel" opacity=".70">1:N</text>
+<path d="M1309,842 C1309,842 1309,2312 1309,2312" fill="none" stroke="#718096" stroke-opacity=".30" stroke-width="1.5" marker-end="url(#arrow)"/><text x="1313" y="1574" class="rel" opacity=".70">1:N</text>
+<path d="M1783,353 C2056,353 2056,1710 2329,1710" fill="none" stroke="#718096" stroke-opacity=".30" stroke-width="1.5" marker-end="url(#arrow)"/><text x="2060" y="1028.5" class="rel" opacity=".70">1:N</text>
+<path d="M1783,353 C2293,353 2293,1692 2803,1692" fill="none" stroke="#718096" stroke-opacity=".30" stroke-width="1.5" marker-end="url(#arrow)"/><text x="2297" y="1019.5" class="rel" opacity=".70">1:N</text>
+<path d="M1534,514 C2056,514 2056,1727 2578,1727" fill="none" stroke="#718096" stroke-opacity=".30" stroke-width="1.5" marker-end="url(#arrow)"/><text x="2060" y="1117.5" class="rel" opacity=".70">1:N</text>
+<path d="M2803,1762 C2803,1762 2803,1861 2803,1861" fill="none" stroke="#718096" stroke-opacity=".30" stroke-width="1.5" marker-end="url(#arrow)"/><text x="2807" y="1808.5" class="rel" opacity=".70">1:N</text>
+<path d="M2329,567 C2566,567 2566,1861 2803,1861" fill="none" stroke="#718096" stroke-opacity=".30" stroke-width="1.5" marker-end="url(#arrow)"/><text x="2570" y="1211" class="rel" opacity=".70">1:N</text>
+<path d="M2104,1745 C1819,1745 1819,1543 1534,1543" fill="none" stroke="#718096" stroke-opacity=".30" stroke-width="1.5" marker-end="url(#arrow)"/><text x="1823" y="1641" class="rel" opacity=".70">1:N</text>
+<path d="M2578,1727 C2293,1727 2293,1820 2008,1820" fill="none" stroke="#718096" stroke-opacity=".30" stroke-width="1.5" marker-end="url(#arrow)"/><text x="2297" y="1770.5" class="rel" opacity=".70">1:N</text>
+<path d="M2554,2004 C2566,2004 2566,2029 2578,2029" fill="none" stroke="#718096" stroke-opacity=".30" stroke-width="1.5" marker-end="url(#arrow)"/><text x="2570" y="2013.5" class="rel" opacity=".70">1:N</text>
+<g filter="url(#shadow)"><rect x="64" y="220" width="450" height="178" rx="11" fill="#ffffff" stroke="#aebdca" stroke-width="1.5"/><rect x="64" y="220" width="450" height="34" rx="11" fill="#5B5BD6"/><rect x="64" y="240" width="450" height="14" fill="#5B5BD6"/><text x="76" y="243" class="ent">Usuario</text>
+<text x="77" y="272" class="attr">PK usuario_id</text>
+<text x="77" y="290" class="attr">FK rol_id</text>
+<text x="77" y="308" class="attr">nombre</text>
+<text x="77" y="326" class="attr">email</text>
+<text x="77" y="344" class="attr">password_hash</text>
+<text x="77" y="362" class="attr">activo</text>
+<text x="77" y="380" class="attr">fecha_creacion</text>
+</g>
+<g filter="url(#shadow)"><rect x="538" y="220" width="450" height="124" rx="11" fill="#ffffff" stroke="#aebdca" stroke-width="1.5"/><rect x="538" y="220" width="450" height="34" rx="11" fill="#5B5BD6"/><rect x="538" y="240" width="450" height="14" fill="#5B5BD6"/><text x="550" y="243" class="ent">Rol</text>
+<text x="551" y="272" class="attr">PK rol_id</text>
+<text x="551" y="290" class="attr">nombre</text>
+<text x="551" y="308" class="attr">descripcion</text>
+<text x="551" y="326" class="attr">activo</text>
+</g>
+<g filter="url(#shadow)"><rect x="538" y="362" width="450" height="106" rx="11" fill="#ffffff" stroke="#aebdca" stroke-width="1.5"/><rect x="538" y="362" width="450" height="34" rx="11" fill="#5B5BD6"/><rect x="538" y="382" width="450" height="14" fill="#5B5BD6"/><text x="550" y="385" class="ent">Entidad</text>
+<text x="551" y="414" class="attr">PK entidad_id</text>
+<text x="551" y="432" class="attr">nombre</text>
+<text x="551" y="450" class="attr">descripcion</text>
+</g>
+<g filter="url(#shadow)"><rect x="64" y="416" width="450" height="124" rx="11" fill="#ffffff" stroke="#aebdca" stroke-width="1.5"/><rect x="64" y="416" width="450" height="34" rx="11" fill="#5B5BD6"/><rect x="64" y="436" width="450" height="14" fill="#5B5BD6"/><text x="76" y="439" class="ent">Accion</text>
+<text x="77" y="468" class="attr">PK accion_id</text>
+<text x="77" y="486" class="attr">FK entidad_id</text>
+<text x="77" y="504" class="attr">codigo</text>
+<text x="77" y="522" class="attr">nombre</text>
+</g>
+<g filter="url(#shadow)"><rect x="538" y="486" width="450" height="106" rx="11" fill="#ffffff" stroke="#aebdca" stroke-width="1.5"/><rect x="538" y="486" width="450" height="34" rx="11" fill="#5B5BD6"/><rect x="538" y="506" width="450" height="14" fill="#5B5BD6"/><text x="550" y="509" class="ent">Accion_Rol</text>
+<text x="551" y="538" class="attr">PK/FK rol_id</text>
+<text x="551" y="556" class="attr">PK/FK accion_id</text>
+<text x="551" y="574" class="attr">permitido</text>
+</g>
+<g filter="url(#shadow)"><rect x="64" y="558" width="450" height="88" rx="11" fill="#ffffff" stroke="#aebdca" stroke-width="1.5"/><rect x="64" y="558" width="450" height="34" rx="11" fill="#5B5BD6"/><rect x="64" y="578" width="450" height="14" fill="#5B5BD6"/><text x="76" y="581" class="ent">Usuario_Proyecto</text>
+<text x="77" y="610" class="attr">PK/FK usuario_id</text>
+<text x="77" y="628" class="attr">PK/FK proyecto_id</text>
+</g>
+<g filter="url(#shadow)"><rect x="1084" y="220" width="450" height="196" rx="11" fill="#ffffff" stroke="#aebdca" stroke-width="1.5"/><rect x="1084" y="220" width="450" height="34" rx="11" fill="#147D92"/><rect x="1084" y="240" width="450" height="14" fill="#147D92"/><text x="1096" y="243" class="ent">Cliente</text>
+<text x="1097" y="272" class="attr">PK id_cliente</text>
+<text x="1097" y="290" class="attr">razon_social</text>
+<text x="1097" y="308" class="attr">nombre</text>
+<text x="1097" y="326" class="attr">apellido</text>
+<text x="1097" y="344" class="attr">documento</text>
+<text x="1097" y="362" class="attr">email</text>
+<text x="1097" y="380" class="attr">telefono</text>
+<text x="1097" y="398" class="attr">activo</text>
+</g>
+<g filter="url(#shadow)"><rect x="1558" y="220" width="450" height="196" rx="11" fill="#ffffff" stroke="#aebdca" stroke-width="1.5"/><rect x="1558" y="220" width="450" height="34" rx="11" fill="#147D92"/><rect x="1558" y="240" width="450" height="14" fill="#147D92"/><text x="1570" y="243" class="ent">Proyecto</text>
+<text x="1571" y="272" class="attr">PK proyecto_id</text>
+<text x="1571" y="290" class="attr">FK cliente_id</text>
+<text x="1571" y="308" class="attr">nombre</text>
+<text x="1571" y="326" class="attr">direccion</text>
+<text x="1571" y="344" class="attr">fecha_inicio</text>
+<text x="1571" y="362" class="attr">fecha_fin_estimada</text>
+<text x="1571" y="380" class="attr">estado</text>
+<text x="1571" y="398" class="attr">eliminado</text>
+</g>
+<g filter="url(#shadow)"><rect x="1084" y="434" width="450" height="160" rx="11" fill="#ffffff" stroke="#aebdca" stroke-width="1.5"/><rect x="1084" y="434" width="450" height="34" rx="11" fill="#147D92"/><rect x="1084" y="454" width="450" height="14" fill="#147D92"/><text x="1096" y="457" class="ent">ResponsableOperacion</text>
+<text x="1097" y="486" class="attr">PK responsable_id</text>
+<text x="1097" y="504" class="attr">codigo</text>
+<text x="1097" y="522" class="attr">nombre</text>
+<text x="1097" y="540" class="attr">tipo</text>
+<text x="1097" y="558" class="attr">activo</text>
+<text x="1097" y="576" class="attr">fecha_creacion</text>
+</g>
+<g filter="url(#shadow)"><rect x="1558" y="434" width="450" height="160" rx="11" fill="#ffffff" stroke="#aebdca" stroke-width="1.5"/><rect x="1558" y="434" width="450" height="34" rx="11" fill="#147D92"/><rect x="1558" y="454" width="450" height="14" fill="#147D92"/><text x="1570" y="457" class="ent">Proveedor</text>
+<text x="1571" y="486" class="attr">PK id_proveedor</text>
+<text x="1571" y="504" class="attr">FK rubro_id</text>
+<text x="1571" y="522" class="attr">razon_social</text>
+<text x="1571" y="540" class="attr">CUIT</text>
+<text x="1571" y="558" class="attr">contacto</text>
+<text x="1571" y="576" class="attr">activo</text>
+</g>
+<g filter="url(#shadow)"><rect x="1084" y="612" width="450" height="106" rx="11" fill="#ffffff" stroke="#aebdca" stroke-width="1.5"/><rect x="1084" y="612" width="450" height="34" rx="11" fill="#147D92"/><rect x="1084" y="632" width="450" height="14" fill="#147D92"/><text x="1096" y="635" class="ent">Rubro</text>
+<text x="1097" y="664" class="attr">PK rubro_id</text>
+<text x="1097" y="682" class="attr">nombre</text>
+<text x="1097" y="700" class="attr">activo</text>
+</g>
+<g filter="url(#shadow)"><rect x="1558" y="612" width="450" height="124" rx="11" fill="#fff1f3" stroke="#B3425A" stroke-width="1.5"/><rect x="1558" y="612" width="450" height="34" rx="11" fill="#147D92"/><rect x="1558" y="632" width="450" height="14" fill="#147D92"/><text x="1570" y="635" class="ent">MedioPago</text>
+<text x="1571" y="664" class="attr">PK medio_pago_id</text>
+<text x="1571" y="682" class="attr">codigo</text>
+<text x="1571" y="700" class="attr">nombre</text>
+<text x="1571" y="718" class="attr">activo</text>
+</g>
+<g filter="url(#shadow)"><rect x="1084" y="736" width="450" height="142" rx="11" fill="#fff1f3" stroke="#B3425A" stroke-width="1.5"/><rect x="1084" y="736" width="450" height="34" rx="11" fill="#147D92"/><rect x="1084" y="756" width="450" height="14" fill="#147D92"/><text x="1096" y="759" class="ent">CategoriaMovimiento</text>
+<text x="1097" y="788" class="attr">PK categoria_id</text>
+<text x="1097" y="806" class="attr">codigo</text>
+<text x="1097" y="824" class="attr">nombre</text>
+<text x="1097" y="842" class="attr">tipo_permitido</text>
+<text x="1097" y="860" class="attr">activo</text>
+</g>
+<g filter="url(#shadow)"><rect x="2104" y="220" width="450" height="142" rx="11" fill="#ffffff" stroke="#aebdca" stroke-width="1.5"/><rect x="2104" y="220" width="450" height="34" rx="11" fill="#2C8C5A"/><rect x="2104" y="240" width="450" height="14" fill="#2C8C5A"/><text x="2116" y="243" class="ent">VersionPlan</text>
+<text x="2117" y="272" class="attr">PK version_id</text>
+<text x="2117" y="290" class="attr">FK proyecto_id</text>
+<text x="2117" y="308" class="attr">codigo</text>
+<text x="2117" y="326" class="attr">es_activa</text>
+<text x="2117" y="344" class="attr">fecha_creacion</text>
+</g>
+<g filter="url(#shadow)"><rect x="2578" y="220" width="450" height="196" rx="11" fill="#ffffff" stroke="#aebdca" stroke-width="1.5"/><rect x="2578" y="220" width="450" height="34" rx="11" fill="#2C8C5A"/><rect x="2578" y="240" width="450" height="14" fill="#2C8C5A"/><text x="2590" y="243" class="ent">EtapaOperacion</text>
+<text x="2591" y="272" class="attr">PK etapa_id</text>
+<text x="2591" y="290" class="attr">FK proyecto_id</text>
+<text x="2591" y="308" class="attr">FK version_id</text>
+<text x="2591" y="326" class="attr">FK estado_id</text>
+<text x="2591" y="344" class="attr">codigo</text>
+<text x="2591" y="362" class="attr">nombre</text>
+<text x="2591" y="380" class="attr">orden</text>
+<text x="2591" y="398" class="attr">peso_pct</text>
+</g>
+<g filter="url(#shadow)"><rect x="2104" y="380" width="450" height="304" rx="11" fill="#eef8f1" stroke="#2C8C5A" stroke-width="1.5"/><rect x="2104" y="380" width="450" height="34" rx="11" fill="#2C8C5A"/><rect x="2104" y="400" width="450" height="14" fill="#2C8C5A"/><text x="2116" y="403" class="ent">Operacion</text>
+<text x="2117" y="432" class="attr">PK operacion_id</text>
+<text x="2117" y="450" class="attr">FK proyecto_id</text>
+<text x="2117" y="468" class="attr">FK version_id</text>
+<text x="2117" y="486" class="attr">FK etapa_id</text>
+<text x="2117" y="504" class="attr">FK responsable_id</text>
+<text x="2117" y="522" class="attr">FK estado_id</text>
+<text x="2117" y="540" class="attr">secuencia</text>
+<text x="2117" y="558" class="attr">nombre</text>
+<text x="2117" y="576" class="attr">peso_pct</text>
+<text x="2117" y="594" class="attr">pct_avance_actual</text>
+<text x="2117" y="612" class="attr">fechas estimadas/reales</text>
+<text x="2117" y="630" class="attr">precio_cliente_usd [NUEVO]</text>
+<text x="2117" y="648" class="attr">costo_contratista_usd [NUEVO]</text>
+<text x="2117" y="666" class="attr">row_version [NUEVO]</text>
+</g>
+<g filter="url(#shadow)"><rect x="2578" y="434" width="450" height="88" rx="11" fill="#ffffff" stroke="#aebdca" stroke-width="1.5"/><rect x="2578" y="434" width="450" height="34" rx="11" fill="#2C8C5A"/><rect x="2578" y="454" width="450" height="14" fill="#2C8C5A"/><text x="2590" y="457" class="ent">OperacionDependencia</text>
+<text x="2591" y="486" class="attr">PK/FK operacion_id</text>
+<text x="2591" y="504" class="attr">PK/FK operacion_predecesora_id</text>
+</g>
+<g filter="url(#shadow)"><rect x="2578" y="540" width="450" height="178" rx="11" fill="#ffffff" stroke="#aebdca" stroke-width="1.5"/><rect x="2578" y="540" width="450" height="34" rx="11" fill="#2C8C5A"/><rect x="2578" y="560" width="450" height="14" fill="#2C8C5A"/><text x="2590" y="563" class="ent">AvanceOperacion</text>
+<text x="2591" y="592" class="attr">PK avance_id</text>
+<text x="2591" y="610" class="attr">FK operacion_id</text>
+<text x="2591" y="628" class="attr">fecha_efectiva</text>
+<text x="2591" y="646" class="attr">porcentaje_acumulado</text>
+<text x="2591" y="664" class="attr">cantidad</text>
+<text x="2591" y="682" class="attr">FK usuario_id</text>
+<text x="2591" y="700" class="attr">anulado</text>
+</g>
+<g filter="url(#shadow)"><rect x="2104" y="702" width="450" height="196" rx="11" fill="#ffffff" stroke="#aebdca" stroke-width="1.5"/><rect x="2104" y="702" width="450" height="34" rx="11" fill="#2C8C5A"/><rect x="2104" y="722" width="450" height="14" fill="#2C8C5A"/><text x="2116" y="725" class="ent">HistorialOperacion</text>
+<text x="2117" y="754" class="attr">PK historial_id</text>
+<text x="2117" y="772" class="attr">FK operacion_id</text>
+<text x="2117" y="790" class="attr">FK usuario_id</text>
+<text x="2117" y="808" class="attr">campo_modificado</text>
+<text x="2117" y="826" class="attr">valor_anterior</text>
+<text x="2117" y="844" class="attr">valor_nuevo</text>
+<text x="2117" y="862" class="attr">motivo</text>
+<text x="2117" y="880" class="attr">fecha</text>
+</g>
+<g filter="url(#shadow)"><rect x="2578" y="736" width="450" height="160" rx="11" fill="#ffffff" stroke="#aebdca" stroke-width="1.5"/><rect x="2578" y="736" width="450" height="34" rx="11" fill="#2C8C5A"/><rect x="2578" y="756" width="450" height="14" fill="#2C8C5A"/><text x="2590" y="759" class="ent">HistorialNMT</text>
+<text x="2591" y="788" class="attr">PK historial_nmt_id</text>
+<text x="2591" y="806" class="attr">FK operacion_id</text>
+<text x="2591" y="824" class="attr">FK usuario_id</text>
+<text x="2591" y="842" class="attr">fecha_anterior</text>
+<text x="2591" y="860" class="attr">fecha_nueva</text>
+<text x="2591" y="878" class="attr">motivo</text>
+</g>
+<g filter="url(#shadow)"><rect x="2578" y="914" width="450" height="124" rx="11" fill="#ffffff" stroke="#aebdca" stroke-width="1.5"/><rect x="2578" y="914" width="450" height="34" rx="11" fill="#2C8C5A"/><rect x="2578" y="934" width="450" height="14" fill="#2C8C5A"/><text x="2590" y="937" class="ent">CalendarioProyecto</text>
+<text x="2591" y="966" class="attr">PK calendario_id</text>
+<text x="2591" y="984" class="attr">FK proyecto_id</text>
+<text x="2591" y="1002" class="attr">horas_jornada</text>
+<text x="2591" y="1020" class="attr">tipos_por_dia</text>
+</g>
+<g filter="url(#shadow)"><rect x="2104" y="916" width="450" height="142" rx="11" fill="#ffffff" stroke="#aebdca" stroke-width="1.5"/><rect x="2104" y="916" width="450" height="34" rx="11" fill="#2C8C5A"/><rect x="2104" y="936" width="450" height="14" fill="#2C8C5A"/><text x="2116" y="939" class="ent">ExcepcionCalendario</text>
+<text x="2117" y="968" class="attr">PK excepcion_id</text>
+<text x="2117" y="986" class="attr">FK calendario_id</text>
+<text x="2117" y="1004" class="attr">fecha</text>
+<text x="2117" y="1022" class="attr">hs_disponibles</text>
+<text x="2117" y="1040" class="attr">motivo</text>
+</g>
+<g filter="url(#shadow)"><rect x="2578" y="1056" width="450" height="124" rx="11" fill="#ffffff" stroke="#aebdca" stroke-width="1.5"/><rect x="2578" y="1056" width="450" height="34" rx="11" fill="#2C8C5A"/><rect x="2578" y="1076" width="450" height="14" fill="#2C8C5A"/><text x="2590" y="1079" class="ent">estado_operacion / estado_etapa</text>
+<text x="2591" y="1108" class="attr">PK estado_id</text>
+<text x="2591" y="1126" class="attr">codigo</text>
+<text x="2591" y="1144" class="attr">label_es</text>
+<text x="2591" y="1162" class="attr">color_hex</text>
+</g>
+<g filter="url(#shadow)"><rect x="2104" y="1076" width="450" height="106" rx="11" fill="#ffffff" stroke="#aebdca" stroke-width="1.5"/><rect x="2104" y="1076" width="450" height="34" rx="11" fill="#2C8C5A"/><rect x="2104" y="1096" width="450" height="14" fill="#2C8C5A"/><text x="2116" y="1099" class="ent">unidad_avance / tipo_restriccion</text>
+<text x="2117" y="1128" class="attr">PK catalogo_id</text>
+<text x="2117" y="1146" class="attr">codigo</text>
+<text x="2117" y="1164" class="attr">nombre</text>
+</g>
+<g filter="url(#shadow)"><rect x="2578" y="1198" width="450" height="196" rx="11" fill="#fff1f3" stroke="#B3425A" stroke-width="1.5"/><rect x="2578" y="1198" width="450" height="34" rx="11" fill="#2C8C5A"/><rect x="2578" y="1218" width="450" height="14" fill="#2C8C5A"/><text x="2590" y="1221" class="ent">HistorialEconomiaOperacion</text>
+<text x="2591" y="1250" class="attr">PK historial_economia_id</text>
+<text x="2591" y="1268" class="attr">FK operacion_id</text>
+<text x="2591" y="1286" class="attr">campo_modificado</text>
+<text x="2591" y="1304" class="attr">valor_anterior_usd</text>
+<text x="2591" y="1322" class="attr">valor_nuevo_usd</text>
+<text x="2591" y="1340" class="attr">motivo</text>
+<text x="2591" y="1358" class="attr">FK usuario_id</text>
+<text x="2591" y="1376" class="attr">fecha</text>
+</g>
+<g filter="url(#shadow)"><rect x="64" y="1270" width="450" height="142" rx="11" fill="#ffffff" stroke="#aebdca" stroke-width="1.5"/><rect x="64" y="1270" width="450" height="34" rx="11" fill="#C47A13"/><rect x="64" y="1290" width="450" height="14" fill="#C47A13"/><text x="76" y="1293" class="ent">Materiales</text>
+<text x="77" y="1322" class="attr">PK id_material</text>
+<text x="77" y="1340" class="attr">nombre</text>
+<text x="77" y="1358" class="attr">codigo</text>
+<text x="77" y="1376" class="attr">FK uom_id</text>
+<text x="77" y="1394" class="attr">activo</text>
+</g>
+<g filter="url(#shadow)"><rect x="538" y="1270" width="450" height="106" rx="11" fill="#ffffff" stroke="#aebdca" stroke-width="1.5"/><rect x="538" y="1270" width="450" height="34" rx="11" fill="#C47A13"/><rect x="538" y="1290" width="450" height="14" fill="#C47A13"/><text x="550" y="1293" class="ent">UoM</text>
+<text x="551" y="1322" class="attr">PK uom_id</text>
+<text x="551" y="1340" class="attr">codigo</text>
+<text x="551" y="1358" class="attr">descripcion</text>
+</g>
+<g filter="url(#shadow)"><rect x="538" y="1394" width="450" height="160" rx="11" fill="#ffffff" stroke="#aebdca" stroke-width="1.5"/><rect x="538" y="1394" width="450" height="34" rx="11" fill="#C47A13"/><rect x="538" y="1414" width="450" height="14" fill="#C47A13"/><text x="550" y="1417" class="ent">registroDecompra</text>
+<text x="551" y="1446" class="attr">PK registro_compra_id</text>
+<text x="551" y="1464" class="attr">FK proveedor_id</text>
+<text x="551" y="1482" class="attr">fecha</text>
+<text x="551" y="1500" class="attr">numero_documento</text>
+<text x="551" y="1518" class="attr">FK estado_id</text>
+<text x="551" y="1536" class="attr">total</text>
+</g>
+<g filter="url(#shadow)"><rect x="64" y="1430" width="450" height="142" rx="11" fill="#ffffff" stroke="#aebdca" stroke-width="1.5"/><rect x="64" y="1430" width="450" height="34" rx="11" fill="#C47A13"/><rect x="64" y="1450" width="450" height="14" fill="#C47A13"/><text x="76" y="1453" class="ent">Detalle_RegistroDeCompra</text>
+<text x="77" y="1482" class="attr">PK detalle_id</text>
+<text x="77" y="1500" class="attr">FK registro_compra_id</text>
+<text x="77" y="1518" class="attr">FK material_id</text>
+<text x="77" y="1536" class="attr">cantidad</text>
+<text x="77" y="1554" class="attr">precio_unitario</text>
+</g>
+<g filter="url(#shadow)"><rect x="538" y="1572" width="450" height="160" rx="11" fill="#ffffff" stroke="#aebdca" stroke-width="1.5"/><rect x="538" y="1572" width="450" height="34" rx="11" fill="#C47A13"/><rect x="538" y="1592" width="450" height="14" fill="#C47A13"/><text x="550" y="1595" class="ent">Remito</text>
+<text x="551" y="1624" class="attr">PK remito_id</text>
+<text x="551" y="1642" class="attr">FK registro_compra_id</text>
+<text x="551" y="1660" class="attr">FK proveedor_id</text>
+<text x="551" y="1678" class="attr">fecha</text>
+<text x="551" y="1696" class="attr">numero</text>
+<text x="551" y="1714" class="attr">estado</text>
+</g>
+<g filter="url(#shadow)"><rect x="64" y="1590" width="450" height="142" rx="11" fill="#ffffff" stroke="#aebdca" stroke-width="1.5"/><rect x="64" y="1590" width="450" height="34" rx="11" fill="#C47A13"/><rect x="64" y="1610" width="450" height="14" fill="#C47A13"/><text x="76" y="1613" class="ent">Detalle_Remito</text>
+<text x="77" y="1642" class="attr">PK detalle_remito_id</text>
+<text x="77" y="1660" class="attr">FK remito_id</text>
+<text x="77" y="1678" class="attr">FK detalle_compra_id</text>
+<text x="77" y="1696" class="attr">FK material_id</text>
+<text x="77" y="1714" class="attr">cantidad</text>
+</g>
+<g filter="url(#shadow)"><rect x="64" y="1750" width="450" height="142" rx="11" fill="#ffffff" stroke="#aebdca" stroke-width="1.5"/><rect x="64" y="1750" width="450" height="34" rx="11" fill="#C47A13"/><rect x="64" y="1770" width="450" height="14" fill="#C47A13"/><text x="76" y="1773" class="ent">LiberacionRemitoDetalle</text>
+<text x="77" y="1802" class="attr">PK liberacion_id</text>
+<text x="77" y="1820" class="attr">FK detalle_remito_id</text>
+<text x="77" y="1838" class="attr">FK operacion_id</text>
+<text x="77" y="1856" class="attr">cantidad</text>
+<text x="77" y="1874" class="attr">fecha</text>
+</g>
+<g filter="url(#shadow)"><rect x="538" y="1750" width="450" height="106" rx="11" fill="#ffffff" stroke="#aebdca" stroke-width="1.5"/><rect x="538" y="1750" width="450" height="34" rx="11" fill="#C47A13"/><rect x="538" y="1770" width="450" height="14" fill="#C47A13"/><text x="550" y="1773" class="ent">StockGeneral</text>
+<text x="551" y="1802" class="attr">PK stock_general_id</text>
+<text x="551" y="1820" class="attr">FK material_id</text>
+<text x="551" y="1838" class="attr">cantidad_total</text>
+</g>
+<g filter="url(#shadow)"><rect x="538" y="1874" width="450" height="142" rx="11" fill="#ffffff" stroke="#aebdca" stroke-width="1.5"/><rect x="538" y="1874" width="450" height="34" rx="11" fill="#C47A13"/><rect x="538" y="1894" width="450" height="14" fill="#C47A13"/><text x="550" y="1897" class="ent">Container</text>
+<text x="551" y="1926" class="attr">PK container_id</text>
+<text x="551" y="1944" class="attr">FK stock_general_id</text>
+<text x="551" y="1962" class="attr">FK proyecto_id</text>
+<text x="551" y="1980" class="attr">cantidad_actual</text>
+<text x="551" y="1998" class="attr">activo</text>
+</g>
+<g filter="url(#shadow)"><rect x="64" y="1910" width="450" height="142" rx="11" fill="#ffffff" stroke="#aebdca" stroke-width="1.5"/><rect x="64" y="1910" width="450" height="34" rx="11" fill="#C47A13"/><rect x="64" y="1930" width="450" height="14" fill="#C47A13"/><text x="76" y="1933" class="ent">CostoStock</text>
+<text x="77" y="1962" class="attr">PK costo_stock_id</text>
+<text x="77" y="1980" class="attr">FK container_id</text>
+<text x="77" y="1998" class="attr">costo_unitario</text>
+<text x="77" y="2016" class="attr">fecha_valorizacion</text>
+<text x="77" y="2034" class="attr">activo</text>
+</g>
+<g filter="url(#shadow)"><rect x="538" y="2034" width="450" height="142" rx="11" fill="#ffffff" stroke="#aebdca" stroke-width="1.5"/><rect x="538" y="2034" width="450" height="34" rx="11" fill="#C47A13"/><rect x="538" y="2054" width="450" height="14" fill="#C47A13"/><text x="550" y="2057" class="ent">BomOperacion</text>
+<text x="551" y="2086" class="attr">PK bom_id</text>
+<text x="551" y="2104" class="attr">FK operacion_id</text>
+<text x="551" y="2122" class="attr">FK material_id</text>
+<text x="551" y="2140" class="attr">FK uom_id</text>
+<text x="551" y="2158" class="attr">cantidad_planificada</text>
+</g>
+<g filter="url(#shadow)"><rect x="64" y="2070" width="450" height="196" rx="11" fill="#ffffff" stroke="#aebdca" stroke-width="1.5"/><rect x="64" y="2070" width="450" height="34" rx="11" fill="#C47A13"/><rect x="64" y="2090" width="450" height="14" fill="#C47A13"/><text x="76" y="2093" class="ent">ConsumoMaterialOperacion</text>
+<text x="77" y="2122" class="attr">PK consumo_id</text>
+<text x="77" y="2140" class="attr">FK bom_id</text>
+<text x="77" y="2158" class="attr">FK operacion_id</text>
+<text x="77" y="2176" class="attr">FK proyecto_id</text>
+<text x="77" y="2194" class="attr">FK container_id</text>
+<text x="77" y="2212" class="attr">cantidad_consumida</text>
+<text x="77" y="2230" class="attr">fecha_consumo</text>
+<text x="77" y="2248" class="attr">anulado</text>
+</g>
+<g filter="url(#shadow)"><rect x="538" y="2194" width="450" height="106" rx="11" fill="#ffffff" stroke="#aebdca" stroke-width="1.5"/><rect x="538" y="2194" width="450" height="34" rx="11" fill="#C47A13"/><rect x="538" y="2214" width="450" height="14" fill="#C47A13"/><text x="550" y="2217" class="ent">estado_registroDecompra</text>
+<text x="551" y="2246" class="attr">PK estado_id</text>
+<text x="551" y="2264" class="attr">codigo</text>
+<text x="551" y="2282" class="attr">nombre</text>
+</g>
+<g filter="url(#shadow)"><rect x="1084" y="1400" width="450" height="286" rx="11" fill="#fff1f3" stroke="#B3425A" stroke-width="1.5"/><rect x="1084" y="1400" width="450" height="34" rx="11" fill="#B3425A"/><rect x="1084" y="1420" width="450" height="14" fill="#B3425A"/><text x="1096" y="1423" class="ent">CertificadoCliente</text>
+<text x="1097" y="1452" class="attr">PK certificado_cliente_id</text>
+<text x="1097" y="1470" class="attr">FK proyecto_id</text>
+<text x="1097" y="1488" class="attr">FK plan_cliente_id (nullable)</text>
+<text x="1097" y="1506" class="attr">numero</text>
+<text x="1097" y="1524" class="attr">metodo_corte</text>
+<text x="1097" y="1542" class="attr">FK operacion_ancla_id (nullable)</text>
+<text x="1097" y="1560" class="attr">fecha_corte</text>
+<text x="1097" y="1578" class="attr">fecha_emision</text>
+<text x="1097" y="1596" class="attr">total_usd</text>
+<text x="1097" y="1614" class="attr">fuera_de_plan</text>
+<text x="1097" y="1632" class="attr">estado_documental</text>
+<text x="1097" y="1650" class="attr">auditoria/anulacion</text>
+<text x="1097" y="1668" class="attr">row_version</text>
+</g>
+<g filter="url(#shadow)"><rect x="1558" y="1400" width="450" height="268" rx="11" fill="#fff1f3" stroke="#B3425A" stroke-width="1.5"/><rect x="1558" y="1400" width="450" height="34" rx="11" fill="#B3425A"/><rect x="1558" y="1420" width="450" height="14" fill="#B3425A"/><text x="1570" y="1423" class="ent">CertificadoClienteDetalle</text>
+<text x="1571" y="1452" class="attr">PK detalle_cliente_id</text>
+<text x="1571" y="1470" class="attr">FK certificado_cliente_id</text>
+<text x="1571" y="1488" class="attr">FK operacion_id</text>
+<text x="1571" y="1506" class="attr">secuencia_aplicada</text>
+<text x="1571" y="1524" class="attr">avance_fisico_ref_pct</text>
+<text x="1571" y="1542" class="attr">pct_anterior</text>
+<text x="1571" y="1560" class="attr">pct_actual</text>
+<text x="1571" y="1578" class="attr">delta_pct</text>
+<text x="1571" y="1596" class="attr">precio_aplicado_usd</text>
+<text x="1571" y="1614" class="attr">importe_usd</text>
+<text x="1571" y="1632" class="attr">modificado_manual</text>
+<text x="1571" y="1650" class="attr">motivo</text>
+</g>
+<g filter="url(#shadow)"><rect x="1558" y="1686" width="450" height="268" rx="11" fill="#fff1f3" stroke="#B3425A" stroke-width="1.5"/><rect x="1558" y="1686" width="450" height="34" rx="11" fill="#B3425A"/><rect x="1558" y="1706" width="450" height="14" fill="#B3425A"/><text x="1570" y="1709" class="ent">CertificadoContratista</text>
+<text x="1571" y="1738" class="attr">PK certificado_contratista_id</text>
+<text x="1571" y="1756" class="attr">FK proyecto_id</text>
+<text x="1571" y="1774" class="attr">FK responsable_id</text>
+<text x="1571" y="1792" class="attr">FK plan_contratista_id (nullable)</text>
+<text x="1571" y="1810" class="attr">numero</text>
+<text x="1571" y="1828" class="attr">fecha_corte</text>
+<text x="1571" y="1846" class="attr">fecha_emision</text>
+<text x="1571" y="1864" class="attr">total_usd</text>
+<text x="1571" y="1882" class="attr">fuera_de_plan</text>
+<text x="1571" y="1900" class="attr">estado_documental</text>
+<text x="1571" y="1918" class="attr">auditoria/anulacion</text>
+<text x="1571" y="1936" class="attr">row_version</text>
+</g>
+<g filter="url(#shadow)"><rect x="1084" y="1704" width="450" height="250" rx="11" fill="#fff1f3" stroke="#B3425A" stroke-width="1.5"/><rect x="1084" y="1704" width="450" height="34" rx="11" fill="#B3425A"/><rect x="1084" y="1724" width="450" height="14" fill="#B3425A"/><text x="1096" y="1727" class="ent">CertificadoContratistaDetalle</text>
+<text x="1097" y="1756" class="attr">PK detalle_contratista_id</text>
+<text x="1097" y="1774" class="attr">FK certificado_contratista_id</text>
+<text x="1097" y="1792" class="attr">FK operacion_id</text>
+<text x="1097" y="1810" class="attr">avance_fisico_ref_pct</text>
+<text x="1097" y="1828" class="attr">pct_anterior</text>
+<text x="1097" y="1846" class="attr">pct_actual</text>
+<text x="1097" y="1864" class="attr">delta_pct</text>
+<text x="1097" y="1882" class="attr">costo_aplicado_usd</text>
+<text x="1097" y="1900" class="attr">importe_usd</text>
+<text x="1097" y="1918" class="attr">modificado_manual</text>
+<text x="1097" y="1936" class="attr">motivo</text>
+</g>
+<g filter="url(#shadow)"><rect x="1084" y="1972" width="450" height="232" rx="11" fill="#fff1f3" stroke="#B3425A" stroke-width="1.5"/><rect x="1084" y="1972" width="450" height="34" rx="11" fill="#B3425A"/><rect x="1084" y="1992" width="450" height="14" fill="#B3425A"/><text x="1096" y="1995" class="ent">CobranzaCertificadoCliente</text>
+<text x="1097" y="2024" class="attr">PK cobranza_id</text>
+<text x="1097" y="2042" class="attr">FK certificado_cliente_id</text>
+<text x="1097" y="2060" class="attr">FK medio_pago_id</text>
+<text x="1097" y="2078" class="attr">fecha_efectiva</text>
+<text x="1097" y="2096" class="attr">importe_usd</text>
+<text x="1097" y="2114" class="attr">referencia</text>
+<text x="1097" y="2132" class="attr">observaciones</text>
+<text x="1097" y="2150" class="attr">estado</text>
+<text x="1097" y="2168" class="attr">auditoria/anulacion</text>
+<text x="1097" y="2186" class="attr">row_version</text>
+</g>
+<g filter="url(#shadow)"><rect x="1558" y="1972" width="450" height="232" rx="11" fill="#fff1f3" stroke="#B3425A" stroke-width="1.5"/><rect x="1558" y="1972" width="450" height="34" rx="11" fill="#B3425A"/><rect x="1558" y="1992" width="450" height="14" fill="#B3425A"/><text x="1570" y="1995" class="ent">PagoCertificadoContratista</text>
+<text x="1571" y="2024" class="attr">PK pago_id</text>
+<text x="1571" y="2042" class="attr">FK certificado_contratista_id</text>
+<text x="1571" y="2060" class="attr">FK medio_pago_id</text>
+<text x="1571" y="2078" class="attr">fecha_efectiva</text>
+<text x="1571" y="2096" class="attr">importe_usd</text>
+<text x="1571" y="2114" class="attr">referencia</text>
+<text x="1571" y="2132" class="attr">observaciones</text>
+<text x="1571" y="2150" class="attr">estado</text>
+<text x="1571" y="2168" class="attr">auditoria/anulacion</text>
+<text x="1571" y="2186" class="attr">row_version</text>
+</g>
+<g filter="url(#shadow)"><rect x="1084" y="2222" width="450" height="250" rx="11" fill="#fff1f3" stroke="#B3425A" stroke-width="1.5"/><rect x="1084" y="2222" width="450" height="34" rx="11" fill="#B3425A"/><rect x="1084" y="2242" width="450" height="14" fill="#B3425A"/><text x="1096" y="2245" class="ent">MovimientoLibre</text>
+<text x="1097" y="2274" class="attr">PK movimiento_libre_id</text>
+<text x="1097" y="2292" class="attr">FK proyecto_id</text>
+<text x="1097" y="2310" class="attr">FK categoria_id</text>
+<text x="1097" y="2328" class="attr">tipo INGRESO/EGRESO</text>
+<text x="1097" y="2346" class="attr">fecha_efectiva</text>
+<text x="1097" y="2364" class="attr">importe_usd</text>
+<text x="1097" y="2382" class="attr">descripcion</text>
+<text x="1097" y="2400" class="attr">FK orden_compra_id (nullable)</text>
+<text x="1097" y="2418" class="attr">FK factura_id (nullable)</text>
+<text x="1097" y="2436" class="attr">auditoria/anulacion</text>
+<text x="1097" y="2454" class="attr">row_version</text>
+</g>
+<g filter="url(#shadow)"><rect x="2104" y="1620" width="450" height="250" rx="11" fill="#fff1f3" stroke="#B3425A" stroke-width="1.5"/><rect x="2104" y="1620" width="450" height="34" rx="11" fill="#7651A6"/><rect x="2104" y="1640" width="450" height="14" fill="#7651A6"/><text x="2116" y="1643" class="ent">PlanCertificacionCliente</text>
+<text x="2117" y="1672" class="attr">PK plan_cliente_id</text>
+<text x="2117" y="1690" class="attr">FK proyecto_id</text>
+<text x="2117" y="1708" class="attr">numero</text>
+<text x="2117" y="1726" class="attr">metodo</text>
+<text x="2117" y="1744" class="attr">FK operacion_ancla_id (nullable)</text>
+<text x="2117" y="1762" class="attr">fecha_corte</text>
+<text x="2117" y="1780" class="attr">fecha_emision_prevista</text>
+<text x="2117" y="1798" class="attr">fecha_cobro_prevista</text>
+<text x="2117" y="1816" class="attr">monto_esperado_usd</text>
+<text x="2117" y="1834" class="attr">notas</text>
+<text x="2117" y="1852" class="attr">auditoria</text>
+</g>
+<g filter="url(#shadow)"><rect x="2578" y="1620" width="450" height="214" rx="11" fill="#fff1f3" stroke="#B3425A" stroke-width="1.5"/><rect x="2578" y="1620" width="450" height="34" rx="11" fill="#7651A6"/><rect x="2578" y="1640" width="450" height="14" fill="#7651A6"/><text x="2590" y="1643" class="ent">PlanCertificacionContratista</text>
+<text x="2591" y="1672" class="attr">PK plan_contratista_id</text>
+<text x="2591" y="1690" class="attr">FK proyecto_id</text>
+<text x="2591" y="1708" class="attr">FK responsable_id</text>
+<text x="2591" y="1726" class="attr">numero</text>
+<text x="2591" y="1744" class="attr">fecha_emision_prevista</text>
+<text x="2591" y="1762" class="attr">fecha_pago_prevista</text>
+<text x="2591" y="1780" class="attr">monto_esperado_usd</text>
+<text x="2591" y="1798" class="attr">notas</text>
+<text x="2591" y="1816" class="attr">auditoria</text>
+</g>
+<g filter="url(#shadow)"><rect x="2578" y="1852" width="450" height="88" rx="11" fill="#fff1f3" stroke="#B3425A" stroke-width="1.5"/><rect x="2578" y="1852" width="450" height="34" rx="11" fill="#7651A6"/><rect x="2578" y="1872" width="450" height="14" fill="#7651A6"/><text x="2590" y="1875" class="ent">PlanContratistaOperacion</text>
+<text x="2591" y="1904" class="attr">PK/FK plan_contratista_id</text>
+<text x="2591" y="1922" class="attr">PK/FK operacion_id</text>
+</g>
+<g filter="url(#shadow)"><rect x="2104" y="1888" width="450" height="232" rx="11" fill="#fff1f3" stroke="#B3425A" stroke-width="1.5"/><rect x="2104" y="1888" width="450" height="34" rx="11" fill="#7651A6"/><rect x="2104" y="1908" width="450" height="14" fill="#7651A6"/><text x="2116" y="1911" class="ent">ImportacionPlanFinanciero</text>
+<text x="2117" y="1940" class="attr">PK importacion_id</text>
+<text x="2117" y="1958" class="attr">FK proyecto_id</text>
+<text x="2117" y="1976" class="attr">tipo_plan</text>
+<text x="2117" y="1994" class="attr">nombre_archivo</text>
+<text x="2117" y="2012" class="attr">estado</text>
+<text x="2117" y="2030" class="attr">cantidad_filas</text>
+<text x="2117" y="2048" class="attr">filas_correctas</text>
+<text x="2117" y="2066" class="attr">filas_error</text>
+<text x="2117" y="2084" class="attr">FK usuario_id</text>
+<text x="2117" y="2102" class="attr">fecha_importacion</text>
+</g>
+<g filter="url(#shadow)"><rect x="2578" y="1958" width="450" height="142" rx="11" fill="#fff1f3" stroke="#B3425A" stroke-width="1.5"/><rect x="2578" y="1958" width="450" height="34" rx="11" fill="#7651A6"/><rect x="2578" y="1978" width="450" height="14" fill="#7651A6"/><text x="2590" y="1981" class="ent">ImportacionPlanError</text>
+<text x="2591" y="2010" class="attr">PK error_id</text>
+<text x="2591" y="2028" class="attr">FK importacion_id</text>
+<text x="2591" y="2046" class="attr">numero_fila</text>
+<text x="2591" y="2064" class="attr">contenido_fila</text>
+<text x="2591" y="2082" class="attr">mensaje_error</text>
+</g>
+<g filter="url(#shadow)"><rect x="2578" y="2118" width="450" height="142" rx="11" fill="#f0eafa" stroke="#7651A6" stroke-width="1.5"/><rect x="2578" y="2118" width="450" height="34" rx="11" fill="#7651A6"/><rect x="2578" y="2138" width="450" height="14" fill="#7651A6"/><text x="2590" y="2141" class="ent">vw_CertificadosClienteSaldo</text>
+<text x="2591" y="2170" class="attr">certificado_cliente_id</text>
+<text x="2591" y="2188" class="attr">total_certificado</text>
+<text x="2591" y="2206" class="attr">total_cobrado</text>
+<text x="2591" y="2224" class="attr">saldo_por_cobrar</text>
+<text x="2591" y="2242" class="attr">estado_calculado</text>
+</g>
+<g filter="url(#shadow)"><rect x="2104" y="2138" width="450" height="142" rx="11" fill="#f0eafa" stroke="#7651A6" stroke-width="1.5"/><rect x="2104" y="2138" width="450" height="34" rx="11" fill="#7651A6"/><rect x="2104" y="2158" width="450" height="14" fill="#7651A6"/><text x="2116" y="2161" class="ent">vw_CertificadosContratistaSaldo</text>
+<text x="2117" y="2190" class="attr">certificado_contratista_id</text>
+<text x="2117" y="2208" class="attr">total_certificado</text>
+<text x="2117" y="2226" class="attr">total_pagado</text>
+<text x="2117" y="2244" class="attr">saldo_por_pagar</text>
+<text x="2117" y="2262" class="attr">estado_calculado</text>
+</g>
+<g filter="url(#shadow)"><rect x="2578" y="2278" width="450" height="160" rx="11" fill="#f0eafa" stroke="#7651A6" stroke-width="1.5"/><rect x="2578" y="2278" width="450" height="34" rx="11" fill="#7651A6"/><rect x="2578" y="2298" width="450" height="14" fill="#7651A6"/><text x="2590" y="2301" class="ent">vw_CajaProyecto</text>
+<text x="2591" y="2330" class="attr">proyecto_id</text>
+<text x="2591" y="2348" class="attr">cobranzas</text>
+<text x="2591" y="2366" class="attr">ingresos_libres</text>
+<text x="2591" y="2384" class="attr">pagos</text>
+<text x="2591" y="2402" class="attr">egresos_libres</text>
+<text x="2591" y="2420" class="attr">caja_real</text>
+</g>
+<g filter="url(#shadow)"><rect x="2104" y="2298" width="450" height="160" rx="11" fill="#f0eafa" stroke="#7651A6" stroke-width="1.5"/><rect x="2104" y="2298" width="450" height="34" rx="11" fill="#7651A6"/><rect x="2104" y="2318" width="450" height="14" fill="#7651A6"/><text x="2116" y="2321" class="ent">vw_CurvaSProyectoMensual</text>
+<text x="2117" y="2350" class="attr">proyecto_id</text>
+<text x="2117" y="2368" class="attr">periodo</text>
+<text x="2117" y="2386" class="attr">planificado</text>
+<text x="2117" y="2404" class="attr">certificado</text>
+<text x="2117" y="2422" class="attr">cobrado</text>
+<text x="2117" y="2440" class="attr">pagado_y_egresos</text>
+</g>
+<rect x="40" y="2570" width="3120" height="75" rx="14" fill="#fff7e6" stroke="#e49b22"/><text x="65" y="2603" class="sub" font-weight="700">Nota de modelado</text><text x="65" y="2630" class="sub">El diagrama se deriva del codigo y migraciones disponibles, no de una introspeccion del esquema productivo. Las entidades rosadas y violetas son propuestas para debate; no existen aun en la base.</text>
+</svg>

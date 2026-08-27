@@ -1,0 +1,108 @@
+<!doctype html><html lang="es"><head><meta charset="utf-8"><title>Analisis de respuestas - Costos OBRA360</title><style>
+@page{size:A4;margin:17mm 16mm 18mm;@bottom-right{content:"Pagina " counter(page) " de " counter(pages);font:8pt Arial;color:#6a7885}}
+*{box-sizing:border-box}body{margin:0;color:#172033;font:10pt/1.43 "Segoe UI",Arial,sans-serif}h1,h2,h3{color:#12355b;break-after:avoid}h1{font-size:24pt;line-height:1.08;margin:0 0 10px}h2{font-size:15pt;margin:21px 0 8px;border-bottom:1px solid #bfd0dc;padding-bottom:4px}h3{font-size:11.5pt;margin:14px 0 5px}p{margin:5px 0 9px}ul,ol{margin:5px 0 10px 21px;padding:0}li{margin:3px 0;break-inside:avoid}table{width:100%;border-collapse:collapse;margin:8px 0 13px;font-size:9.1pt}th{background:#12355b;color:#fff;text-align:left}th,td{border:1px solid #ced9e2;padding:6px;vertical-align:top}tr:nth-child(even) td{background:#f5f8fa}.cover{height:250mm;display:flex;flex-direction:column;justify-content:center;page-break-after:always}.ey{color:#168aad;font-weight:700;letter-spacing:1.2px}.rule{height:5px;width:82px;background:#19a7a0;margin:20px 0}.sub{font-size:14pt;color:#526476;max-width:620px}.meta{margin-top:42px;color:#657587}.call{padding:10px 12px;margin:10px 0;background:#eef8f7;border-left:4px solid #19a7a0}.warn{background:#fff7e6;border-left-color:#e49b22}.risk{background:#fff0f2;border-left-color:#c4475d}.good{background:#eef8f1;border-left-color:#2c8c5a}.tag{display:inline-block;border-radius:10px;padding:1px 7px;font-size:8pt;font-weight:700}.closed{background:#dff4e7;color:#17643e}.pending{background:#fff0c9;color:#7b5300}.block{background:#ffdfe4;color:#922a3d}.formula{font-family:Consolas,monospace;background:#edf2f7;padding:7px 9px;margin:6px 0}.small{font-size:8.7pt;color:#5c6b79}.page{page-break-before:always}
+</style></head><body>
+<section class="cover"><div class="ey">OBRA360</div><div class="rule"></div><h1>Analisis de respuestas para el modelado del modulo de Costos y Certificaciones</h1><p class="sub">Evaluacion de decisiones cerradas, ambiguedades, riesgos y condiciones necesarias para comenzar la implementacion.</p><p class="meta">Fuente: Cuestionario_Modelado_Modulo_Costos_OBRA360.xlsx<br>Analisis funcional y tecnico - Agosto de 2026</p></section>
+
+<h2>1. Resumen ejecutivo</h2>
+<p>El cuestionario contiene 253 preguntas funcionales. Se respondieron 63 y quedaron 190 sin respuesta. Dentro de las respuestas existen al menos 8 casos expresamente ambiguos (por ejemplo, “no entiendo”, “que numero” o una respuesta “si” que no selecciona entre dos alternativas).</p>
+<div class="call warn"><b>Conclusion:</b> hay informacion suficiente para comenzar el nucleo economico de las operaciones y preparar la arquitectura, pero todavia no para implementar de punta a punta certificados, anulaciones, cobranzas, plan financiero y Curva S.</div>
+<p>La recomendacion es iniciar una Fase 0 de modelo base y cerrar antes seis decisiones bloqueantes. Empezar directamente con todo el modulo obligaria a inventar reglas que luego pueden alterar tablas, saldos e historiales.</p>
+
+<h2>2. Decisiones suficientemente cerradas</h2>
+<table><tr><th>Area</th><th>Decision interpretada</th><th>Impacto</th></tr>
+<tr><td>Proyecto</td><td>Todo registro financiero pertenece a un unico proyecto y cada proyecto tiene un solo cliente.</td><td>Las cabeceras llevaran proyecto_id; el cliente se obtiene desde Proyecto.</td></tr>
+<tr><td>Alcance</td><td>Solo proyectos activos. No se migraran historicos. Mano de obra y servicios tercerizados; materiales no se incorporan automaticamente.</td><td>MVP acotado y sin proceso de migracion inicial.</td></tr>
+<tr><td>Indicadores</td><td>No se calcularan margen, utilidad ni rentabilidad.</td><td>El tablero se limita a certificado, cobrado, pagado, saldos y caja.</td></tr>
+<tr><td>Nombre</td><td>“Costos y Certificaciones”.</td><td>Nombre funcional del modulo.</td></tr>
+<tr><td>Operacion</td><td>Una operacion admite un unico responsable.</td><td>No se necesita tabla N:N operacion-contratista.</td></tr>
+<tr><td>Reemplazo</td><td>Despues de aprobar una certificacion no se cambia el responsable; para el saldo se crea otra operacion.</td><td>Debe bloquearse el cambio y conservarse trazabilidad.</td></tr>
+<tr><td>Operacion sin responsable</td><td>Puede tener precio cliente y certificarse al cliente.</td><td>responsable_id puede ser NULL; el certificado al contratista exige responsable.</td></tr>
+<tr><td>Cuadrilla propia</td><td>Tiene costo contratista.</td><td>Puede entrar en el circuito de costo/pago, sujeto a definir contraparte financiera.</td></tr>
+<tr><td>Valores</td><td>Precio y costo se cargan al programar, pueden valer cero y editarse posteriormente.</td><td>Se agregan a Operacion y se auditan cambios.</td></tr>
+<tr><td>Auditoria economica</td><td>Cada cambio conserva anterior, nuevo, usuario, fecha y motivo.</td><td>Se necesita HistorialEconomiaOperacion.</td></tr>
+<tr><td>Avance</td><td>Existe historial fechado; con varios eventos diarios se toma el ultimo; se admiten retroactivos.</td><td>Es posible reconstruir el porcentaje a una fecha, pero falta precisar cual fecha manda.</td></tr>
+<tr><td>Preview</td><td>Es temporal y no existe estado BORRADOR.</td><td>La previsualizacion no crea documento persistente.</td></tr>
+<tr><td>Certificacion</td><td>No se incluyen operaciones borradas o archivadas; no se permiten emisiones retroactivas fuera de orden.</td><td>Validaciones en servidor y orden cronologico obligatorio.</td></tr>
+<tr><td>Corte por fecha</td><td>Se muestran operaciones del corte; las de 0% no suman.</td><td>El preview puede mostrar lineas informativas con importe cero.</td></tr></table>
+
+<h2>3. Cambio principal respecto del prompt original: moneda libre</h2>
+<p>El PDF establecia USD. El Excel cambia esa decision: el usuario carga numeros en la moneda que desee, sin conversion ni cotizacion.</p>
+<div class="call risk"><b>Riesgo alto:</b> almacenar solamente “1000” sin moneda impide saber si son USD, ARS u otra divisa. Tambien vuelve incorrectos los totales, saldos y la Curva S si se mezclan monedas dentro del mismo proyecto.</div>
+<p>Recomendacion minima, aun sin hacer conversiones:</p>
+<ul><li>Agregar <b>moneda_codigo</b> al proyecto o contrato financiero: ARS, USD, EUR, etc.</li><li>Todos los importes de un proyecto usan esa moneda.</li><li>El sistema no convierte; solamente muestra el simbolo/codigo correcto.</li><li>No permitir cambiar moneda cuando ya exista un certificado o movimiento.</li></ul>
+<p>Si se desea absoluta simplicidad, la mejor regla es: <b>una moneda por proyecto</b>. “Solo numeros” sin identificar moneda no es recomendable para datos financieros.</p>
+
+<h2>4. Precio y costo despues de certificar</h2>
+<p>La respuesta indica que, si el valor cambia, el certificado siguiente conserva el porcentaje anterior pero calcula el nuevo delta con el precio nuevo.</p>
+<div class="formula">Certificado siguiente = (pct_nuevo - pct_anterior) x precio_vigente_nuevo</div>
+<p>Esta regla es viable. Sin embargo, debe distinguirse entre:</p>
+<ul><li><b>Valor actual de Operacion:</b> usado para certificados futuros.</li><li><b>Valor aplicado en un detalle emitido:</b> fotografia del valor que produjo ese importe historico.</li></ul>
+<div class="call good"><b>Recomendacion:</b> el cambio de precio no recalcula documentos anteriores. Cada detalle guarda precio_aplicado e importe. El siguiente certificado usa el valor nuevo solo para el delta pendiente.</div>
+<p>Aunque la respuesta dice “no congela el precio”, tecnicamente el documento emitido debe conservar el precio que utilizo. De otro modo, al consultar el certificado antiguo aparecerian montos diferentes de los emitidos.</p>
+
+<h2>5. Responsable operativo y financiero</h2>
+<p>Se respondio que el responsable financiero no necesariamente coincide con el operativo. Esto introduce una entidad o referencia adicional que no estaba cerrada:</p>
+<ul><li><b>responsable_id:</b> quien ejecuta la operacion.</li><li><b>contraparte_pago_id:</b> persona o empresa a quien se certifica y paga.</li></ul>
+<p>Antes de modelar certificados a contratistas debe decidirse si la contraparte financiera sera:</p>
+<ol><li>otro registro de ResponsableOperacion;</li><li>un Proveedor existente;</li><li>una nueva entidad ContraparteFinanciera;</li><li>un responsable de tipo especial con datos fiscales.</li></ol>
+<div class="call warn">Mi recomendacion es reutilizar o ampliar <b>ResponsableOperacion</b> solamente si puede representar correctamente razon social, identificacion y datos de pago. Si no, crear ContraparteFinanciera y relacionarla con el responsable operativo.</div>
+
+<h2>6. Avance historico y fecha de corte</h2>
+<p>La respuesta “la fecha representa ejecucion efectiva o momento de carga: SI” no resuelve cual fecha manda. Para certificar historicamente se necesitan ambas:</p>
+<ul><li><b>fecha_efectiva:</b> cuando ocurrio el avance.</li><li><b>fecha_registro:</b> cuando se cargo en el sistema.</li></ul>
+<p>Para una fecha de corte debe tomarse el ultimo avance vigente cuya fecha_efectiva sea menor o igual al corte. Las cargas retroactivas realizadas despues pueden cambiar un preview, pero nunca deben modificar un certificado ya emitido.</p>
+<p>“Avance de referencia” significa el porcentaje fisico que el sistema mostro al emitir. Conviene guardarlo en el detalle para poder explicar posteriormente:</p>
+<div class="formula">avance fisico de referencia 75% - porcentaje certificado 60% = diferencia -15%</div>
+
+<h2>7. Certificado: conceptos que deben aclararse</h2>
+<table><tr><th>Tema</th><th>Problema observado</th><th>Propuesta</th></tr>
+<tr><td>Numero</td><td>La respuesta pregunta “¿que numero?”.</td><td>Todo certificado necesita un identificador interno; el numero visible puede ser correlativo automatico por proyecto.</td></tr>
+<tr><td>Anulacion</td><td>Se propone borrar o no crear.</td><td>No borrar documentos emitidos. Usar ANULADO con motivo, usuario y fecha.</td></tr>
+<tr><td>Fecha de corte/emision</td><td>Se consideran iguales.</td><td>Para el MVP pueden ser una sola fecha_certificacion. Separarlas solo si el negocio luego lo exige.</td></tr>
+<tr><td>Creado/enviado/aceptado</td><td>Se reconocen como eventos distintos, pero no se define flujo.</td><td>Si no hay flujo en el MVP, guardar solo EMITIDO y un indicador opcional RECHAZADO con observacion.</td></tr>
+<tr><td>Rechazo</td><td>El cliente puede rechazar “sin flujo”.</td><td>Definir si el rechazo anula efectos economicos o solo registra una observacion.</td></tr>
+<tr><td>Ancla y delta cero</td><td>No quedo entendido.</td><td>Guardar el ancla aunque genere cero para demostrar el punto de corte; las demas lineas cero pueden omitirse.</td></tr>
+<tr><td>Secuencia congelada</td><td>No quedo entendido.</td><td>Guardar la secuencia aplicada para que reordenar el cronograma no cambie el alcance historico.</td></tr></table>
+
+<h2>8. Contradicciones y riesgos</h2>
+<ol>
+<li><b>Certificar sin precio o costo:</b> si el valor es cero, se puede emitir un certificado de importe cero. Debe decidirse si eso es informativo o un error.</li>
+<li><b>Fecha futura:</b> un corte futuro no puede conocer avance futuro; solo puede usar avances registrados hasta el momento de generar el preview.</li>
+<li><b>Operaciones posteriores:</b> se respondio que no se incluyen porque la fecha “corta”, pero una fecha no implica secuencia. Debe aclararse si el corte por fecha filtra por avance historico o tambien por orden de operaciones.</li>
+<li><b>Redondeo a un decimal:</b> es adecuado para visualizacion, pero almacenar dinero con un solo decimal puede acumular diferencias. Se recomienda almacenar cuatro decimales y mostrar uno.</li>
+<li><b>Borrado de certificados:</b> contradice la trazabilidad exigida para cambios de precio y el caracter financiero de los documentos.</li>
+<li><b>Responsable financiero distinto:</b> contradice la idea simplificada de seleccionar al responsable de la operacion como contratista a pagar.</li>
+</ol>
+
+<h2>9. Secciones aun no definidas</h2>
+<p>Quedaron sin respuestas sustantivas las siguientes areas:</p>
+<ul><li>Corte por operacion ancla.</li><li>Modificacion manual, advertencias, limites de 100% y deltas negativos.</li><li>Certificacion al contratista.</li><li>Estados derivados, vencimientos y saldos.</li><li>Cobranzas, pagos y aplicaciones parciales.</li><li>Movimientos libres y anticipos.</li><li>Anulaciones, correcciones y ajustes.</li><li>Plan cliente, plan contratista e importacion CSV.</li><li>Vinculacion plan-real y calculo de desvios.</li><li>Caja real y Curva S.</li><li>Roles, permisos y auditoria general.</li><li>Concurrencia e integridad transaccional.</li><li>Reportes y pantallas.</li></ul>
+
+<h2>10. Modelo minimo que ya puede prepararse</h2>
+<p>Sin implementar todavia todo el circuito, puede definirse este nucleo:</p>
+<table><tr><th>Entidad</th><th>Decision preliminar</th></tr>
+<tr><td>Proyecto</td><td>Agregar moneda_codigo; una moneda por proyecto.</td></tr>
+<tr><td>Operacion</td><td>precio_cliente, costo_contratista, responsable operativo opcional y contraparte financiera pendiente.</td></tr>
+<tr><td>HistorialEconomiaOperacion</td><td>Valor anterior/nuevo, campo, motivo, usuario y fecha.</td></tr>
+<tr><td>CertificadoCliente</td><td>Proyecto, numero interno, fecha, metodo, ancla opcional, total y estado documental.</td></tr>
+<tr><td>CertificadoClienteDetalle</td><td>Operacion, avance de referencia, porcentajes, delta, precio aplicado e importe.</td></tr>
+<tr><td>CertificadoContratista</td><td>No cerrar hasta definir contraparte financiera y reglas especificas.</td></tr></table>
+
+<h2>11. Seis decisiones bloqueantes antes de programar certificados</h2>
+<div class="call risk"><ol>
+<li>¿Se acepta una moneda identificada por proyecto, aunque no haya conversion?</li>
+<li>¿Fecha de corte usa fecha efectiva del avance y el ultimo evento menor o igual?</li>
+<li>¿Quien es exactamente la contraparte financiera cuando difiere del responsable operativo?</li>
+<li>¿Se permiten porcentajes menores al certificado anterior o mayores a 100%?</li>
+<li>¿Un certificado emitido se anula con trazabilidad o se borra fisicamente?</li>
+<li>¿Como se corrige un certificado si ya existen certificados posteriores?</li>
+</ol></div>
+
+<h2>12. Recomendacion para comenzar</h2>
+<p><span class="tag closed">SE PUEDE INICIAR</span> la Fase 0:</p>
+<ol><li>Confirmar el esquema real de AvanceOperacion y sus fechas.</li><li>Agregar moneda del proyecto sin conversion.</li><li>Agregar precio y costo actuales en Operacion.</li><li>Crear auditoria de cambios economicos.</li><li>Diseñar las cabeceras y detalles de certificados sin ejecutar migraciones definitivas.</li><li>Construir casos de prueba del delta y cambio de precio.</li></ol>
+<p><span class="tag block">NO INICIAR TODAVIA</span> cobranzas, pagos, anulaciones, plan financiero y Curva S hasta responder las seis decisiones bloqueantes y las secciones pendientes correspondientes.</p>
+<div class="call good"><b>Valoracion final:</b> las respuestas simplifican bien el alcance, pero introducen dos cambios estructurales importantes: moneda libre y separación entre responsable operativo y financiero. Cerrando esos puntos y las reglas de correccion, el nucleo de certificaciones puede comenzar con una base estable.</div>
+<p class="small">Este documento interpreta las respuestas del Excel y señala recomendaciones. No modifica el proyecto ni constituye una migracion aprobada.</p>
+</body></html>
