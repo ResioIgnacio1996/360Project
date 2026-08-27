@@ -66,9 +66,10 @@ describe('CostosCertificaciones', () => {
     const texto = (fixture.nativeElement as HTMLElement).textContent || '';
     expect(texto).toContain('Costos Operaciones');
     expect(texto).toContain('Certificación a Cliente');
-    expect(texto).toContain('AVANCE OPERACIÓN');
-    expect(texto).toContain('CRONOGRAMA CERT.');
-    expect(texto).toContain('N° CERT. PLAN.');
+    expect(texto).toContain('AVANCE CLIENTE');
+    expect(texto).toContain('AVANCE RESPONSABLE');
+    expect(texto).toContain('CRONOGRAMA CERT. CLIENTE');
+    expect(texto).toContain('N° CERT. CLIENTE');
     expect(texto).toContain('Cargar CSV');
   });
 
