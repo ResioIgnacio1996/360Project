@@ -1,0 +1,2 @@
+require('dotenv').config();const {conectarDB}=require('../DB/dbConection');
+(async()=>{const pool=await conectarDB();try{const r=await pool.request().query(`SELECT UPPER(LTRIM(RTRIM(ISNULL(tipo,'')))) tipo,COUNT(*) cantidad,MIN(numero) ejemplo FROM registroDecompra WHERE ISNULL(activo,1)=1 GROUP BY UPPER(LTRIM(RTRIM(ISNULL(tipo,'')))) ORDER BY tipo`);console.log(JSON.stringify(r.recordset,null,2));}finally{await pool.close();}})().catch(e=>{console.error(e);process.exitCode=1;});

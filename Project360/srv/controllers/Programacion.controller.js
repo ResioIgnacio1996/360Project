@@ -1,91 +1,7 @@
 const { conectarDB, sql } = require('../DB/dbConection');
-
-const fechaISO = (value) => value ? new Date(value).toISOString().slice(0, 10) : null;
-const sumarDiasLaborales = (inicio, horas, calendario, excepciones) => {
-  if (!inicio) return null;
-  const fecha = new Date(`${fechaISO(inicio)}T12:00:00Z`);
-  const tipos = calendario ? [calendario.tipo_domingo,calendario.tipo_lunes,calendario.tipo_martes,calendario.tipo_miercoles,calendario.tipo_jueves,calendario.tipo_viernes,calendario.tipo_sabado].map(Number) : [0,1,1,1,1,1,0];
-  const exMap = new Map((excepciones || []).map(e => [fechaISO(e.fecha), Number(e.hs_disponibles)]));
-  let restante = Number(horas || calendario?.hs_jornada_estandar || 9), guard = 3660;
-  while (restante > 0 && guard-- > 0) {
-    const excepcion = exMap.get(fechaISO(fecha));
-    const tipo = tipos[fecha.getUTCDay()];
-    const disponibles = excepcion ?? (tipo === 1 ? Number(calendario?.hs_jornada_estandar || 9) : tipo === 2 ? Number(calendario?.hs_jornada_parcial || 0) : 0);
-    if (disponibles > 0) restante -= disponibles;
-    if (restante > 0) fecha.setUTCDate(fecha.getUTCDate() + 1);
-  }
-  return fechaISO(fecha);
-};
-const sumarDesfaseLaboral = (finPredecesora, horas, calendario, excepciones) => {
-  if (!(Number(horas) > 0)) return fechaISO(finPredecesora);
-  const siguiente = new Date(`${fechaISO(finPredecesora)}T12:00:00Z`);
-  siguiente.setUTCDate(siguiente.getUTCDate() + 1);
-  return sumarDiasLaborales(fechaISO(siguiente), horas, calendario, excepciones);
-};
-
-const construirProgramacion = (filas, calendario, excepciones) => {
-  const mapa = new Map(filas.map(f => [Number(f.operacion_id), {
-    ...f,
-    operacion_id: Number(f.operacion_id),
-    proyecto_id: Number(f.proyecto_id),
-    dependencias: f.dependencias ? f.dependencias.split(',').map(Number) : []
-  }]));
-  const pendientes = new Set(mapa.keys());
-  let guard = mapa.size + 1;
-
-  while (pendientes.size && guard-- > 0) {
-    let progreso = false;
-    for (const id of [...pendientes]) {
-      const op = mapa.get(id);
-      const preds = op.dependencias.map(dep => mapa.get(dep)).filter(Boolean);
-      if (preds.some(pred => pendientes.has(pred.operacion_id))) continue;
-      const tieneFechaReal = Boolean(op.fecha_inicio_real || op.fecha_fin_real);
-      const afectadaPorCadenaReal = preds.some(pred => pred.reprogramacion_activa);
-      op.reprogramacion_activa = tieneFechaReal || Boolean(op.fecha_no_antes_del) || afectadaPorCadenaReal;
-      if (!op.reprogramacion_activa) {
-        op.fecha_inicio_reprog = fechaISO(op.fecha_inicio_estimada);
-        op.fecha_fin_reprog = fechaISO(op.fecha_fin_estimada);
-      } else if (op.fecha_fin_real) {
-        op.fecha_inicio_reprog = fechaISO(op.fecha_inicio_real);
-        op.fecha_fin_reprog = fechaISO(op.fecha_fin_real);
-      } else if (op.fecha_inicio_real) {
-        op.fecha_inicio_reprog = fechaISO(op.fecha_inicio_real);
-        op.fecha_fin_reprog = sumarDiasLaborales(op.fecha_inicio_real, op.duracion_hs, calendario, excepciones);
-      } else {
-      const finPred = preds.map(p => p.fecha_fin_reprog || fechaISO(p.fecha_fin_estimada)).filter(Boolean).sort().at(-1);
-      const inicioPorDependencia = finPred
-        ? sumarDesfaseLaboral(finPred, op.desfase_inicio_hs, calendario, excepciones)
-        : null;
-        /*
-         * Con predecesoras, el pronóstico nace de su finalización vigente. La línea
-         * base no puede actuar como piso porque impediría reflejar adelantos reales.
-         * Para operaciones raíz sí se conserva el inicio estimado original.
-         */
-        const candidatosInicio = preds.length
-          ? [inicioPorDependencia, fechaISO(op.fecha_no_antes_del)]
-          : [fechaISO(op.fecha_no_antes_del), fechaISO(op.fecha_inicio_estimada)];
-        op.fecha_inicio_reprog = candidatosInicio.filter(Boolean).sort().at(-1) || null;
-        op.fecha_fin_reprog = sumarDiasLaborales(op.fecha_inicio_reprog, op.duracion_hs, calendario, excepciones);
-      }
-      op.fecha_inicio_estimada = fechaISO(op.fecha_inicio_estimada);
-      op.fecha_fin_estimada = fechaISO(op.fecha_fin_estimada);
-      op.fecha_inicio_real = fechaISO(op.fecha_inicio_real);
-      op.fecha_fin_real = fechaISO(op.fecha_fin_real);
-      op.fecha_no_antes_del = fechaISO(op.fecha_no_antes_del);
-      pendientes.delete(id);
-      progreso = true;
-    }
-    if (!progreso) break;
-  }
-
-  for (const id of pendientes) {
-    const op = mapa.get(id);
-    op.estado_codigo = 'BLOQUEADA';
-    op.fecha_inicio_reprog = fechaISO(op.fecha_inicio_estimada);
-    op.fecha_fin_reprog = fechaISO(op.fecha_fin_estimada);
-  }
-  return [...mapa.values()].map(({ reprogramacion_activa, ...op }) => op).sort((a, b) => a.secuencia - b.secuencia);
-};
+const {
+  fechaISO, sumarDiasLaborales, sumarDesfaseLaboral, construirProgramacion
+} = require('../services/ProgramacionFechas.service');
 
 const aplicarEstadosDerivados = (operaciones) => {
   const hoy = fechaISO(new Date());
@@ -348,7 +264,7 @@ const actualizarOperacion = async (req, res) => {
       return res.status(422).json({ message: 'Las predecesoras generan un ciclo en la programación' });
     }
     await new sql.Request(tx).input('id', sql.BigInt, id).input('s', sql.Int, secuencia)
-      .input('n', sql.NVarChar(200), nombre).input('dh', sql.Decimal(8,2), duracion)
+      .input('n', sql.NVarChar(500), nombre).input('dh', sql.Decimal(8,2), duracion)
       .input('pe', sql.Decimal(5,2), peso)
       .input('di', sql.Int, desfaseInicio)
       .input('d', sql.NVarChar(sql.MAX), instrucciones)
@@ -459,7 +375,7 @@ const crearOperacion = async (req, res) => {
       .input('es', sql.BigInt, catalogos.recordsets[1][0].estado_id)
       .input('uaid', sql.BigInt, catalogos.recordsets[0][0].unidad_avance_id)
       .input('tr', sql.BigInt, catalogos.recordsets[2][0].tipo_restriccion_id)
-      .input('s', sql.Int, secuencia).input('n', sql.NVarChar(200), nombre)
+      .input('s', sql.Int, secuencia).input('n', sql.NVarChar(500), nombre)
       .input('d', sql.NVarChar(sql.MAX), String(req.body.descripcion || '').trim() || null)
       .input('cc', sql.NVarChar(sql.MAX), String(req.body.criterio_cierre || '').trim() || null)
       .input('dh', sql.Decimal(8,2), duracion).input('cm', sql.Decimal(10,2), req.body.cantidad_meta || null)

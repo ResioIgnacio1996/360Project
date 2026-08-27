@@ -1,0 +1,10 @@
+const {conectarDB}=require('../DB/dbConection');
+const service=require('../services/CertificacionResponsable.service');
+const pdfService=require('../services/CertificadoPdf.service');
+const error=(res,e)=>res.status(e.status||500).json({message:e.status?e.message:'No se pudo procesar el certificado a responsable',...(e.status?{}:{error:e.message})});
+exports.preview=async(req,res)=>{try{res.json(await service.generarPreview(await conectarDB(),Number(req.params.proyectoId),req.body));}catch(e){error(res,e);}};
+exports.emitir=async(req,res)=>{try{res.status(201).json(await service.emitir(await conectarDB(),Number(req.params.proyectoId),req.body,req.usuario.usuario_id));}catch(e){error(res,e);}};
+exports.eliminar=async(req,res)=>{try{res.json(await service.eliminar(await conectarDB(),Number(req.params.proyectoId),Number(req.params.certificadoId),req.body.motivo,req.usuario.usuario_id));}catch(e){error(res,e);}};
+exports.listar=async(req,res)=>{try{res.json(await service.listar(await conectarDB(),Number(req.params.proyectoId)));}catch(e){error(res,e);}};
+exports.detalle=async(req,res)=>{try{res.json(await service.detalle(await conectarDB(),Number(req.params.proyectoId),Number(req.params.certificadoId)));}catch(e){error(res,e);}};
+exports.pdf=async(req,res)=>{try{const id=Number(req.params.certificadoId);const documento=await pdfService.generarResponsable(await conectarDB(),Number(req.params.proyectoId),id);res.set({'Content-Type':'application/pdf','Content-Disposition':`attachment; filename="certificado-responsable-${id}.pdf"`,'Content-Length':documento.length});res.send(documento);}catch(e){error(res,e);}};

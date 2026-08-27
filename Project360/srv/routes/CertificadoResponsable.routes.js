@@ -1,0 +1,11 @@
+const router=require('express').Router();
+const {verificarToken}=require('../middlewares/auth.middleware');
+const {requierePermiso}=require('../middlewares/permiso.middleware');
+const c=require('../controllers/CertificadoResponsable.controller');
+router.post('/proyectos/:proyectoId/preview',verificarToken,requierePermiso('CERTIFICADO_RESPONSABLE_PREVIEW'),c.preview);
+router.post('/proyectos/:proyectoId',verificarToken,requierePermiso('CERTIFICADO_RESPONSABLE_EMITIR'),c.emitir);
+router.delete('/proyectos/:proyectoId/:certificadoId',verificarToken,requierePermiso('CERTIFICADO_RESPONSABLE_ELIMINAR'),c.eliminar);
+router.get('/proyectos/:proyectoId',verificarToken,requierePermiso('CERTIFICADO_RESPONSABLE_VER'),c.listar);
+router.get('/proyectos/:proyectoId/:certificadoId/pdf',verificarToken,requierePermiso('CERTIFICADO_RESPONSABLE_VER'),c.pdf);
+router.get('/proyectos/:proyectoId/:certificadoId',verificarToken,requierePermiso('CERTIFICADO_RESPONSABLE_VER'),c.detalle);
+module.exports=router;

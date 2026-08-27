@@ -1,0 +1,2 @@
+require('dotenv').config();const fs=require('fs');const path=require('path');const {conectarDB}=require('../DB/dbConection');
+(async()=>{const pool=await conectarDB();try{await pool.request().batch(fs.readFileSync(path.join(__dirname,'../DB/migrations/20260825_cronograma_certificaciones.sql'),'utf8'));console.log('Migracion de cronograma de certificaciones aplicada correctamente');}finally{await pool.close();}})().catch(e=>{console.error(e);process.exitCode=1;});

@@ -1,4 +1,5 @@
 const { conectarDB, sql } = require('../DB/dbConection');
+const { TextDecoder } = require('util');
 
 const requeridos = {
   etapas: ['codigo', 'nombre', 'orden', 'peso_pct'],
@@ -9,15 +10,41 @@ const requeridos = {
   excepciones: ['fecha', 'tipo', 'hs_disponibles', 'motivo', 'recuperable']
 };
 
+function decodificarCsv(buffer) {
+  const contenido = Buffer.isBuffer(buffer) ? buffer : Buffer.from(buffer || '');
+  try {
+    return new TextDecoder('utf-8', { fatal: true }).decode(contenido).replace(/^\uFEFF/, '');
+  } catch {
+    return new TextDecoder('windows-1252').decode(contenido).replace(/^\uFEFF/, '');
+  }
+}
+
+function contarSeparadores(linea, separador) {
+  let cantidad = 0, quoted = false;
+  for (let i = 0; i < linea.length; i++) {
+    if (linea[i] === '"') {
+      if (quoted && linea[i + 1] === '"') i++;
+      else quoted = !quoted;
+    } else if (linea[i] === separador && !quoted) cantidad++;
+  }
+  return cantidad;
+}
+
+function detectarDelimitador(text) {
+  const cabecera = text.split(/\r?\n/, 1)[0] || '';
+  return contarSeparadores(cabecera, ';') > contarSeparadores(cabecera, ',') ? ';' : ',';
+}
+
 function parseCsv(buffer) {
-  const text = buffer.toString('utf8').replace(/^\uFEFF/, '');
+  const text = decodificarCsv(buffer);
+  const delimitador = detectarDelimitador(text);
   const rows = [];
   let row = [], field = '', quoted = false;
   for (let i = 0; i < text.length; i++) {
     const c = text[i];
     if (c === '"') {
       if (quoted && text[i + 1] === '"') { field += '"'; i++; } else quoted = !quoted;
-    } else if (c === ',' && !quoted) { row.push(field); field = ''; }
+    } else if (c === delimitador && !quoted) { row.push(field); field = ''; }
     else if ((c === '\n' || c === '\r') && !quoted) {
       if (c === '\r' && text[i + 1] === '\n') i++;
       row.push(field); field = '';
@@ -47,6 +74,7 @@ function normalizarDatosEditados(datos) {
     })),
     operaciones: filas('operaciones').map((r, i) => ({
       ...r, etapa:String(r.etapa || '').trim(), secuencia:numero(r.secuencia),
+      nombre:String(r.nombre || '').trim(),
       desfase_inicio_hs:numero(r.desfase_inicio_hs) || 0,
       responsable:String(r.responsable || '').trim(), duracion_hs:numero(r.duracion_hs),
       unidad_avance:String(r.unidad_avance || '').trim().toUpperCase(),
@@ -126,6 +154,7 @@ function validar(datos, parsed, unidadesDb = []) {
     if (secuencias.has(o.secuencia)) error('operaciones.csv',o._fila,'secuencia',`Secuencia duplicada ${o.secuencia}`);
     secuencias.add(o.secuencia);
     if (!o.nombre) error('operaciones.csv',o._fila,'nombre','Nombre obligatorio');
+    if (o.nombre.length > 500) error('operaciones.csv',o._fila,'nombre','El nombre no puede superar los 500 caracteres');
     if (!(o.duracion_hs > 0)) error('operaciones.csv',o._fila,'duracion_hs','Debe ser mayor a cero');
     if (!respCodes.has(o.responsable)) error('operaciones.csv',o._fila,'responsable',`El responsable ${o.responsable} no existe`);
     if (!['PORCENTAJE','CANTIDAD','BINARIO'].includes(o.unidad_avance)) error('operaciones.csv',o._fila,'unidad_avance','Unidad de avance inválida');
@@ -319,7 +348,7 @@ async function importar(req,res){
       const estadoConservado=pct>=100?estadoCompleta:pct>0?estadoCurso:(previa?.estado_id||estadoOp);
       const or=await rq().input('e',sql.BigInt,etapaMap.get(o.etapa)).input('p',sql.BigInt,req.params.id).input('v',sql.BigInt,versionId)
         .input('r',sql.BigInt,respMap.get(o.responsable)).input('es',sql.BigInt,estadoConservado).input('ua',sql.BigInt,ua.unidad_avance_id).input('tr',sql.BigInt,restr)
-        .input('s',sql.Int,o.secuencia).input('n',sql.NVarChar(200),o.nombre).input('d',sql.NVarChar(sql.MAX),o.descripcion||null).input('cc',sql.NVarChar(sql.MAX),o.criterio_cierre||null)
+        .input('s',sql.Int,o.secuencia).input('n',sql.NVarChar(500),o.nombre).input('d',sql.NVarChar(sql.MAX),o.descripcion||null).input('cc',sql.NVarChar(sql.MAX),o.criterio_cierre||null)
         .input('dh',sql.Decimal(8,2),o.duracion_hs).input('di',sql.Int,o.desfase_inicio_hs||0).input('cm',sql.Decimal(10,2),o.cantidad_meta).input('pe',sql.Decimal(5,2),o.peso_pct)
         .input('fi',sql.Date,o.fecha_inicio_estimada).input('ff',sql.Date,o.fecha_fin_estimada).input('fir',sql.Date,previa?.fecha_inicio_real||null).input('ffr',sql.Date,previa?.fecha_fin_real||null)
         .input('pct',sql.Decimal(5,2),pct).input('ca',sql.Decimal(10,2),Number(previa?.cantidad_acumulada||0)).input('vo',sql.NVarChar(20),codigo)
