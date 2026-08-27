@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
-    "test": "node --test tests/reglas-costos.test.js",
+    "test": "node --test tests",
     "dev": "nodemon index.js"
   },
   "keywords": [],

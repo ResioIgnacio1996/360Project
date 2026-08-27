@@ -3,6 +3,8 @@ require('dotenv').config();
 const express = require('express');
 const app = express();
 const cors = require('cors');
+const { observabilidadRequest } = require('./middlewares/request-observability.middleware');
+app.use(observabilidadRequest);
 app.use(cors());
 app.use(express.json());
 app.use('/api/auth', require('./routes/Auth.routes'));
