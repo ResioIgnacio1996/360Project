@@ -89,6 +89,7 @@ export const routes: Routes = [
       loadComponent: () => import('./features/bom/bom-proyecto').then(m => m.BomProyecto)
     },
     { path: 'proyectos/:id/avances', component: AvanceOperaciones },
+    { path: 'proyectos/:id/costos', loadComponent: () => import('./features/costos/costos-certificaciones').then(m => m.CostosCertificaciones) },
     {
       path: 'proyectos/:id/dependencias',
       loadComponent: () => import('./features/dependencias-operaciones/dependencias-operaciones')

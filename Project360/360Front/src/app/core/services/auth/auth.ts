@@ -41,7 +41,18 @@ export class Auth {
   }
 
   estaLogueado(): boolean {
-    return !!this.getToken();
+    const token = this.getToken();
+
+    if (!token) {
+      return false;
+    }
+
+    if (this.tokenExpirado(token)) {
+      this.logout();
+      return false;
+    }
+
+    return true;
   }
 
   logout(): void {
@@ -62,6 +73,27 @@ export class Auth {
     } catch {
       localStorage.removeItem(this.usuarioStorageKey);
       return null;
+    }
+  }
+
+  private tokenExpirado(token: string): boolean {
+    try {
+      const payloadBase64 = token.split('.')[1];
+
+      if (!payloadBase64) {
+        return false;
+      }
+
+      const payload = JSON.parse(atob(payloadBase64.replace(/-/g, '+').replace(/_/g, '/')));
+      const exp = Number(payload?.exp);
+
+      if (!exp) {
+        return false;
+      }
+
+      return Date.now() >= exp * 1000;
+    } catch {
+      return false;
     }
   }
 }

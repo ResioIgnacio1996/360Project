@@ -63,6 +63,10 @@ export class ProyectoHome implements OnInit {
     this.router.navigate(['/proyectos', this.proyectoId, 'dependencias']);
   }
 
+  abrirCostos(): void {
+    this.router.navigate(['/proyectos', this.proyectoId, 'costos']);
+  }
+
   codigoProyecto(): string {
     const codigo = this.proyecto?.codigo || this.proyecto?.codigo_proyecto;
     return codigo ? String(codigo) : `PRJ-${String(this.proyectoId).padStart(4, '0')}`;

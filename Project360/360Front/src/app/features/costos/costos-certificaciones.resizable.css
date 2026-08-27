@@ -1,0 +1,62 @@
+.economics-scroll {
+  max-height: calc(100vh - 245px);
+  min-height: 280px;
+  overflow: scroll;
+  scrollbar-gutter: stable;
+}
+
+.economics-table {
+  table-layout: fixed;
+  min-width: 0;
+}
+
+.economics-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+}
+
+.economics-table th {
+  position: relative;
+  overflow: visible;
+}
+
+.economics-table td {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.column-resizer {
+  position: absolute;
+  top: 0;
+  right: -4px;
+  width: 9px;
+  height: 100%;
+  z-index: 8;
+  cursor: col-resize;
+  touch-action: none;
+  user-select: none;
+}
+
+.column-resizer::after {
+  content: '';
+  position: absolute;
+  top: 22%;
+  bottom: 22%;
+  left: 4px;
+  width: 1px;
+  background: var(--border-2);
+}
+
+.column-resizer:hover::after,
+.column-resizer:active::after {
+  width: 2px;
+  background: var(--primary);
+}
+
+@media (max-width: 800px) {
+  .economics-scroll {
+    max-height: calc(100vh - 285px);
+    min-height: 240px;
+  }
+}

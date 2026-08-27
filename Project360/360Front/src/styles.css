@@ -830,3 +830,16 @@ td:first-child,
     width: 100%;
   }
 }
+
+/* Estetica Programacion: modulos operativos, sin login ni homes. */
+:where(.module-page,.form-page,.registro-compra-page,.registro-compra-form-page):not(.dashboard-page):not(.ingreso-materiales-page):not(.seguridad-page){padding:8px;background:var(--bg);border:1px solid var(--border);border-radius:9px;overflow:hidden}
+:where(.module-page,.form-page,.registro-compra-page,.registro-compra-form-page):not(.dashboard-page):not(.ingreso-materiales-page):not(.seguridad-page)>.page-header{min-height:58px;align-items:center;margin:0 0 8px;padding:8px 12px;background:var(--surface-nav);border:1px solid var(--border);border-radius:7px}
+:where(.module-page,.form-page,.registro-compra-page,.registro-compra-form-page):not(.dashboard-page):not(.ingreso-materiales-page):not(.seguridad-page)>.page-header h1{margin:3px 0 0;font-size:18px}
+:where(.module-page,.form-page,.registro-compra-page,.registro-compra-form-page):not(.dashboard-page):not(.ingreso-materiales-page):not(.seguridad-page)>.page-header p{margin:2px 0 0;color:var(--text-muted);font:9px/1.35 var(--font-tech)}
+:where(.module-page,.form-page,.registro-compra-page,.registro-compra-form-page):not(.dashboard-page):not(.ingreso-materiales-page):not(.seguridad-page) .block{margin-bottom:8px;border-radius:7px}
+:where(.module-page,.form-page,.registro-compra-page,.registro-compra-form-page):not(.dashboard-page):not(.ingreso-materiales-page):not(.seguridad-page) .block-header{min-height:30px;padding:5px 11px;background:var(--surface-nav)}
+:where(.module-page,.form-page,.registro-compra-page,.registro-compra-form-page):not(.dashboard-page):not(.ingreso-materiales-page):not(.seguridad-page) .block-body{padding:10px 12px}
+:where(.module-page,.form-page,.registro-compra-page,.registro-compra-form-page):not(.dashboard-page):not(.ingreso-materiales-page):not(.seguridad-page) :is(.toolbar,.filters-bar){min-height:42px;gap:6px;margin-bottom:8px;padding:6px 10px;background:var(--surface-nav);border:1px solid var(--border);border-radius:6px}
+:where(.module-page,.form-page,.registro-compra-page):not(.dashboard-page):not(.ingreso-materiales-page):not(.seguridad-page) :is(.table-container,.table-wrapper,.table-wrap){border:1px solid var(--border);border-radius:6px;background:var(--surface-card)}
+:where(.module-page,.form-page,.registro-compra-page):not(.dashboard-page):not(.ingreso-materiales-page):not(.seguridad-page) :is(th,.mat-mdc-header-cell){height:34px;padding:6px 9px!important;background:var(--surface-card-2)!important;font:600 8px var(--font-tech);letter-spacing:1.2px}
+:where(.module-page,.form-page,.registro-compra-page):not(.dashboard-page):not(.ingreso-materiales-page):not(.seguridad-page) :is(td,.mat-mdc-cell){height:36px;padding:6px 9px!important;font-size:11px}

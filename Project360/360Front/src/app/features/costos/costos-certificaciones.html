@@ -1,0 +1,610 @@
+<div class="costos-page">
+  <header class="project-bar">
+    <div>
+      <a [routerLink]="['/proyectos', proyectoId]">‹ APPLICATIONS</a
+      ><small>COSTOS Y CERTIFICACIONES</small>
+      <h1>{{ proyecto?.nombre || 'Proyecto' }}</h1>
+      <p>{{ proyecto?.cliente_nombre || 'Cliente no informado' }}</p>
+    </div>
+    <div class="head-actions">
+      <span class="status">{{ proyecto?.estado }}</span
+      ><button (click)="cargar()"><mat-icon>refresh</mat-icon> Actualizar</button>
+    </div>
+  </header>
+  <nav>
+    <button [class.on]="tab === 'economia'" (click)="cambiarTab('economia')">
+      Costos Operaciones</button
+    ><button [class.on]="tab === 'dashboard'" (click)="cambiarTab('dashboard')">
+      Dashboard</button
+    ><button *ngIf="puede('CERTIFICADO_CLIENTE_PREVIEW')" [class.on]="tab === 'preview'" (click)="cambiarTab('preview')">
+      Certificación a Cliente</button
+    ><button *ngIf="puede('CERTIFICADO_CLIENTE_VER')" [class.on]="tab === 'historial'" (click)="cambiarTab('historial')">
+      Certificados emitidos
+    </button
+    ><button *ngIf="puede('CERTIFICADO_RESPONSABLE_PREVIEW')" [class.on]="tab === 'responsable_preview'" (click)="cambiarTab('responsable_preview')">
+      Certificación a Contratista
+    </button
+    ><button *ngIf="puede('CERTIFICADO_RESPONSABLE_VER')" [class.on]="tab === 'responsable_historial'" (click)="cambiarTab('responsable_historial')">
+      Certificados Contratistas
+    </button
+    ><button *ngIf="puede('MOVIMIENTO_FINANCIERO_VER')" [class.on]="tab === 'movimientos'" (click)="cambiarTab('movimientos')">
+      Ingresos y Egresos
+    </button>
+  </nav>
+  <div class="notice error" *ngIf="error">{{ error }} <button (click)="error = ''">×</button></div>
+  <div class="notice ok" *ngIf="mensaje">
+    {{ mensaje }} <button (click)="mensaje = ''">×</button>
+  </div>
+  <div class="loading" *ngIf="cargando">Cargando información económica...</div>
+  <main *ngIf="!cargando">
+    <section *ngIf="tab === 'economia'">
+      <div class="section-title">
+        <div>
+          <small>PREPARACIÓN ECONÓMICA</small>
+          <h2>Valores por operación</h2>
+        </div>
+        <div class="section-actions">
+          <p>Importes globales. Se muestran con un decimal y se conservan con cuatro en base.</p>
+          <input #csvInput type="file" accept=".csv,text/csv" hidden (change)="seleccionarCsv($event)" />
+          <button *ngIf="puede('ECONOMIA_OPERACION_EDITAR')" class="primary" (click)="csvInput.click()" [disabled]="procesando">
+            <mat-icon>upload_file</mat-icon> Cargar CSV
+          </button>
+        </div>
+      </div>
+      <div class="table-wrap economics-scroll" style="height:clamp(280px,calc(100vh - 245px),680px);overflow:scroll;scrollbar-gutter:stable">
+        <table class="economics-table" style="table-layout:fixed;min-width:0" [style.width.px]="anchoTotalColumnas()">
+          <colgroup>
+            <col *ngFor="let ancho of anchosColumnas" [style.width.px]="ancho" />
+          </colgroup>
+          <thead>
+            <tr>
+              <th *ngFor="let titulo of titulosColumnas; let i = index" style="position:sticky;top:0;z-index:5;overflow:visible">
+                <span>{{ titulo }}</span>
+                <span
+                  class="column-resizer"
+                  style="position:absolute;top:0;right:-5px;width:11px;height:100%;z-index:8;cursor:col-resize;touch-action:none;user-select:none;background:linear-gradient(90deg,transparent 5px,var(--primary) 5px,var(--primary) 6px,transparent 6px)"
+                  role="separator"
+                  aria-orientation="vertical"
+                  [attr.aria-label]="'Cambiar ancho de la columna ' + (titulo || 'Acciones')"
+                  (pointerdown)="iniciarRedimensionColumna($event, i)"
+                  (pointermove)="redimensionarColumna($event)"
+                  (pointerup)="finalizarRedimensionColumna($event)"
+                  (pointercancel)="finalizarRedimensionColumna($event)"
+                ></span>
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            <ng-container *ngFor="let etapa of etapasOperaciones">
+              <tr class="stage-divider" [attr.aria-expanded]="!etapaColapsada(etapa.etapa_id)">
+                <td colspan="3">
+                  <button type="button" (click)="alternarEtapa(etapa.etapa_id)" [attr.aria-label]="(etapaColapsada(etapa.etapa_id) ? 'Expandir ' : 'Contraer ') + etapa.nombre" style="width:100%;display:grid;grid-template-columns:22px auto 1fr;align-items:center;gap:7px;padding:0;border:0;background:transparent;color:inherit;text-align:left;cursor:pointer">
+                    <mat-icon style="font-size:18px;width:18px;height:18px;color:var(--primary)">{{ etapaColapsada(etapa.etapa_id) ? 'chevron_right' : 'expand_more' }}</mat-icon>
+                    <span>{{ etapa.codigo }}</span>
+                    <span><strong>{{ etapa.nombre }}</strong><small>PESO {{ etapa.peso_pct | number:'1.0-2' }}%</small></span>
+                  </button>
+                </td>
+                <td colspan="10"><div class="stage-metrics">
+                  <div><small>COSTO ETAPA</small><b>{{ etapa.costo_total | number:'1.1-1' }}</b></div>
+                  <div><small>AVANCE ETAPA</small><b>{{ etapa.avance_etapa | number:'1.1-1' }}%</b></div>
+                  <div><small>AVANCE CERTIFICADO</small><b>{{ etapa.avance_certificado | number:'1.1-1' }}%</b></div>
+                </div></td>
+              </tr>
+              <ng-container *ngIf="!etapaColapsada(etapa.etapa_id)">
+              <tr class="operation-row" *ngFor="let op of etapa.operaciones">
+                <td class="seq">{{ op.secuencia }}</td>
+                <td><strong>{{ op.nombre }}</strong></td>
+                <td><span class="responsible-chip">{{ op.responsable_nombre || 'Sin responsable' }}</span></td>
+                <td><div class="operation-progress"><span [style.width.%]="op.pct_certificado_actual"></span></div><b class="advance-value" [class.complete]="op.pct_certificado_actual >= 100">{{ op.pct_certificado_actual | number: '1.1-1' }}%</b></td>
+                <td><div class="operation-progress"><span [style.width.%]="op.pct_certificado_responsable_actual"></span></div><b class="advance-value" [class.complete]="op.pct_certificado_responsable_actual >= 100">{{ op.pct_certificado_responsable_actual | number: '1.1-1' }}%</b></td>
+                <td class="money">{{ op.precio_cliente | number: '1.1-1' }}</td>
+                <td class="money">{{ op.costo_responsable | number: '1.1-1' }}</td>
+                <td class="planned-date">{{ op.cronograma_certificacion_fecha ? fechaCalendario(op.cronograma_certificacion_fecha) : 'SIN PLANIFICAR' }}</td>
+                <td class="planned-number">{{ op.numero_certificado_planificado ? '#' + op.numero_certificado_planificado : '-' }}</td>
+                <td class="planned-date">{{ op.cronograma_certificacion_responsable_fecha ? fechaCalendario(op.cronograma_certificacion_responsable_fecha) : 'SIN PLANIFICAR' }}</td>
+                <td class="planned-number">{{ op.numero_certificado_responsable_planificado ? '#' + op.numero_certificado_responsable_planificado : '-' }}</td>
+                <td><span class="badge" [class.cert]="op.ya_certificada">{{ op.ya_certificada ? 'CERTIFICADA' : 'SIN CERTIFICAR' }}</span></td>
+                <td><button *ngIf="puede('ECONOMIA_OPERACION_EDITAR')" class="icon" (click)="editar(op)" title="Editar economía"><mat-icon>edit</mat-icon></button></td>
+              </tr>
+              </ng-container>
+            </ng-container>
+          </tbody>
+        </table>
+      </div>
+    </section>
+    <section *ngIf="tab === 'dashboard'" class="dashboard-section">
+      <div class="section-title">
+        <div><small>CONTROL ECONÓMICO</small><h2>Dashboard planificado vs. real</h2></div>
+        <button (click)="cargarDashboard()" [disabled]="cargandoDashboard"><mat-icon>refresh</mat-icon> Actualizar</button>
+      </div>
+      <div class="loading" *ngIf="cargandoDashboard">Calculando curvas y márgenes...</div>
+      <ng-container *ngIf="dashboardData && !cargandoDashboard">
+        <div class="dashboard-cards">
+          <article><small>VENTA PLANIFICADA</small><strong>{{ dashboardData.resumen.presupuesto_cliente | number:'1.1-1' }}</strong><span>Cliente</span></article>
+          <article><small>COSTO PLANIFICADO</small><strong>{{ dashboardData.resumen.costo_responsable | number:'1.1-1' }}</strong><span>Responsables</span></article>
+          <article class="accent"><small>MARGEN PLANIFICADO</small><strong>{{ dashboardData.resumen.margen_planificado | number:'1.1-1' }}</strong><span>{{ dashboardData.resumen.margen_planificado_pct | number:'1.1-1' }}%</span></article>
+          <article><small>CERTIFICADO CLIENTE</small><strong>{{ dashboardData.resumen.certificado_cliente | number:'1.1-1' }}</strong><span>Real acumulado</span></article>
+          <article><small>CERTIFICADO RESPONSABLE</small><strong>{{ dashboardData.resumen.certificado_responsable | number:'1.1-1' }}</strong><span>Real acumulado</span></article>
+          <article class="accent" [class.negative]="dashboardData.resumen.margen_certificado < 0"><small>MARGEN CERTIFICADO</small><strong>{{ dashboardData.resumen.margen_certificado | number:'1.1-1' }}</strong><span>{{ dashboardData.resumen.margen_certificado_pct | number:'1.1-1' }}%</span></article>
+        </div>
+        <div class="dashboard-alerts" *ngIf="dashboardData.resumen.sin_planificar_cliente || dashboardData.resumen.sin_planificar_responsable">
+          <mat-icon>warning_amber</mat-icon>
+          <span>Sin fecha de planificación: cliente {{ dashboardData.resumen.sin_planificar_cliente | number:'1.1-1' }} · responsables {{ dashboardData.resumen.sin_planificar_responsable | number:'1.1-1' }}. Esos importes no forman parte de la Curva S planificada.</span>
+        </div>
+        <div class="dashboard-layout">
+          <article class="dashboard-panel curve-panel">
+            <header><div><small>CURVA S</small><h3>Certificación acumulada</h3></div><span>{{ dashboardData.curva.length }} hitos</span></header>
+            <div class="curve-legend"><span class="client-plan">Cliente plan</span><span class="client-real">Cliente real</span><span class="responsible-plan">Responsable plan</span><span class="responsible-real">Responsable real</span></div>
+            <div class="curve-empty" *ngIf="!dashboardData.curva.length">No hay fechas planificadas ni certificados emitidos.</div>
+            <svg *ngIf="dashboardData.curva.length" class="s-curve" viewBox="0 0 800 300" preserveAspectRatio="none" role="img" aria-label="Curva S de certificaciones planificadas y reales">
+              <line x1="45" y1="265" x2="755" y2="265"></line><line x1="45" y1="40" x2="45" y2="265"></line>
+              <line class="grid-line" x1="45" y1="152" x2="755" y2="152"></line><line class="grid-line" x1="45" y1="40" x2="755" y2="40"></line>
+              <polyline class="client-plan" [attr.points]="puntosCurva('plan_cliente_acumulado')"></polyline>
+              <polyline class="client-real" [attr.points]="puntosCurva('real_cliente_acumulado')"></polyline>
+              <polyline class="responsible-plan" [attr.points]="puntosCurva('plan_responsable_acumulado')"></polyline>
+              <polyline class="responsible-real" [attr.points]="puntosCurva('real_responsable_acumulado')"></polyline>
+            </svg>
+            <div class="curve-months" *ngIf="dashboardData.curva.length"><span *ngFor="let mes of mesesEjeX()">{{ mes }}</span></div>
+          </article>
+          <article class="dashboard-panel deviation-panel">
+            <header><div><small>DESVÍO A HOY · {{ fechaCalendario(dashboardData.resumen.fecha_corte_desvio) }}</small><h3>Plan contra realidad</h3></div></header>
+            <div><span>Cliente</span><strong [class.negative]="dashboardData.resumen.desvio_cliente < 0">{{ dashboardData.resumen.desvio_cliente | number:'1.1-1' }}</strong><small>{{ dashboardData.resumen.desvio_cliente_pct | number:'1.1-1' }}%</small></div>
+            <div><span>Responsables</span><strong [class.negative]="dashboardData.resumen.desvio_responsable < 0">{{ dashboardData.resumen.desvio_responsable | number:'1.1-1' }}</strong><small>{{ dashboardData.resumen.desvio_responsable_pct | number:'1.1-1' }}%</small></div>
+            <div><span>Saldo de caja</span><strong [class.negative]="dashboardData.resumen.saldo_caja < 0">{{ dashboardData.resumen.saldo_caja | number:'1.1-1' }}</strong><small>Ingresos − egresos</small></div>
+          </article>
+        </div>
+        <article class="dashboard-panel comparison-panel">
+          <header><div><small>COMPARATIVA POR FECHA</small><h3>Planificado y real acumulado</h3></div></header>
+          <div class="table-wrap" *ngIf="dashboardData.curva.length"><table><thead><tr><th>FECHA</th><th>PLAN CLIENTE</th><th>REAL CLIENTE</th><th>DESVÍO CLIENTE</th><th>PLAN RESPONSABLE</th><th>REAL RESPONSABLE</th><th>DESVÍO RESPONSABLE</th></tr></thead><tbody><tr *ngFor="let punto of dashboardData.curva"><td>{{ fechaCalendario(punto.fecha) }}</td><td class="money">{{ punto.plan_cliente_acumulado | number:'1.1-1' }}</td><td class="money">{{ punto.real_cliente_acumulado | number:'1.1-1' }}</td><td class="money deviation" [class.negative]="punto.desvio_cliente < 0">{{ punto.desvio_cliente | number:'1.1-1' }} <small>{{ punto.desvio_cliente_pct | number:'1.1-1' }}%</small></td><td class="money">{{ punto.plan_responsable_acumulado | number:'1.1-1' }}</td><td class="money">{{ punto.real_responsable_acumulado | number:'1.1-1' }}</td><td class="money deviation" [class.negative]="punto.desvio_responsable < 0">{{ punto.desvio_responsable | number:'1.1-1' }} <small>{{ punto.desvio_responsable_pct | number:'1.1-1' }}%</small></td></tr></tbody></table></div>
+        </article>
+      </ng-container>
+    </section>
+    <section *ngIf="tab === 'preview'">
+      <div class="section-title inline">
+        <div>
+          <small>CERTIFICACIÓN AL CLIENTE</small>
+          <h2>Preparar certificado a cliente</h2>
+        </div>
+        <label>METODOLOGÍA
+          <select [(ngModel)]="metodoCorte" (ngModelChange)="cambiarCorte()">
+            <option value="POR_FECHA">Por fecha de corte</option>
+            <option value="POR_OPERACION">Por corte de operación</option>
+          </select>
+        </label>
+        <label *ngIf="metodoCorte === 'POR_OPERACION'">OPERACIÓN DE CORTE
+          <select [(ngModel)]="operacionCorteId" (ngModelChange)="cambiarCorte()">
+            <option [ngValue]="null">Seleccione una operación</option>
+            <option *ngFor="let op of operaciones" [ngValue]="op.operacion_id">
+              {{ op.secuencia }} · {{ op.nombre }}
+            </option>
+          </select>
+        </label>
+        <label>FECHA DEL CERTIFICADO<input type="date" [(ngModel)]="fecha" (ngModelChange)="previewData = null" /></label
+        ><button class="primary" (click)="generarPreview()" [disabled]="procesando || (metodoCorte === 'POR_OPERACION' && !operacionCorteId)">
+          Generar preview
+        </button>
+      </div>
+      <div class="empty" *ngIf="!previewData">
+        <mat-icon>calculate</mat-icon>
+        <h3>El preview no guarda datos</h3>
+        <p>
+          Por fecha incluye las operaciones cuyo inicio vigente ingresó al corte. Por operación
+          incluye la seleccionada y todas las anteriores. En ambos casos calcula solo el delta pendiente.
+        </p>
+      </div>
+      <ng-container *ngIf="previewData"
+        ><div class="cut-summary">
+          <strong>{{ previewData.metodo_corte === 'POR_FECHA' ? 'CORTE POR FECHA' : 'CORTE POR OPERACIÓN' }}</strong>
+          <span *ngIf="previewData.operacion_corte">Hasta {{ previewData.operacion_corte.secuencia }} · {{ previewData.operacion_corte.nombre }}</span>
+          <span>{{ previewData.lineas.length }} operaciones incluidas</span>
+        </div>
+        <div class="empty compact" *ngIf="!previewData.lineas.length">
+          <h3>No hay operaciones que correspondan al corte seleccionado</h3>
+        </div>
+        <div class="table-wrap" *ngIf="previewData.lineas.length">
+          <table class="preview">
+            <thead>
+              <tr>
+                <th>SEC.</th>
+                <th>OPERACIÓN</th>
+                <th>AVANCE REF.</th>
+                <th>ANTERIOR</th>
+                <th>% A CERTIFICAR</th>
+                <th>DIFERENCIA</th>
+                <th>DELTA</th>
+                <th>PRECIO</th>
+                <th>IMPORTE</th>
+                <th>MOTIVO SI DIFIERE</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let l of previewData.lineas" [class.sin-delta]="l.delta === 0" [class.con-delta]="l.delta > 0">
+                <td class="seq">{{ l.secuencia }}</td>
+                <td>
+                  <small>{{ l.etapa_nombre }}</small
+                  ><strong>{{ l.nombre }}</strong>
+                </td>
+                <td>{{ l.avance_fisico_referencia | number: '1.1-1' }}%</td>
+                <td>{{ l.porcentaje_anterior | number: '1.1-1' }}%</td>
+                <td>
+                  <input
+                    class="percent"
+                    type="number"
+                    min="0"
+                    max="100"
+                    step="0.1"
+                    [(ngModel)]="l.porcentaje_actual"
+                    (ngModelChange)="recalcular(l)"
+                  />
+                </td>
+                <td [class.warn]="l.modificado_manualmente">
+                  {{ l.porcentaje_actual - l.avance_fisico_referencia | number: '1.1-1' }}%
+                </td>
+                <td>
+                  {{ l.delta | number: '1.1-1' }}%
+                  <span class="delta-status" [class.positivo]="l.delta > 0">{{ l.delta > 0 ? 'A CERTIFICAR' : 'SIN DELTA' }}</span>
+                </td>
+                <td class="money">{{ l.precio_cliente | number: '1.1-1' }}</td>
+                <td class="money">{{ l.importe | number: '1.1-1' }}</td>
+                <td>
+                  <input
+                    class="reason"
+                    [(ngModel)]="l.motivo_modificacion"
+                    [required]="l.modificado_manualmente"
+                    [placeholder]="l.modificado_manualmente ? 'Motivo obligatorio' : '-'"
+                    [disabled]="!l.modificado_manualmente"
+                  />
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <footer class="emit" *ngIf="previewData.lineas.length">
+          <label
+            >OBSERVACIONES<textarea [(ngModel)]="observaciones" maxlength="1000"></textarea>
+          </label>
+          <div>
+            <small>TOTAL DEL PERÍODO</small><strong>{{ totalPreview() | number: '1.1-1' }}</strong
+            ><button *ngIf="puede('CERTIFICADO_CLIENTE_EMITIR')" class="primary" (click)="emitir()" [disabled]="procesando">
+              Emitir certificado
+            </button>
+          </div>
+        </footer></ng-container
+      >
+    </section>
+    <section *ngIf="tab === 'historial'">
+      <div class="section-title">
+        <div>
+          <small>HISTORIA ECONÓMICA</small>
+          <h2>Certificados emitidos</h2>
+        </div>
+      </div>
+      <div class="empty" *ngIf="!certificados.length">
+        <mat-icon>history</mat-icon>
+        <h3>Todavía no hay certificados</h3>
+      </div>
+      <div class="cert-grid">
+        <div class="cert-card-wrap" *ngFor="let c of certificados">
+          <button class="cert-card" (click)="abrirCertificado(c.certificado_cliente_id)">
+            <span>#{{ c.certificado_cliente_id }}</span
+            ><strong>{{ fechaCalendario(c.fecha_certificacion) }}</strong
+            ><b>{{ c.total | number: '1.1-1' }}</b
+            ><small>{{ c.metodo_corte === 'POR_OPERACION' ? 'POR OPERACIÓN' : 'POR FECHA' }}<ng-container *ngIf="c.operacion_corte_nombre"> · hasta {{ c.operacion_corte_secuencia }} {{ c.operacion_corte_nombre }}</ng-container></small
+            ><small>{{ c.creado_por_nombre }} · {{ c.estado }}</small>
+            <small class="payment-state" [class.paid]="c.estado_pago === 'PAGADO'" [class.partial]="c.estado_pago === 'PAGADO_PARCIAL'">
+              {{ c.estado_pago === 'PAGADO_PARCIAL' ? 'PAGADO PARCIAL' : c.estado_pago }} · {{ c.total_cobrado | number:'1.1-1' }} / {{ c.total | number:'1.1-1' }}
+            </small>
+          </button>
+          <button class="cert-pdf" (click)="descargarPdf(c.certificado_cliente_id,$event)" [disabled]="procesando" [attr.aria-label]="'Descargar PDF del certificado #' + c.certificado_cliente_id" title="Descargar certificado en PDF"><mat-icon>picture_as_pdf</mat-icon></button>
+          <button *ngIf="puede('CERTIFICADO_CLIENTE_ELIMINAR') && c.es_ultimo_emitido"
+            class="cert-trash" (click)="solicitarEliminarDesdeCard(c,$event)"
+            [attr.aria-label]="'Eliminar certificado #' + c.certificado_cliente_id"
+            title="Eliminar último certificado">
+            <mat-icon>delete</mat-icon>
+          </button>
+        </div>
+      </div>
+    </section>
+    <section *ngIf="tab === 'responsable_preview'">
+      <div class="section-title inline">
+        <div><small>CERTIFICACIÓN AL RESPONSABLE</small><h2>Preparar certificado a contratista</h2></div>
+        <label>RESPONSABLE<select [(ngModel)]="responsableId" (ngModelChange)="cambiarResponsable()"><option [ngValue]="null">Seleccione un responsable</option><option *ngFor="let r of responsables" [ngValue]="r.responsable_id">{{ r.nombre }}</option></select></label>
+        <label>METODOLOGÍA<select [(ngModel)]="metodoCorteResponsable" (ngModelChange)="cambiarCorteResponsable()"><option value="POR_FECHA">Por fecha de corte</option><option value="POR_OPERACION">Por corte de operación</option></select></label>
+        <label *ngIf="metodoCorteResponsable === 'POR_OPERACION'">OPERACIÓN DE CORTE<select [(ngModel)]="operacionCorteResponsableId" (ngModelChange)="cambiarCorteResponsable()"><option [ngValue]="null">Seleccione una operación</option><option *ngFor="let op of operacionesResponsable()" [ngValue]="op.operacion_id">{{ op.secuencia }} · {{ op.nombre }}</option></select></label>
+        <label>FECHA DEL CERTIFICADO<input type="date" [(ngModel)]="fechaResponsable" (ngModelChange)="previewResponsableData=null" /></label>
+        <button class="primary" (click)="generarPreviewResponsable()" [disabled]="procesando||!responsableId||(metodoCorteResponsable==='POR_OPERACION'&&!operacionCorteResponsableId)">Generar preview</button>
+      </div>
+      <div class="empty" *ngIf="!previewResponsableData"><mat-icon>engineering</mat-icon><h3>Certificación independiente por responsable</h3><p>Incluye solamente sus operaciones y valoriza el delta con el costo responsable.</p></div>
+      <ng-container *ngIf="previewResponsableData">
+        <div class="cut-summary"><strong>{{ previewResponsableData.responsable.nombre }}</strong><span>{{ previewResponsableData.metodo_corte==='POR_FECHA'?'CORTE POR FECHA':'CORTE POR OPERACIÓN' }}</span><span>{{ previewResponsableData.lineas.length }} operaciones incluidas</span></div>
+        <div class="empty compact" *ngIf="!previewResponsableData.lineas.length"><h3>No hay operaciones para este corte</h3></div>
+        <div class="table-wrap" *ngIf="previewResponsableData.lineas.length">
+          <table class="preview"><thead><tr><th>SEC.</th><th>OPERACIÓN</th><th>AVANCE REF.</th><th>ANTERIOR</th><th>% A CERTIFICAR</th><th>DELTA</th><th>COSTO RESPONSABLE</th><th>IMPORTE</th><th>MOTIVO SI DIFIERE</th></tr></thead>
+            <tbody><tr *ngFor="let l of previewResponsableData.lineas" [class.sin-delta]="l.delta===0" [class.con-delta]="l.delta>0">
+              <td class="seq">{{ l.secuencia }}</td><td><small>{{ l.etapa_nombre }}</small><strong>{{ l.nombre }}</strong></td><td>{{ l.avance_fisico_referencia | number:'1.1-1' }}%</td><td>{{ l.porcentaje_anterior | number:'1.1-1' }}%</td>
+              <td><input class="percent" type="number" min="0" max="100" step="0.1" [(ngModel)]="l.porcentaje_actual" (ngModelChange)="recalcularResponsable(l)" /></td>
+              <td>{{ l.delta | number:'1.1-1' }}%<span class="delta-status" [class.positivo]="l.delta>0">{{ l.delta>0?'A CERTIFICAR':'SIN DELTA' }}</span></td><td class="money">{{ l.costo_responsable | number:'1.1-1' }}</td><td class="money">{{ l.importe | number:'1.1-1' }}</td>
+              <td><input class="reason" [(ngModel)]="l.motivo_modificacion" [required]="l.modificado_manualmente" [placeholder]="l.modificado_manualmente?'Motivo obligatorio':'-'" [disabled]="!l.modificado_manualmente" /></td>
+            </tr></tbody>
+          </table>
+        </div>
+        <footer class="emit" *ngIf="previewResponsableData.lineas.length"><label>OBSERVACIONES<textarea [(ngModel)]="observacionesResponsable" maxlength="1000"></textarea></label><div><small>TOTAL DEL PERÍODO</small><strong>{{ totalPreviewResponsable() | number:'1.1-1' }}</strong><button *ngIf="puede('CERTIFICADO_RESPONSABLE_EMITIR')" class="primary" (click)="emitirResponsable()" [disabled]="procesando">Emitir certificado</button></div></footer>
+      </ng-container>
+    </section>
+    <section *ngIf="tab === 'responsable_historial'">
+      <div class="section-title"><div><small>HISTORIA POR RESPONSABLE</small><h2>Certificados a contratistas</h2></div></div>
+      <div class="empty" *ngIf="!certificadosResponsable.length"><mat-icon>history</mat-icon><h3>Todavía no hay certificados a responsables</h3></div>
+      <div class="cert-grid"><div class="cert-card-wrap" *ngFor="let c of certificadosResponsable">
+        <button class="cert-card" (click)="abrirCertificadoResponsable(c.certificado_responsable_id)"><span>#{{ c.certificado_responsable_id }}</span><strong>{{ c.responsable_nombre }}</strong><small>{{ fechaCalendario(c.fecha_certificacion) }}</small><b>{{ c.total | number:'1.1-1' }}</b><small>{{ c.metodo_corte==='POR_OPERACION'?'POR OPERACIÓN':'POR FECHA' }} · {{ c.estado }}</small><small class="payment-state" [class.paid]="c.estado_pago==='PAGADO'" [class.partial]="c.estado_pago==='PAGADO_PARCIAL'">{{ c.estado_pago==='PAGADO_PARCIAL'?'PAGADO PARCIAL':c.estado_pago }} · {{ c.total_pagado | number:'1.1-1' }} / {{ c.total | number:'1.1-1' }}</small></button>
+        <button class="cert-pdf" (click)="descargarPdfResponsable(c.certificado_responsable_id,$event)" [disabled]="procesando" [attr.aria-label]="'Descargar PDF del certificado a responsable #' + c.certificado_responsable_id" title="Descargar certificado en PDF"><mat-icon>picture_as_pdf</mat-icon></button>
+        <button *ngIf="puede('CERTIFICADO_RESPONSABLE_ELIMINAR')&&c.es_ultimo_emitido" class="cert-trash" (click)="solicitarEliminarCertificadoResponsable(c,$event)" [attr.aria-label]="'Eliminar certificado a responsable #'+c.certificado_responsable_id" title="Eliminar último certificado del responsable"><mat-icon>delete</mat-icon></button>
+      </div></div>
+    </section>
+    <section *ngIf="tab === 'movimientos'" class="finance-section">
+      <div class="section-title">
+        <div><small>CAJA REAL DEL PROYECTO</small><h2>Ingresos y egresos manuales</h2></div>
+        <button class="primary" *ngIf="puede('MOVIMIENTO_FINANCIERO_CREAR')" (click)="abrirMovimiento()" [disabled]="!finanzas"><mat-icon>add</mat-icon> Nuevo movimiento</button>
+      </div>
+      <div class="finance-summary" *ngIf="finanzas">
+        <article><small>INGRESOS</small><strong>{{ finanzas.resumen.ingresos | number:'1.1-1' }}</strong></article>
+        <article><small>EGRESOS</small><strong class="out">{{ finanzas.resumen.egresos | number:'1.1-1' }}</strong></article>
+        <article><small>SALDO</small><strong
+          [class.balance-negative]="finanzas.resumen.saldo < 0"
+          [class.balance-warning]="finanzas.resumen.saldo === 0"
+          [class.balance-positive]="finanzas.resumen.saldo > 0">{{ finanzas.resumen.saldo | number:'1.1-1' }}</strong></article>
+      </div>
+      <div class="table-wrap" *ngIf="finanzas?.movimientos?.length">
+        <table class="finance-table"><thead><tr><th>FECHA</th><th>TIPO</th><th>IMPORTE</th><th>DESCRIPCIÓN</th><th>VÍNCULO</th><th>MEDIO / REFERENCIA</th><th>ESTADO</th><th></th></tr></thead>
+          <tbody><tr *ngFor="let m of finanzas.movimientos" [class.cancelled]="m.estado === 'ANULADO'">
+            <td>{{ fechaCalendario(m.fecha) }}</td><td><span class="movement-kind" [class.expense]="m.tipo === 'EGRESO'">{{ m.tipo }}</span></td>
+            <td class="money">{{ m.importe | number:'1.1-1' }}</td><td>{{ m.descripcion }}</td>
+            <td><span *ngIf="m.vinculo_tipo === 'LIBRE'">LIBRE</span><span *ngIf="m.certificado_cliente_id">CERT. CLIENTE #{{ m.certificado_cliente_id }}</span><span *ngIf="m.certificado_responsable_id">CERT. RESPONSABLE #{{ m.certificado_responsable_id }} · {{ m.certificado_responsable_nombre }}</span><span *ngIf="m.registro_compra_id">{{ m.registro_tipo }} {{ m.registro_numero }} · {{ m.proveedor_nombre }}</span></td>
+            <td>{{ m.medio_pago || '-' }}<small>{{ m.referencia || '' }}</small></td><td>{{ m.estado }}</td>
+            <td><button class="icon danger-icon" *ngIf="m.estado === 'ACTIVO' && puede('MOVIMIENTO_FINANCIERO_ANULAR')" (click)="solicitarAnularMovimiento(m)" title="Anular movimiento"><mat-icon>delete</mat-icon></button></td>
+          </tr></tbody></table>
+      </div>
+      <div class="empty compact" *ngIf="finanzas && !finanzas.movimientos.length"><mat-icon>account_balance_wallet</mat-icon><h3>Todavía no hay movimientos</h3></div>
+    </section>
+  </main>
+</div>
+<div class="overlay" *ngIf="editando">
+  <div class="modal">
+    <button class="close" (click)="cerrarEdicion()">×</button
+    ><small>OPERACIÓN {{ editando.secuencia }}</small>
+    <h2>{{ editando.nombre }}</h2>
+    <div class="form-grid">
+      <label
+        >PRECIO CLIENTE<input
+          type="number"
+          min="0"
+          step="0.1"
+          [(ngModel)]="editando.precio_cliente" /></label
+      ><label
+        >COSTO RESPONSABLE<input
+          type="number"
+          min="0"
+          step="0.1"
+          [(ngModel)]="editando.costo_responsable"
+      /></label>
+    </div>
+    <label
+      >MOTIVO DEL CAMBIO<textarea
+        maxlength="500"
+        [(ngModel)]="motivo"
+        placeholder="Obligatorio cuando cambia un importe"
+      ></textarea>
+    </label>
+    <h3>HISTORIAL</h3>
+    <div class="history">
+      <p *ngIf="!historialEconomia.length">Sin cambios anteriores.</p>
+      <p *ngFor="let h of historialEconomia">
+        <b>{{ h.campo_modificado }}</b> {{ h.valor_anterior | number: '1.1-1' }} →
+        {{ h.valor_nuevo | number: '1.1-1'
+        }}<small
+          >{{ h.motivo }} · {{ h.usuario_nombre }} ·
+          {{ h.fecha_modificacion | date: 'dd/MM/yyyy HH:mm' }}</small
+        >
+      </p>
+    </div>
+    <footer>
+      <button (click)="cerrarEdicion()">Cancelar</button
+      ><button class="primary" (click)="guardarEconomia()" [disabled]="procesando">
+        Guardar y auditar
+      </button>
+    </footer>
+  </div>
+</div>
+<div class="overlay" *ngIf="importacion">
+  <div class="modal import-modal">
+    <button class="close" (click)="cerrarImportacion()">×</button>
+    <small>IMPORTACIÓN DE COSTOS</small>
+    <h2>{{ nombreArchivo }}</h2>
+    <p class="import-help">
+      Proyecto y plan activo validados. Cada valor nuevo REEMPLAZA completamente al anterior;
+      no se suma ni se concatena. Las fechas aceptan AAAA-MM-DD o DD/MM/AAAA. El formato ampliado agrega
+      cronograma_certificacion_cliente, nro_certificado_cliente_planificado,
+      cronograma_certificacion_responsable y nro_certificado_responsable_planificado.
+      También se conservan las cabeceras anteriores del cronograma del cliente.
+      Cada operación queda planificada al 100% en un único certificado de cada circuito.
+      La confirmación actualiza todo en una única transacción y audita cada cambio.
+    </p>
+    <div class="import-stats">
+      <span>{{ importacion.total_filas }} FILAS</span>
+      <span class="ok-text">{{ importacion.filas_validas }} VÁLIDAS</span>
+      <span [class.error-text]="importacion.filas_con_error">{{ importacion.filas_con_error }} CON ERROR</span>
+      <span>{{ importacion.filas_con_cambios }} CON CAMBIOS</span>
+    </div>
+    <div class="table-wrap" style="max-height:55vh;overflow:scroll;scrollbar-gutter:stable">
+      <table class="csv-preview" style="table-layout:fixed;min-width:0;font-size:9px;line-height:1" [style.width.px]="anchoTotalColumnasImportacion()">
+        <colgroup>
+          <col *ngFor="let ancho of anchosColumnasImportacion" [style.width.px]="ancho" />
+        </colgroup>
+        <thead>
+          <tr>
+            <th *ngFor="let titulo of titulosColumnasImportacion; let i = index" style="position:sticky;top:0;z-index:5;overflow:visible;padding:4px 6px;height:24px">
+              <span>{{ titulo }}</span>
+              <span
+                role="separator"
+                aria-orientation="vertical"
+                [attr.aria-label]="'Cambiar ancho de la columna ' + titulo"
+                style="position:absolute;top:0;right:-5px;width:11px;height:100%;z-index:8;cursor:col-resize;touch-action:none;user-select:none;background:linear-gradient(90deg,transparent 5px,var(--primary) 5px,var(--primary) 6px,transparent 6px)"
+                (pointerdown)="iniciarRedimensionColumnaImportacion($event, i)"
+                (pointermove)="redimensionarColumnaImportacion($event)"
+                (pointerup)="finalizarRedimensionColumnaImportacion($event)"
+                (pointercancel)="finalizarRedimensionColumnaImportacion($event)"
+              ></span>
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let fila of importacion.filas" [class.csv-error]="!fila.valido">
+            <td style="padding:3px 5px;height:22px">{{ fila.fila }}</td>
+            <td class="seq" style="padding:3px 5px;height:22px">{{ fila.secuencia || '-' }}</td>
+            <td style="padding:3px 5px;height:22px;overflow:hidden;text-overflow:ellipsis"><small>{{ fila.etapa_nombre || '-' }}</small><strong>{{ fila.operacion_nombre || 'No encontrada' }}</strong></td>
+            <td class="money" style="padding:3px 5px;height:22px">{{ fila.precio_cliente_anterior === null ? '-' : (fila.precio_cliente_anterior | number: '1.1-4') }}</td>
+            <td class="money" style="padding:3px 5px;height:22px">{{ fila.precio_cliente === null ? '-' : (fila.precio_cliente | number: '1.1-4') }}</td>
+            <td class="money" style="padding:3px 5px;height:22px">{{ fila.costo_responsable_anterior === null ? '-' : (fila.costo_responsable_anterior | number: '1.1-4') }}</td>
+            <td class="money" style="padding:3px 5px;height:22px">{{ fila.costo_responsable === null ? '-' : (fila.costo_responsable | number: '1.1-4') }}</td>
+            <td style="padding:3px 5px;height:22px;overflow:hidden;text-overflow:ellipsis"><span *ngIf="fila.incluye_cronograma">{{ fila.cronograma_certificacion_anterior ? fechaCalendario(fila.cronograma_certificacion_anterior) : '-' }} → {{ fila.cronograma_certificacion ? fechaCalendario(fila.cronograma_certificacion) : 'SIN PLANIFICAR' }}</span><span *ngIf="!fila.incluye_cronograma">NO MODIFICA</span></td>
+            <td style="padding:3px 5px;height:22px;overflow:hidden;text-overflow:ellipsis"><span *ngIf="fila.incluye_cronograma">{{ fila.nro_certificado_planificado_anterior ? '#' + fila.nro_certificado_planificado_anterior : '-' }} → {{ fila.nro_certificado_planificado ? '#' + fila.nro_certificado_planificado : '-' }}</span><span *ngIf="!fila.incluye_cronograma">NO MODIFICA</span></td>
+            <td style="padding:3px 5px;height:22px;overflow:hidden;text-overflow:ellipsis"><span *ngIf="fila.incluye_cronograma_responsable">{{ fila.cronograma_certificacion_responsable_anterior ? fechaCalendario(fila.cronograma_certificacion_responsable_anterior) : '-' }} → {{ fila.cronograma_certificacion_responsable ? fechaCalendario(fila.cronograma_certificacion_responsable) : 'SIN PLANIFICAR' }}</span><span *ngIf="!fila.incluye_cronograma_responsable">NO MODIFICA</span></td>
+            <td style="padding:3px 5px;height:22px;overflow:hidden;text-overflow:ellipsis"><span *ngIf="fila.incluye_cronograma_responsable">{{ fila.nro_certificado_responsable_planificado_anterior ? '#' + fila.nro_certificado_responsable_planificado_anterior : '-' }} → {{ fila.nro_certificado_responsable_planificado ? '#' + fila.nro_certificado_responsable_planificado : '-' }}</span><span *ngIf="!fila.incluye_cronograma_responsable">NO MODIFICA</span></td>
+            <td style="padding:3px 5px;height:22px;overflow:hidden;text-overflow:ellipsis"><span *ngIf="fila.valido" class="ok-text">{{ fila.cambia ? 'LISTA PARA IMPORTAR' : 'SIN CAMBIOS' }}</span><span *ngIf="!fila.valido" class="error-text">{{ fila.errores.join(' · ') }}</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <footer>
+      <button (click)="cerrarImportacion()">Cancelar</button>
+      <button class="primary" (click)="confirmarImportacion()" [disabled]="procesando || importacion.filas_con_error">
+        Confirmar importación
+      </button>
+    </footer>
+  </div>
+</div>
+<div class="overlay" *ngIf="detalle">
+  <div class="modal detail-modal">
+    <button class="close" (click)="detalle = null">×</button><small>CERTIFICADO EMITIDO</small>
+    <h2>
+      #{{ detalle.certificado.certificado_cliente_id }} ·
+      {{ fechaCalendario(detalle.certificado.fecha_certificacion) }}
+    </h2>
+    <p>
+      {{ detalle.certificado.creado_por_nombre }} · Total
+      {{ detalle.certificado.total | number: '1.1-1' }}
+    </p>
+    <p class="cut-summary">
+      {{ detalle.certificado.metodo_corte === 'POR_OPERACION' ? 'Corte por operación' : 'Corte por fecha' }}
+      <ng-container *ngIf="detalle.certificado.operacion_corte_nombre">
+        · hasta {{ detalle.certificado.operacion_corte_secuencia }} {{ detalle.certificado.operacion_corte_nombre }}
+      </ng-container>
+    </p>
+    <section class="stage-certification" *ngIf="detalle.etapas?.length">
+      <small>PORCENTAJE CERTIFICADO POR ETAPA</small>
+      <div class="stage-cert-grid">
+        <article *ngFor="let etapa of detalle.etapas">
+          <div><strong>{{ etapa.etapa_nombre }}</strong><b>{{ etapa.porcentaje_certificado | number: '1.1-1' }}%</b></div>
+          <div class="stage-progress"><span [style.width.%]="etapa.porcentaje_certificado"></span></div>
+        </article>
+      </div>
+    </section>
+    <section class="certificate-payments">
+      <div class="payment-heading"><div><small>ESTADO DE COBRANZA</small><strong>{{ detalle.certificado.estado_pago === 'PAGADO_PARCIAL' ? 'PAGADO PARCIAL' : detalle.certificado.estado_pago }}</strong></div><div><small>COBRADO / TOTAL</small><b>{{ detalle.certificado.total_cobrado | number:'1.1-1' }} / {{ detalle.certificado.total | number:'1.1-1' }}</b></div><div><small>SALDO</small><b>{{ detalle.certificado.saldo_cobro | number:'1.1-1' }}</b></div></div>
+      <div *ngIf="detalle.pagos?.length"><small>PAGOS ASOCIADOS</small><p *ngFor="let pago of detalle.pagos"><span>{{ fechaCalendario(pago.fecha) }} · {{ pago.medio_pago || 'Sin medio' }} · {{ pago.referencia || 'Sin referencia' }}</span><b>{{ pago.importe | number:'1.1-1' }}</b></p></div>
+      <p class="no-payments" *ngIf="!detalle.pagos?.length">El certificado todavía no tiene ingresos asociados.</p>
+    </section>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>SEC.</th>
+            <th>OPERACIÓN</th>
+            <th>AVANCE</th>
+            <th>ANT.</th>
+            <th>ACTUAL</th>
+            <th>DELTA</th>
+            <th>PRECIO</th>
+            <th>IMPORTE</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let d of detalle.detalles">
+            <td>{{ d.secuencia_aplicada }}</td>
+            <td>{{ d.operacion_nombre }}</td>
+            <td>{{ d.avance_fisico_referencia }}%</td>
+            <td>{{ d.porcentaje_anterior }}%</td>
+            <td>{{ d.porcentaje_actual }}%</td>
+            <td>{{ d.delta }}%</td>
+            <td>{{ d.precio_cliente_aplicado | number: '1.1-1' }}</td>
+            <td>{{ d.importe | number: '1.1-1' }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <footer class="detail-actions">
+      <button (click)="descargarPdf(detalle.certificado.certificado_cliente_id)" [disabled]="procesando"><mat-icon>picture_as_pdf</mat-icon> Descargar PDF</button>
+      <p *ngIf="puede('CERTIFICADO_CLIENTE_ELIMINAR') && !detalle.certificado.es_ultimo_emitido">
+        Solo puede eliminarse el último certificado emitido. Para llegar a este, elimine primero los posteriores.
+      </p>
+      <button class="danger" *ngIf="puede('CERTIFICADO_CLIENTE_ELIMINAR') && detalle.certificado.es_ultimo_emitido" (click)="solicitarEliminarCertificado()">
+        <mat-icon>delete</mat-icon> Eliminar certificado
+      </button>
+    </footer>
+  </div>
+</div>
+<div class="overlay" *ngIf="detalleResponsable">
+  <div class="modal detail-modal">
+    <button class="close" (click)="detalleResponsable=null">×</button><small>CERTIFICADO A RESPONSABLE</small>
+    <h2>#{{ detalleResponsable.certificado.certificado_responsable_id }} · {{ detalleResponsable.certificado.responsable_nombre }}</h2>
+    <p>{{ fechaCalendario(detalleResponsable.certificado.fecha_certificacion) }} · {{ detalleResponsable.certificado.creado_por_nombre }} · Total {{ detalleResponsable.certificado.total | number:'1.1-1' }}</p>
+    <p class="cut-summary">{{ detalleResponsable.certificado.metodo_corte==='POR_OPERACION'?'Corte por operación':'Corte por fecha' }}<ng-container *ngIf="detalleResponsable.certificado.operacion_corte_nombre"> · hasta {{ detalleResponsable.certificado.operacion_corte_secuencia }} {{ detalleResponsable.certificado.operacion_corte_nombre }}</ng-container></p>
+    <section class="stage-certification" *ngIf="detalleResponsable.etapas?.length"><small>PORCENTAJE CERTIFICADO POR ETAPA</small><div class="stage-cert-grid"><article *ngFor="let etapa of detalleResponsable.etapas"><div><strong>{{ etapa.etapa_nombre }}</strong><b>{{ etapa.porcentaje_certificado | number:'1.1-1' }}%</b></div><div class="stage-progress"><span [style.width.%]="etapa.porcentaje_certificado"></span></div></article></div></section>
+    <section class="certificate-payments"><div class="payment-heading"><div><small>ESTADO DE PAGO</small><strong>{{ detalleResponsable.certificado.estado_pago==='PAGADO_PARCIAL'?'PAGADO PARCIAL':detalleResponsable.certificado.estado_pago }}</strong></div><div><small>PAGADO / TOTAL</small><b>{{ detalleResponsable.certificado.total_pagado | number:'1.1-1' }} / {{ detalleResponsable.certificado.total | number:'1.1-1' }}</b></div><div><small>SALDO</small><b>{{ detalleResponsable.certificado.saldo_pago | number:'1.1-1' }}</b></div></div><div *ngIf="detalleResponsable.pagos?.length"><small>EGRESOS ASOCIADOS</small><p *ngFor="let pago of detalleResponsable.pagos"><span>{{ fechaCalendario(pago.fecha) }} · {{ pago.medio_pago||'Sin medio' }} · {{ pago.referencia||'Sin referencia' }}</span><b>{{ pago.importe | number:'1.1-1' }}</b></p></div><p class="no-payments" *ngIf="!detalleResponsable.pagos?.length">El certificado todavía no tiene egresos asociados.</p></section>
+    <div class="table-wrap"><table><thead><tr><th>SEC.</th><th>OPERACIÓN</th><th>AVANCE</th><th>ANT.</th><th>ACTUAL</th><th>DELTA</th><th>COSTO</th><th>IMPORTE</th></tr></thead><tbody><tr *ngFor="let d of detalleResponsable.detalles"><td>{{ d.secuencia_aplicada }}</td><td>{{ d.operacion_nombre }}</td><td>{{ d.avance_fisico_referencia }}%</td><td>{{ d.porcentaje_anterior }}%</td><td>{{ d.porcentaje_actual }}%</td><td>{{ d.delta }}%</td><td>{{ d.costo_responsable_aplicado | number:'1.1-1' }}</td><td>{{ d.importe | number:'1.1-1' }}</td></tr></tbody></table></div>
+    <footer class="detail-actions"><button (click)="descargarPdfResponsable(detalleResponsable.certificado.certificado_responsable_id)" [disabled]="procesando"><mat-icon>picture_as_pdf</mat-icon> Descargar PDF</button><p *ngIf="puede('CERTIFICADO_RESPONSABLE_ELIMINAR') && !detalleResponsable.certificado.es_ultimo_emitido">Solo puede eliminarse el último certificado emitido de este responsable.</p><button class="danger" *ngIf="puede('CERTIFICADO_RESPONSABLE_ELIMINAR') && detalleResponsable.certificado.es_ultimo_emitido" (click)="solicitarEliminarCertificadoResponsable(detalleResponsable.certificado)"><mat-icon>delete</mat-icon> Eliminar certificado</button></footer>
+  </div>
+</div>
+<div class="overlay" *ngIf="mostrandoMovimiento">
+  <form class="modal movement-modal" (ngSubmit)="guardarMovimiento()">
+    <button type="button" class="close" (click)="cerrarMovimiento()">×</button><small>MOVIMIENTO MANUAL</small><h2>Nuevo ingreso o egreso</h2>
+    <div class="notice error modal-notice" *ngIf="errorModal">{{ errorModal }} <button type="button" (click)="errorModal=''">×</button></div>
+    <div class="form-grid">
+      <label>TIPO<select name="tipoMovimiento" [(ngModel)]="nuevoMovimiento.tipo" (ngModelChange)="cambiarTipoMovimiento()" required><option value="INGRESO">Ingreso</option><option value="EGRESO">Egreso</option></select></label>
+      <label>FECHA EFECTIVA<input name="fechaMovimiento" type="date" [(ngModel)]="nuevoMovimiento.fecha" required /></label>
+      <label>IMPORTE<input name="importeMovimiento" type="number" min="0.0001" step="0.0001" [(ngModel)]="nuevoMovimiento.importe" required /></label>
+      <label>VÍNCULO<select name="vinculoMovimiento" [(ngModel)]="nuevoMovimiento.vinculo_tipo"><option value="LIBRE">Libre</option><option *ngIf="nuevoMovimiento.tipo==='INGRESO'" value="CERTIFICADO_CLIENTE">Certificado a cliente</option><option *ngIf="nuevoMovimiento.tipo==='EGRESO'" value="OC">Orden de compra</option><option *ngIf="nuevoMovimiento.tipo==='EGRESO'" value="FAC">Factura</option><option *ngIf="nuevoMovimiento.tipo==='EGRESO'" value="CERTIFICADO_RESPONSABLE">Certificado a responsable</option></select></label>
+      <label *ngIf="nuevoMovimiento.vinculo_tipo==='CERTIFICADO_CLIENTE'">CERTIFICADO<select name="certClienteMovimiento" [(ngModel)]="nuevoMovimiento.certificado_cliente_id" required><option [ngValue]="null">Seleccionar</option><option *ngFor="let c of finanzas.certificados_cliente" [ngValue]="c.certificado_cliente_id">#{{ c.certificado_cliente_id }} · saldo {{ c.saldo | number:'1.1-1' }} · {{ c.estado_pago }}</option></select></label>
+      <label *ngIf="nuevoMovimiento.vinculo_tipo==='CERTIFICADO_RESPONSABLE'">CERTIFICADO A RESPONSABLE<select name="certResponsableMovimiento" [(ngModel)]="nuevoMovimiento.certificado_responsable_id" required><option [ngValue]="null">Seleccionar</option><option *ngFor="let c of finanzas.certificados_responsable" [ngValue]="c.certificado_responsable_id">#{{ c.certificado_responsable_id }} · {{ c.responsable_nombre }} · saldo {{ c.saldo | number:'1.1-1' }} · {{ c.estado_pago }}</option></select><small class="selector-warning" *ngIf="!finanzas.certificados_responsable.length">No hay certificados a responsables con saldo disponible.</small></label>
+      <label *ngIf="nuevoMovimiento.vinculo_tipo==='OC'||nuevoMovimiento.vinculo_tipo==='FAC'">{{ nuevoMovimiento.vinculo_tipo }} · {{ registrosPorTipo().length }} DISPONIBLES<select name="registroMovimiento" [(ngModel)]="nuevoMovimiento.registro_compra_id" required><option [ngValue]="null">Seleccionar</option><option *ngFor="let r of registrosPorTipo()" [ngValue]="r.registro_compra_id">{{ r.tipo }} {{ r.numero }} · {{ r.proveedor_nombre || 'Sin proveedor' }}</option></select><small class="selector-warning" *ngIf="!registrosPorTipo().length">No hay documentos activos de este tipo.</small></label>
+      <label>MEDIO<select name="medioMovimiento" [(ngModel)]="nuevoMovimiento.medio_pago"><option>TRANSFERENCIA</option><option>EFECTIVO</option><option>CHEQUE</option><option>TARJETA</option><option>COMPENSACIÓN</option><option>OTRO</option></select></label>
+      <label>REFERENCIA<input name="referenciaMovimiento" maxlength="100" [(ngModel)]="nuevoMovimiento.referencia" placeholder="Comprobante o referencia" /></label>
+    </div>
+    <label>DESCRIPCIÓN<textarea name="descripcionMovimiento" maxlength="500" [(ngModel)]="nuevoMovimiento.descripcion" required></textarea></label>
+    <footer><button type="button" (click)="cerrarMovimiento()">Cancelar</button><button class="primary" type="submit" [disabled]="procesando">Registrar movimiento</button></footer>
+  </form>
+</div>
+<div class="overlay confirm-overlay" *ngIf="eliminandoCertificadoResponsable">
+  <div class="modal confirm-modal"><small>ELIMINACIÓN AUDITADA</small><h2>Eliminar certificado a responsable #{{ eliminandoCertificadoResponsable.certificado_responsable_id }}</h2><p>El próximo delta de este responsable partirá de su certificado anterior. Los detalles se conservan para auditoría.</p><label>MOTIVO OBLIGATORIO<textarea maxlength="500" [(ngModel)]="motivoEliminacionResponsable"></textarea></label><footer><button (click)="cancelarEliminacionResponsable()">Cancelar</button><button class="danger" (click)="confirmarEliminacionResponsable()" [disabled]="procesando||!motivoEliminacionResponsable.trim()">Confirmar eliminación</button></footer></div>
+</div>
+<div class="overlay confirm-overlay" *ngIf="anulandoMovimiento">
+  <div class="modal confirm-modal"><small>ANULACIÓN AUDITADA</small><h2>Anular movimiento #{{ anulandoMovimiento.movimiento_id }}</h2><p>El movimiento dejará de afectar caja y, si es un cobro, se recalculará el saldo del certificado.</p><label>MOTIVO OBLIGATORIO<textarea maxlength="500" [(ngModel)]="motivoAnulacionMovimiento"></textarea></label><footer><button (click)="cancelarAnulacionMovimiento()">Cancelar</button><button class="danger" [disabled]="procesando||!motivoAnulacionMovimiento.trim()" (click)="confirmarAnulacionMovimiento()">Anular movimiento</button></footer></div>
+</div>
+<div class="overlay confirm-overlay" *ngIf="eliminandoCertificado">
+  <div class="modal confirm-modal">
+    <small>ELIMINACIÓN AUDITADA</small>
+    <h2>Eliminar certificado #{{ eliminandoCertificado.certificado_cliente_id }}</h2>
+    <p>
+      El documento desaparecerá del historial vigente y los próximos deltas partirán del certificado anterior.
+      Sus detalles se conservan internamente para auditoría.
+    </p>
+    <label>MOTIVO OBLIGATORIO
+      <textarea maxlength="500" [(ngModel)]="motivoEliminacion" placeholder="Explique por qué se elimina el certificado"></textarea>
+    </label>
+    <footer>
+      <button (click)="cancelarEliminacion()">Cancelar</button>
+      <button class="danger" (click)="confirmarEliminacion()" [disabled]="procesando || !motivoEliminacion.trim()">
+        Confirmar eliminación
+      </button>
+    </footer>
+  </div>
+</div>

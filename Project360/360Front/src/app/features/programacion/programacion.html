@@ -67,7 +67,7 @@
       </select>
     </div>
   </section>
-  <main #workspace class="workspace" *ngIf="!cargando" [style.--table-height]="alturaTablaPct + '%'" [style.grid-template-rows]="soloGantt ? '1fr' : null">
+  <main #workspace class="workspace" *ngIf="!cargando && !error" [style.--table-height]="alturaTablaPct + '%'" [style.grid-template-rows]="soloGantt ? '1fr' : null">
     <section class="aps" *ngIf="!soloGantt">
       <div class="section-title">
         <span>TABLA APS</span><small>{{ filtradas.length }} operaciones visibles</small>
@@ -321,7 +321,7 @@
           </select>
         </label>
         <label>SECUENCIA<input type="number" [(ngModel)]="nuevaOperacion.secuencia" name="secuencia" required /></label>
-        <label class="wide">NOMBRE<input [(ngModel)]="nuevaOperacion.nombre" name="nombre" maxlength="200" required /></label>
+        <label class="wide">NOMBRE<input [(ngModel)]="nuevaOperacion.nombre" name="nombre" maxlength="500" required /></label>
         <label>RESPONSABLE
           <select [(ngModel)]="nuevaOperacion.responsable_id" name="responsable">
             <option [ngValue]="null">Sin asignar</option>
@@ -393,7 +393,7 @@
           <input type="number" min="0" max="100" step=".01" [(ngModel)]="operacionEditada.peso_pct" name="pesoEditado" required />
         </label>
         <label class="wide">NOMBRE
-          <input [(ngModel)]="operacionEditada.nombre" name="nombreEditado" maxlength="200" required />
+          <input [(ngModel)]="operacionEditada.nombre" name="nombreEditado" maxlength="500" required />
         </label>
         <label class="wide">WI · INSTRUCCIONES DE TRABAJO
           <textarea [(ngModel)]="operacionEditada.descripcion" name="wiEditada"></textarea>

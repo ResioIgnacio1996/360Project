@@ -1,41 +1,54 @@
 <div class="dashboard-page">
   <div class="page-header">
     <div>
-      <span class="breadcrumb">DB360 / Aplicaciones</span>
-      <h1>Dashboard</h1>
-      <p>Acceso operativo a los modulos principales del sistema.</p>
+      <span class="breadcrumb">DB360 / Inicio</span>
+      <h1>Inicio</h1>
+      <p>Acceso rapido a los modulos principales del sistema.</p>
     </div>
   </div>
 
-  <div class="tile-grid">
-    <div class="tile" routerLink="/ingreso-materiales">
-      <div class="tile-icon">inventory_2</div>
-      <h3>Ingreso de Materiales</h3>
+  <section class="home-primary">
+    <a class="home-module featured teal" routerLink="/proyectos">
+      <span class="material-icons">construction</span>
+      <strong>Proyectos</strong>
+    </a>
+
+    <a class="home-module featured blue" routerLink="/system-tools">
+      <span class="material-icons">manufacturing</span>
+      <strong>System Tools</strong>
+    </a>
+
+    <a class="home-module featured orange" routerLink="/ingreso-materiales">
+      <span class="material-icons">inventory_2</span>
+      <strong>Ingreso de Materiales</strong>
+    </a>
+  </section>
+
+  <section class="block home-secondary-block">
+    <div class="block-header">
+      <h2 class="block-title">Accesos</h2>
     </div>
 
-    <div class="tile" routerLink="/seguridad">
-      <div class="tile-icon">admin_panel_settings</div>
-      <h3>Seguridad</h3>
-    </div>
+    <div class="home-secondary">
+      <a class="home-module" routerLink="/clientes">
+        <span class="material-icons">business</span>
+        <strong>Clientes</strong>
+      </a>
 
-    <div class="tile" routerLink="/clientes">
-      <div class="tile-icon">business</div>
-      <h3>Clientes</h3>
-    </div>
+      <a class="home-module" routerLink="/proveedores">
+        <span class="material-icons">warehouse</span>
+        <strong>Proveedores</strong>
+      </a>
 
-    <div class="tile" routerLink="/proveedores">
-      <div class="tile-icon">warehouse</div>
-      <h3>Proveedores</h3>
-    </div>
+      <a class="home-module" routerLink="/seguridad">
+        <span class="material-icons">admin_panel_settings</span>
+        <strong>Seguridad</strong>
+      </a>
 
-    <div class="tile" routerLink="/proyectos">
-      <div class="tile-icon">account_tree</div>
-      <h3>Proyectos</h3>
+      <a class="home-module" routerLink="/configuracion">
+        <span class="material-icons">settings</span>
+        <strong>Configuracion</strong>
+      </a>
     </div>
-
-    <div class="tile" routerLink="/configuracion">
-      <div class="tile-icon">settings_applications</div>
-      <h3>Configuracion</h3>
-    </div>
-  </div>
+  </section>
 </div>
