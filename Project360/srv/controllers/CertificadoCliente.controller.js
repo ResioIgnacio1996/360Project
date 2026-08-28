@@ -6,7 +6,7 @@ exports.preview=async(req,res)=>{try{res.json(await service.generarPreview(await
 exports.emitir=async(req,res)=>{try{res.status(201).json(await service.emitir(await conectarDB(),Number(req.params.proyectoId),req.body,req.usuario.usuario_id));}catch(e){error(res,e);}};
 exports.eliminar=async(req,res)=>{try{res.json(await service.eliminar(await conectarDB(),Number(req.params.proyectoId),Number(req.params.certificadoId),req.body.motivo,req.usuario.usuario_id));}catch(e){error(res,e);}};
 exports.pdf=async(req,res)=>{try{const id=Number(req.params.certificadoId);const documento=await pdfService.generarCliente(await conectarDB(),Number(req.params.proyectoId),id);res.set({'Content-Type':'application/pdf','Content-Disposition':`attachment; filename="certificado-cliente-${id}.pdf"`,'Content-Length':documento.length});res.send(documento);}catch(e){error(res,e);}};
-exports.listar=async(req,res)=>{try{const pool=await conectarDB();const r=await pool.request().input('p',sql.BigInt,req.params.proyectoId).query(`SELECT cc.certificado_cliente_id,cc.proyecto_id,cc.metodo_corte,cc.operacion_corte_id,
+exports.listar=async(req,res)=>{try{const pool=await conectarDB();const paginado=req.query.page!==undefined&&req.query.pageSize!==undefined;const page=Math.max(0,Number.parseInt(req.query.page,10)||0),pageSize=Math.min(100,Math.max(1,Number.parseInt(req.query.pageSize,10)||25)),offset=page*pageSize;const r=await pool.request().input('p',sql.BigInt,req.params.proyectoId).query(`SELECT cc.certificado_cliente_id,cc.proyecto_id,cc.metodo_corte,cc.operacion_corte_id,
   corte.secuencia operacion_corte_secuencia,corte.nombre operacion_corte_nombre,cc.fecha_certificacion,cc.total,cc.estado,
   cc.observaciones,cc.fecha_creacion,u.nombre creado_por_nombre,ISNULL(cobros.total_cobrado,0) total_cobrado,
   cc.total-ISNULL(cobros.total_cobrado,0) saldo_cobro,ISNULL(cobros.cantidad_pagos,0) cantidad_pagos,
@@ -19,7 +19,8 @@ exports.listar=async(req,res)=>{try{const pool=await conectarDB();const r=await 
   OUTER APPLY(SELECT SUM(m.importe) total_cobrado,COUNT(*) cantidad_pagos FROM MovimientoFinancieroProyecto m
     WHERE m.certificado_cliente_id=cc.certificado_cliente_id AND m.estado='ACTIVO') cobros
   LEFT JOIN Operacion corte ON corte.operacion_id=cc.operacion_corte_id
-  WHERE cc.proyecto_id=@p AND cc.estado<>'ELIMINADO' ORDER BY cc.fecha_certificacion DESC,cc.certificado_cliente_id DESC`);res.json(r.recordset);}catch(e){error(res,e);}};
+  WHERE cc.proyecto_id=@p AND cc.estado<>'ELIMINADO' ORDER BY cc.fecha_certificacion DESC,cc.certificado_cliente_id DESC${paginado?` OFFSET ${offset} ROWS FETCH NEXT ${pageSize} ROWS ONLY`:''};
+  ${paginado?`SELECT COUNT_BIG(*) total FROM CertificadoCliente WHERE proyecto_id=@p AND estado<>'ELIMINADO';`:''}`);if(!paginado)return res.json(r.recordset);const total=Number(r.recordsets[1][0].total);res.json({data:r.recordsets[0],page:{index:page,size:pageSize,total,totalPages:Math.ceil(total/pageSize)}});}catch(e){error(res,e);}};
 exports.detalle=async(req,res)=>{try{const pool=await conectarDB();const r=await pool.request().input('p',sql.BigInt,req.params.proyectoId).input('id',sql.BigInt,req.params.certificadoId).query(`SELECT cc.*,u.nombre creado_por_nombre,p.nombre proyecto_nombre,ISNULL(cobros.total_cobrado,0) total_cobrado,
   cc.total-ISNULL(cobros.total_cobrado,0) saldo_cobro,ISNULL(cobros.cantidad_pagos,0) cantidad_pagos,
   CASE WHEN cc.total<=ISNULL(cobros.total_cobrado,0) THEN 'PAGADO' WHEN ISNULL(cobros.total_cobrado,0)>0 THEN 'PAGADO_PARCIAL' ELSE 'PENDIENTE' END estado_pago,

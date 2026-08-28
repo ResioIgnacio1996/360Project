@@ -2,6 +2,7 @@ import { CommonModule } from '@angular/common';
 import { Component, OnInit, ViewChild, ViewEncapsulation, inject } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
+import { EMPTY, Subject, catchError, debounceTime, switchMap, tap } from 'rxjs';
 
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
@@ -78,20 +79,14 @@ export class RemitoMaster implements OnInit {
     fechaHasta: [null as Date | null]
   });
 
-  private paginator?: MatPaginator;
-  private sort?: MatSort;
-
-  @ViewChild(MatPaginator)
-  set matPaginator(paginator: MatPaginator | undefined) {
-    this.paginator = paginator;
-    this.conectarPaginador();
-  }
-
-  @ViewChild(MatSort)
-  set matSort(sort: MatSort | undefined) {
-    this.sort = sort;
-    this.conectarOrdenamiento();
-  }
+  @ViewChild(MatPaginator) paginator?: MatPaginator;
+  @ViewChild(MatSort) sort?: MatSort;
+  totalRemitos = 0;
+  pageIndex = 0;
+  pageSize = 10;
+  sortActive = 'fecha';
+  sortDirection: 'asc'|'desc' = 'desc';
+  private recargar$ = new Subject<void>();
 
   constructor(
     private remitosService: Remitos,
@@ -104,13 +99,24 @@ export class RemitoMaster implements OnInit {
   ngOnInit(): void {
     const idRegistro = this.route.snapshot.paramMap.get('id');
     this.idRegistroCompra = idRegistro ? Number(idRegistro) : null;
+    this.recargar$.pipe(switchMap(()=>{
+      this.cargando=true;
+      const query=this.construirQuery();
+      const request$=this.idRegistroCompra
+        ? this.remitosService.getRemitosRegistroCompraPaginados(this.idRegistroCompra,query)
+        : this.remitosService.getRemitosPaginados(query);
+      return request$.pipe(
+        tap(response=>{this.remitos=response.data;this.dataSource.data=response.data;this.totalRemitos=response.page.total;this.pageIndex=response.page.index;this.cargando=false;}),
+        catchError(error=>{this.cargando=false;this.snackBar.open(error?.error?.message||'Error al obtener remitos.','Cerrar',{duration:3500});return EMPTY;})
+      );
+    })).subscribe();
     this.cargarRegistroCompraSeleccionado();
     this.configurarFiltros();
     this.cargarRemitos();
   }
 
   configurarFiltros(): void {
-    this.filtrosForm.valueChanges.subscribe(() => {
+    this.filtrosForm.valueChanges.pipe(debounceTime(300)).subscribe(() => {
       this.aplicarFiltros();
     });
   }
@@ -132,28 +138,7 @@ export class RemitoMaster implements OnInit {
   }
 
   cargarRemitos(): void {
-    this.cargando = true;
-
-    const request$ = this.idRegistroCompra
-      ? this.remitosService.getRemitosByRegistroCompra(this.idRegistroCompra)
-      : this.remitosService.getRemitos();
-
-    request$.subscribe({
-      next: remitos => {
-        this.cargando = false;
-        this.remitos = remitos;
-        this.dataSource = new MatTableDataSource(remitos);
-        this.conectarPaginador();
-        this.conectarOrdenamiento();
-        this.aplicarFiltros();
-      },
-      error: error => {
-        this.cargando = false;
-        this.snackBar.open(error?.error?.message || 'Error al obtener remitos.', 'Cerrar', {
-          duration: 3500
-        });
-      }
-    });
+    this.recargar$.next();
   }
 
   nuevoRemito(): void {
@@ -229,35 +214,15 @@ export class RemitoMaster implements OnInit {
   }
 
   aplicarFiltros(): void {
-    const filtros = this.filtrosForm.getRawValue();
-    const busqueda = this.normalizarTexto(filtros.busqueda ?? '');
-    const estado = filtros.estado ?? 'TODOS';
-    const fechaDesde = this.normalizarFechaFiltro(filtros.fechaDesde, 'desde');
-    const fechaHasta = this.normalizarFechaFiltro(filtros.fechaHasta, 'hasta');
-
-    const filtrados = this.remitos.filter(remito => {
-      const textoRemito = this.normalizarTexto([
-        remito.numero,
-        remito.registroCompraNumero,
-        remito.idRegistroCompra,
-        remito.proveedor,
-        remito.estadoRegistroCompra,
-        this.estadoRemito(remito)
-      ].join(' '));
-
-      const cumpleBusqueda = !busqueda || textoRemito.includes(busqueda);
-      const cumpleEstado = estado === 'TODOS' || this.estadoRemito(remito) === estado;
-      const fechaRemito = this.normalizarFechaFiltro(remito.fecha, 'desde');
-      const cumpleDesde = !fechaDesde || !!fechaRemito && fechaRemito >= fechaDesde;
-      const cumpleHasta = !fechaHasta || !!fechaRemito && fechaRemito <= fechaHasta;
-
-      return cumpleBusqueda && cumpleEstado && cumpleDesde && cumpleHasta;
-    });
-
-    this.dataSource.data = filtrados;
-    this.conectarPaginador();
-    this.paginator?.firstPage();
+    this.pageIndex=0;
+    this.cargarRemitos();
   }
+
+  cambiarPagina(event:{pageIndex:number;pageSize:number}):void{this.pageIndex=event.pageIndex;this.pageSize=event.pageSize;this.cargarRemitos();}
+  cambiarOrden(event:{active:string;direction:string}):void{this.sortActive=event.active;this.sortDirection=(event.direction||'desc') as 'asc'|'desc';this.pageIndex=0;this.cargarRemitos();}
+
+  private construirQuery():Record<string,string|number|null|undefined>{const f=this.filtrosForm.getRawValue();return{page:this.pageIndex,pageSize:this.pageSize,search:f.busqueda?.trim(),estado:f.estado==='TODOS'?null:f.estado,fechaDesde:this.fechaQuery(f.fechaDesde),fechaHasta:this.fechaQuery(f.fechaHasta),sort:this.sortActive,direction:this.sortDirection};}
+  private fechaQuery(fecha:Date|null):string|null{if(!fecha)return null;return`${fecha.getFullYear()}-${String(fecha.getMonth()+1).padStart(2,'0')}-${String(fecha.getDate()).padStart(2,'0')}`;}
 
   limpiarFiltros(): void {
     this.filtrosForm.reset({
@@ -304,23 +269,4 @@ export class RemitoMaster implements OnInit {
     this.router.navigate(['/ingreso-materiales']);
   }
 
-  private conectarPaginador(): void {
-    if (this.paginator) {
-      this.dataSource.paginator = this.paginator;
-    }
-  }
-
-  private conectarOrdenamiento(): void {
-    this.dataSource.sortingDataAccessor = (remito: Remito, columna: string): string | number => {
-      switch (columna) {
-        case 'fecha': return new Date(String(remito.fecha || '').substring(0, 10)).getTime() || 0;
-        case 'numero': return this.normalizarTexto(remito.numero);
-        case 'registroCompra': return this.normalizarTexto(remito.registroCompraNumero || remito.idRegistroCompra);
-        case 'proveedor': return this.normalizarTexto(remito.proveedor);
-        case 'estado': return this.normalizarTexto(this.estadoRemito(remito));
-        default: return '';
-      }
-    };
-    if (this.sort) this.dataSource.sort = this.sort;
-  }
 }

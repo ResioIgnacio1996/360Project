@@ -35,8 +35,9 @@ async function validarProyecto(request, proyectoId) {
   if (!r.recordset.length) throw fallo('El proyecto debe estar activo', 409);
 }
 
-async function listar(pool, proyectoId) {
+async function listar(pool, proyectoId, opciones) {
   if (!Number.isInteger(proyectoId)) throw fallo('Proyecto invalido');
+  const paginado=!!opciones,page=opciones?.page||0,pageSize=opciones?.pageSize||50,offset=page*pageSize;
   await validarProyecto(pool.request(), proyectoId);
   const r = await pool.request().input('proyecto',sql.BigInt,proyectoId).query(`
     SELECT m.*,u.nombre creado_por_nombre,ua.nombre anulado_por_nombre,
@@ -49,7 +50,8 @@ async function listar(pool, proyectoId) {
     LEFT JOIN ResponsableOperacion resp ON resp.responsable_id=cr.responsable_id
     LEFT JOIN registroDecompra rc ON rc.registro_compra_id=m.registro_compra_id
     LEFT JOIN Proveedor p ON p.proveedor_id=rc.proveedor_id
-    WHERE m.proyecto_id=@proyecto ORDER BY m.fecha DESC,m.movimiento_id DESC;
+    WHERE m.proyecto_id=@proyecto ORDER BY m.fecha DESC,m.movimiento_id DESC${paginado?` OFFSET ${offset} ROWS FETCH NEXT ${pageSize} ROWS ONLY`:''};
+    ${paginado?'SELECT COUNT_BIG(*) total FROM MovimientoFinancieroProyecto WHERE proyecto_id=@proyecto;':''}
 
     SELECT cc.certificado_cliente_id,cc.fecha_certificacion,cc.total,
       ISNULL(c.cobrado,0) total_cobrado,cc.total-ISNULL(c.cobrado,0) saldo,
@@ -79,10 +81,13 @@ async function listar(pool, proyectoId) {
       ISNULL(SUM(CASE WHEN tipo='EGRESO' AND estado='ACTIVO' THEN importe ELSE 0 END),0) egresos
     FROM MovimientoFinancieroProyecto WHERE proyecto_id=@proyecto;
   `);
-  const resumen=r.recordsets[4][0];
-  return {movimientos:r.recordsets[0],certificados_cliente:r.recordsets[1],registros_compra:r.recordsets[2],
-    certificados_responsable:r.recordsets[3],certificados_responsable_disponibles:true,
+  const desplazamiento=paginado?1:0,resumen=r.recordsets[4+desplazamiento][0];
+  const data={movimientos:r.recordsets[0],certificados_cliente:r.recordsets[1+desplazamiento],registros_compra:r.recordsets[2+desplazamiento],
+    certificados_responsable:r.recordsets[3+desplazamiento],certificados_responsable_disponibles:true,
     resumen:{ingresos:Number(resumen.ingresos),egresos:Number(resumen.egresos),saldo:Number(resumen.ingresos)-Number(resumen.egresos)}};
+  if(!paginado)return data;
+  const total=Number(r.recordsets[1][0].total);
+  return{data,page:{index:page,size:pageSize,total,totalPages:Math.ceil(total/pageSize)}};
 }
 
 async function crear(pool, proyectoId, body, usuarioId) {

@@ -1,6 +1,7 @@
 // controllers/materiales/RegistroCompra.controller.js
 
 const { conectarDB, sql } = require('../../DB/dbConection');
+const { parsePagedQuery, pagedResponse, parseOptionalDate, parseOptionalId } = require('../../utils/list-pagination');
 
 const limpiarRazonSocial = value => String(value || '').trim().replace(/\s+/g, ' ');
 const expresionRazonNormalizada = `UPPER(REPLACE(REPLACE(REPLACE(REPLACE(LTRIM(RTRIM(razon_social)), '  ', ' '), '  ', ' '), '  ', ' '), '  ', ' ')) COLLATE Latin1_General_CI_AI`;
@@ -200,8 +201,86 @@ const obtenerUomId = async (transaction, uom) => {
 
 const getRegistrosCompra = async (req, res) => {
     try {
+        const pagination = parsePagedQuery(req.query, {
+            tipo: 'tipo', numero: 'numero', proveedor: 'razon_social', fecha: 'fecha',
+            fechaEntrega: 'fecha_entrega', proyecto: 'proyecto_nombre', estado: 'estado',
+            avance: 'porcentaje_recibido', remitos: 'cantidad_remitos_activos'
+        }, 'estado');
+        const proveedorId = pagination.paged ? parseOptionalId(req.query.proveedorId, 'proveedorId') : null;
+        const proyectoId = pagination.paged ? parseOptionalId(req.query.proyectoId, 'proyectoId') : null;
+        const fechaDesde = pagination.paged ? parseOptionalDate(req.query.fechaDesde, 'fechaDesde') : null;
+        const fechaHasta = pagination.paged ? parseOptionalDate(req.query.fechaHasta, 'fechaHasta') : null;
         const pool = await conectarDB();
-console.log('RC.');
+        if (pagination.paged) {
+            const request = pool.request()
+                .input('offset', sql.Int, pagination.offset)
+                .input('pageSize', sql.Int, pagination.pageSize)
+                .input('search', sql.NVarChar(200), String(req.query.search || '').trim() || null)
+                .input('tipo', sql.VarChar(10), req.query.tipo && req.query.tipo !== 'TODOS' ? req.query.tipo : null)
+                .input('estado', sql.NVarChar(80), req.query.estado && req.query.estado !== 'TODOS' ? req.query.estado : null)
+                .input('proveedorId', sql.BigInt, proveedorId)
+                .input('proveedorTexto', sql.NVarChar(150), String(req.query.proveedorTexto || '').trim() || null)
+                .input('proyectoId', sql.BigInt, proyectoId)
+                .input('fechaDesde', sql.Date, fechaDesde)
+                .input('fechaHasta', sql.Date, fechaHasta);
+            const result = await request.query(`
+                WITH LiberacionDetalle AS (
+                    SELECT detalle_remito_id, SUM(cantidad) cantidad_liberada
+                    FROM LiberacionRemitoDetalle WHERE ISNULL(activo,1)=1 GROUP BY detalle_remito_id
+                ), LiberadoPorLinea AS (
+                    SELECT drc.id_oc,drc.id_detalle_oc,CAST(drc.cantidad AS DECIMAL(18,2)) cantidad_solicitada,
+                        CAST(ISNULL(SUM(CASE WHEN ld.cantidad_liberada IS NOT NULL THEN ld.cantidad_liberada
+                            WHEN ISNULL(r.liberado,0)=1 THEN dr.cantidad ELSE 0 END),0) AS DECIMAL(18,2)) cantidad_liberada
+                    FROM Detalle_RegistroDeCompra drc
+                    LEFT JOIN Materiales m ON m.id_material=drc.id_material
+                    LEFT JOIN Remito r ON r.idRegistroDeCompra=drc.id_oc AND ISNULL(r.activo,1)=1
+                    LEFT JOIN Detalle_Remito dr ON dr.remito_id=r.remito_id
+                        AND dbo.fn_NormalizarClave(dr.Descripcion)=dbo.fn_NormalizarClave(COALESCE(drc.Descripcion,m.nombre))
+                        AND dbo.fn_NormalizarClave(dr.UoM)=dbo.fn_NormalizarClave(drc.UoM)
+                    LEFT JOIN LiberacionDetalle ld ON ld.detalle_remito_id=dr.detalle_remito_id
+                    GROUP BY drc.id_oc,drc.id_detalle_oc,drc.cantidad
+                ), Resumen AS (
+                    SELECT id_oc,COUNT(*) cantidad_materiales,
+                        SUM(CASE WHEN cantidad_liberada>=cantidad_solicitada AND cantidad_solicitada>0 THEN 1 ELSE 0 END) materiales_liberados,
+                        SUM(cantidad_solicitada) cantidad_total,SUM(cantidad_liberada) cantidad_liberada
+                    FROM LiberadoPorLinea GROUP BY id_oc
+                ), Remitos AS (
+                    SELECT idRegistroDeCompra,COUNT_BIG(*) cantidad_remitos_activos
+                    FROM Remito WHERE ISNULL(activo,1)=1 GROUP BY idRegistroDeCompra
+                ), Datos AS (
+                    SELECT rc.registro_compra_id,rc.estado_registroDecompra_id AS estado_registroDeCompra_id,
+                        rc.numero,rc.tipo,rc.fecha,rc.fecha_entrega,rc.observaciones,rc.activo,
+                        ISNULL(x.cantidad_materiales,0) cantidad_materiales,ISNULL(x.materiales_liberados,0) materiales_liberados,
+                        ISNULL(x.cantidad_total,0) cantidad_total,ISNULL(x.cantidad_liberada,0) cantidad_liberada,
+                        CAST(CASE WHEN ISNULL(x.cantidad_total,0)>0 THEN x.cantidad_liberada*100.0/x.cantidad_total ELSE 0 END AS DECIMAL(18,4)) porcentaje_recibido,
+                        CASE WHEN ISNULL(x.cantidad_liberada,0)<=0 THEN 'PENDIENTE' WHEN x.materiales_liberados=x.cantidad_materiales THEN 'LIBERADO' ELSE 'PARCIAL' END estado_liberacion,
+                        ISNULL(rr.cantidad_remitos_activos,0) cantidad_remitos_activos,p.proveedor_id,p.razon_social,p.cuit,
+                        e.nombre estado,rc.proyecto_id,pr.nombre proyecto_nombre
+                    FROM registroDecompra rc
+                    LEFT JOIN Proveedor p ON p.proveedor_id=rc.proveedor_id
+                    LEFT JOIN Proyecto pr ON pr.proyecto_id=rc.proyecto_id
+                    LEFT JOIN estado_registroDecompra e ON e.estado_registroDecompra_id=rc.estado_registroDecompra_id
+                    LEFT JOIN Resumen x ON x.id_oc=rc.registro_compra_id LEFT JOIN Remitos rr ON rr.idRegistroDeCompra=rc.registro_compra_id
+                    WHERE (@tipo IS NULL OR rc.tipo=@tipo) AND (@estado IS NULL OR e.nombre=@estado)
+                      AND (@proveedorId IS NULL OR rc.proveedor_id=@proveedorId) AND (@proyectoId IS NULL OR rc.proyecto_id=@proyectoId)
+                      AND (@fechaDesde IS NULL OR rc.fecha>=@fechaDesde) AND (@fechaHasta IS NULL OR rc.fecha<=@fechaHasta)
+                      AND (@proveedorTexto IS NULL OR p.razon_social LIKE '%'+@proveedorTexto+'%' OR p.cuit LIKE '%'+@proveedorTexto+'%')
+                      AND (@search IS NULL OR rc.numero LIKE '%'+@search+'%' OR rc.tipo LIKE '%'+@search+'%'
+                           OR p.razon_social LIKE '%'+@search+'%' OR p.cuit LIKE '%'+@search+'%'
+                           OR pr.nombre LIKE '%'+@search+'%' OR rc.observaciones LIKE '%'+@search+'%'
+                           OR EXISTS (SELECT 1 FROM Detalle_RegistroDeCompra ds
+                               LEFT JOIN Materiales ms ON ms.id_material=ds.id_material
+                               WHERE ds.id_oc=rc.registro_compra_id
+                                 AND (ds.Descripcion LIKE '%'+@search+'%' OR ms.nombre LIKE '%'+@search+'%')))
+                )
+                SELECT * INTO #Datos FROM Datos;
+                SELECT COUNT_BIG(*) total FROM #Datos;
+                SELECT * FROM #Datos
+                ORDER BY ${pagination.orderBy} ${pagination.direction},registro_compra_id DESC
+                OFFSET @offset ROWS FETCH NEXT @pageSize ROWS ONLY
+            `);
+            return res.json(pagedResponse(result.recordsets[1], pagination.page, pagination.pageSize, result.recordsets[0][0].total));
+        }
         const result = await pool.request().query(`
             WITH LiberadoPorLinea AS (
                 SELECT
@@ -282,7 +361,7 @@ console.log('RC.');
     } catch (error) {
         console.error('Error al obtener registros de compra:', error);
 
-        res.status(500).json({
+        res.status(error.statusCode || 500).json({
             message: 'Error al obtener registros de compra',
             error: error.message
         });

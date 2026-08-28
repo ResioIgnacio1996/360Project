@@ -174,6 +174,7 @@
       <div class="gantt-scroll">
         <div
           class="gantt-grid"
+          style="position:relative"
           [style.--days]="rango.dias"
           [style.--timeline-width]="anchoTimelinePx + 'px'"
           [style.width.px]="anchoGanttPx"
@@ -194,14 +195,25 @@
               </span>
             </div>
           </div>
+          <div
+            class="track gantt-calendar-layer"
+            aria-hidden="true"
+            style="position:absolute;left:210px;top:50px;z-index:0;pointer-events:none;overflow:hidden;border:0;min-height:0;max-height:none"
+            [style.height.px]="filtradas.length * 36"
+          >
+            <i
+              *ngFor="let d of dias(); trackBy: trackDia"
+              [ngClass]="claseDia(d)"
+              [class.es-hoy]="esHoy(d)"
+            ></i>
+          </div>
           <ng-container *ngFor="let op of filtradas; trackBy: trackOperacion"
             ><button class="g-label" [style.border-left]="'3px solid ' + colorEstado(op)" [title]="op.estado_label" (click)="seleccionar(op)">
               <b>{{ op.secuencia }}</b
               ><span>{{ op.nombre }}</span>
             </button>
-            <div class="track" [class.active]="seleccionada?.operacion_id === op.operacion_id">
-              <i *ngFor="let d of dias(); trackBy: trackDia" [ngClass]="claseDia(d)" [class.es-hoy]="esHoy(d)" [title]="detalleDia(d)"></i
-              ><button
+            <div class="track" [appGanttDayTooltip]="detallesDiasGantt" [class.active]="seleccionada?.operacion_id === op.operacion_id">
+              <button
                 *ngIf="capas.estimado && op.fecha_inicio_estimada"
                 class="bar estimated"
                 [style.left.%]="posicion(op.fecha_inicio_estimada)"

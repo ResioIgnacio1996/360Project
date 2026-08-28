@@ -23,6 +23,7 @@ export class AvanceOperaciones implements OnInit {
   readonly proyectoId: number;
   proyecto: any; operaciones: any[] = []; avances: any[] = []; bom: any[] = []; consumos: any[] = [];
   seleccionada: any = null; cargando = true; guardando = false; error = ''; mensaje = '';
+  cargandoDetalle = false;
   errorConsumo = '';
   busqueda = ''; estado = 'TODAS'; etapa = 'TODAS'; orden = 'secuencia'; direccion: 'asc' | 'desc' = 'asc';
   readonly fechaMaxima = hoyLocalISO();
@@ -46,10 +47,9 @@ export class AvanceOperaciones implements OnInit {
     this.cargando = true; this.error = '';
     this.service.obtener(this.proyectoId).subscribe({
       next: d => {
-        this.proyecto = d.proyecto; this.operaciones = d.operaciones || []; this.avances = d.avances || [];
-        this.bom = d.bom || []; this.consumos = d.consumos || [];
+        this.proyecto = d.proyecto; this.operaciones = d.operaciones || [];
         this.seleccionada = this.operaciones.find(o => o.operacion_id === seleccionadaId) || null;
-        if (this.seleccionada) this.prepararFormulario();
+        if (this.seleccionada) this.cargarDetalle(this.seleccionada.operacion_id);
         this.cargando = false;
       },
       error: e => { this.error = e?.error?.message || 'No se pudieron cargar las operaciones'; this.cargando = false; }
@@ -104,7 +104,38 @@ export class AvanceOperaciones implements OnInit {
   }
   get consumoConAlertas(): boolean { return this.consumosPendientes.some(m => m.sobreconsumo || m.stockInsuficiente); }
   get consumoConStockInsuficiente(): boolean { return this.consumosPendientes.some(m => m.stockInsuficiente); }
-  seleccionar(op: any): void { this.seleccionada = op; this.prepararFormulario(); }
+  seleccionar(op: any): void {
+    this.seleccionada = op; this.prepararFormulario();
+    this.avances = []; this.bom = []; this.consumos = [];
+    this.cargarDetalle(op.operacion_id);
+  }
+  private cargarDetalle(operacionId: number): void {
+    this.cargandoDetalle = true;
+    this.service.obtenerDetalle(operacionId).subscribe({
+      next: detalle => {
+        if (this.seleccionada?.operacion_id !== operacionId) return;
+        const actualizada = detalle.operacion?.operacion;
+        if (actualizada) this.actualizarOperacion(actualizada);
+        this.bom = detalle.bom?.bom || [];
+        this.avances = detalle.avances?.avances || [];
+        this.consumos = detalle.consumos?.consumos || [];
+        this.cargandoDetalle = false;
+      },
+      error: e => {
+        if (this.seleccionada?.operacion_id === operacionId) {
+          this.error = this.mensajeError(e, 'No se pudo cargar el detalle de la operación');
+          this.cargandoDetalle = false;
+        }
+      }
+    });
+  }
+  private actualizarOperacion(operacion: any): void {
+    const indice = this.operaciones.findIndex(o => o.operacion_id === operacion.operacion_id);
+    const fusionada = indice >= 0 ? { ...this.operaciones[indice], ...operacion } : operacion;
+    if (indice >= 0) this.operaciones = this.operaciones.map((o, i) => i === indice ? fusionada : o);
+    this.seleccionada = fusionada;
+    this.porcentaje = Number(fusionada.pct_avance_actual || 0);
+  }
   ordenar(campo: string): void {
     if (this.orden === campo) this.direccion = this.direccion === 'asc' ? 'desc' : 'asc';
     else { this.orden = campo; this.direccion = 'asc'; }
@@ -171,7 +202,7 @@ export class AvanceOperaciones implements OnInit {
         this.guardando = false;
         this.gestionFecha = null;
         this.mensaje = r.message;
-        this.cargar();
+        this.cargarDetalle(id);
         setTimeout(() => this.mensaje = '', 3500);
       },
       error: (e: any) => {
@@ -233,7 +264,7 @@ export class AvanceOperaciones implements OnInit {
         this.confirmacionConsumo = false;
         this.mensaje = respuesta?.message || 'Consumo guardado correctamente';
         this.prepararFormulario();
-        this.cargar();
+        this.cargarDetalle(this.seleccionada!.operacion_id);
         setTimeout(() => this.mensaje = '', 3500);
       },
       error: (error: any) => {
@@ -261,7 +292,11 @@ export class AvanceOperaciones implements OnInit {
   ejecutar(peticion: any): void {
     this.guardando = true; this.error = '';
     peticion.subscribe({
-      next: (r: any) => { this.guardando = false; this.mensaje = r.message; this.cargar(); setTimeout(() => this.mensaje = '', 3500); },
+      next: (r: any) => {
+        this.guardando = false; this.mensaje = r.message;
+        if (this.seleccionada) this.cargarDetalle(this.seleccionada.operacion_id);
+        setTimeout(() => this.mensaje = '', 3500);
+      },
       error: (e: any) => { this.guardando = false; this.error = this.mensajeError(e, 'No se pudo guardar'); }
     });
   }

@@ -2,7 +2,7 @@ import { CommonModule } from '@angular/common';
 import { Component, OnInit, ViewChild, ViewEncapsulation, inject } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
-import { Observable, map, startWith } from 'rxjs';
+import { EMPTY, Observable, Subject, catchError, debounceTime, map, startWith, switchMap, tap } from 'rxjs';
 
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
@@ -122,20 +122,14 @@ export class RegistroCompraMaster implements OnInit {
     fechaHasta: [null as Date | null]
   });
 
-  private paginator?: MatPaginator;
-  private sort?: MatSort;
-
-  @ViewChild(MatPaginator)
-  set matPaginator(paginator: MatPaginator | undefined) {
-    this.paginator = paginator;
-    this.conectarPaginador();
-  }
-
-  @ViewChild(MatSort)
-  set matSort(sort: MatSort | undefined) {
-    this.sort = sort;
-    this.configurarOrdenamiento();
-  }
+  @ViewChild(MatPaginator) paginator?: MatPaginator;
+  @ViewChild(MatSort) sort?: MatSort;
+  totalRegistros = 0;
+  pageIndex = 0;
+  pageSize = 10;
+  sortActive = 'fecha';
+  sortDirection: 'asc' | 'desc' = 'desc';
+  private recargar$ = new Subject<void>();
 
   constructor(
     private registroCompraService: RegistroCompraService,
@@ -147,6 +141,25 @@ export class RegistroCompraMaster implements OnInit {
   ) {}
 
   ngOnInit(): void {
+    this.recargar$.pipe(
+      switchMap(() => {
+        this.cargando = true;
+        return this.registroCompraService.getRegistrosPaginados(this.construirQuery()).pipe(
+          tap(response => {
+            this.registros = response.data;
+            this.dataSource.data = response.data;
+            this.totalRegistros = response.page.total;
+            this.pageIndex = response.page.index;
+            this.cargando = false;
+          }),
+          catchError(() => {
+            this.cargando = false;
+            this.snackBar.open('Error al obtener registros de compra.', 'Cerrar', { duration: 3500 });
+            return EMPTY;
+          })
+        );
+      })
+    ).subscribe();
     this.configurarFiltros();
     this.cargarProveedores();
     this.cargarProyectos();
@@ -159,35 +172,13 @@ export class RegistroCompraMaster implements OnInit {
       map(value => this.filtrarProveedores(value))
     );
 
-    this.filtrosForm.valueChanges.subscribe(() => {
+    this.filtrosForm.valueChanges.pipe(debounceTime(300)).subscribe(() => {
       this.aplicarFiltros();
     });
   }
 
   cargarRegistros(): void {
-    this.cargando = true;
-
-    this.registroCompraService.getRegistros().subscribe({
-      next: (registros: any) => {
-        this.cargando = false;
-
-        const data = Array.isArray(registros)
-          ? registros
-          : registros.data ?? [];
-
-        this.registros = data;
-        this.dataSource = new MatTableDataSource<RegistroCompra>([]);
-        this.conectarPaginador();
-        this.configurarOrdenamiento();
-        this.aplicarFiltros(false);
-      },
-      error: () => {
-        this.cargando = false;
-        this.snackBar.open('Error al obtener registros de compra.', 'Cerrar', {
-          duration: 3500
-        });
-      }
-    });
+    this.recargar$.next();
   }
 
   cargarProveedores(): void {
@@ -224,17 +215,21 @@ export class RegistroCompraMaster implements OnInit {
   }
 
   aplicarFiltros(resetPage: boolean = true): void {
-    const filtros = this.filtrosForm.getRawValue() as FiltrosRegistroCompra;
-    const filtrados = this.registros.filter(registro => this.cumpleFiltros(registro, filtros));
-
-    this.dataSource.data = filtrados;
-
-    this.conectarPaginador();
-
-    if (resetPage && this.paginator) {
-      this.paginator.firstPage();
-    }
+    if (resetPage) this.pageIndex = 0;
+    this.cargarRegistros();
   }
+
+  cambiarPagina(event: {pageIndex:number;pageSize:number}): void { this.pageIndex=event.pageIndex;this.pageSize=event.pageSize;this.cargarRegistros(); }
+  cambiarOrden(event: {active:string;direction:string}): void { this.sortActive=event.active;this.sortDirection=(event.direction||'desc') as 'asc'|'desc';this.pageIndex=0;this.cargarRegistros(); }
+
+  private construirQuery(): Record<string,string|number|null|undefined> {
+    const f=this.filtrosForm.getRawValue() as FiltrosRegistroCompra;
+    const proveedorId=typeof f.proveedor==='object' ? f.proveedor?.idProveedor : null;
+    const proveedorTexto=typeof f.proveedor==='string' ? f.proveedor.trim() : null;
+    return {page:this.pageIndex,pageSize:this.pageSize,search:f.busqueda?.trim(),tipo:f.tipo==='TODOS'?null:f.tipo,estado:f.estado==='TODOS'?null:f.estado,proveedorId:proveedorId||null,proveedorTexto:proveedorTexto||null,proyectoId:f.idProyecto==='TODOS'?null:f.idProyecto,fechaDesde:this.fechaQuery(f.fechaDesde),fechaHasta:this.fechaQuery(f.fechaHasta),sort:this.sortActive,direction:this.sortDirection};
+  }
+
+  private fechaQuery(fecha:Date|null):string|null { if(!fecha)return null;return `${fecha.getFullYear()}-${String(fecha.getMonth()+1).padStart(2,'0')}-${String(fecha.getDate()).padStart(2,'0')}`; }
 
   cumpleFiltros(registro: RegistroCompra, filtros: FiltrosRegistroCompra): boolean {
     return this.coincideBusquedaGeneral(registro, filtros.busqueda)
@@ -356,7 +351,6 @@ export class RegistroCompraMaster implements OnInit {
       fechaHasta: null
     });
 
-    this.cargarRegistros();
   }
 
   nuevoRegistro(): void {
@@ -535,47 +529,6 @@ export class RegistroCompraMaster implements OnInit {
 
   getResumenMaterialesLiberados(registro: RegistroCompra): string {
     return `${Number(registro.materialesLiberados || 0)}/${Number(registro.cantidadMateriales || 0)}`;
-  }
-
-  private configurarOrdenamiento(): void {
-    this.dataSource.sortingDataAccessor = (registro: RegistroCompra, columna: string): string | number => {
-      switch (columna) {
-        case 'tipo':
-          return this.getTipoDocumento(registro);
-        case 'numero':
-          return this.normalizarTexto(registro.numero);
-        case 'proveedor':
-          return this.normalizarTexto(registro.proveedor?.razonSocial);
-        case 'fecha':
-          return this.obtenerValorFecha(registro.fecha);
-        case 'fechaEntrega':
-          return this.obtenerValorFecha(registro.fechaEntrega);
-        case 'proyecto':
-          return this.normalizarTexto(registro.proyecto?.nombre);
-        case 'estado':
-          return this.normalizarTexto(this.getEstadoNombre(registro));
-        case 'avance':
-          return this.getPorcentajeRecibido(registro);
-        case 'remitos':
-          return this.getCantidadRemitos(registro);
-        default:
-          return '';
-      }
-    };
-
-    if (this.sort) {
-      this.dataSource.sort = this.sort;
-    }
-  }
-
-  private conectarPaginador(): void {
-    if (this.paginator) {
-      this.dataSource.paginator = this.paginator;
-    }
-  }
-
-  private obtenerValorFecha(fecha?: string | null): number {
-    return this.crearFechaLocal(fecha)?.getTime() ?? 0;
   }
 
   private normalizarTexto(value?: string | null): string {

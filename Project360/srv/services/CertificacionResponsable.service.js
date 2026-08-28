@@ -159,7 +159,8 @@ async function emitir(pool,proyectoId,body,usuarioId){
   }catch(error){try{await tx.rollback();}catch{}throw error;}
 }
 
-async function listar(pool,proyectoId){
+async function listar(pool,proyectoId,opciones){
+  const paginado=!!opciones,page=opciones?.page||0,pageSize=opciones?.pageSize||25,offset=page*pageSize;
   const r=await pool.request().input('p',sql.BigInt,proyectoId).query(`SELECT cr.certificado_responsable_id,cr.proyecto_id,
     cr.responsable_id,r.codigo responsable_codigo,r.nombre responsable_nombre,r.tipo responsable_tipo,cr.metodo_corte,
     cr.operacion_corte_id,corte.secuencia operacion_corte_secuencia,corte.nombre operacion_corte_nombre,
@@ -174,8 +175,11 @@ async function listar(pool,proyectoId){
     JOIN Usuario u ON u.usuario_id=cr.creado_por LEFT JOIN Operacion corte ON corte.operacion_id=cr.operacion_corte_id
     OUTER APPLY(SELECT SUM(m.importe) total_pagado,COUNT(*) cantidad_pagos FROM MovimientoFinancieroProyecto m
       WHERE m.certificado_responsable_id=cr.certificado_responsable_id AND m.estado='ACTIVO') pagos
-    WHERE cr.proyecto_id=@p AND cr.estado<>'ELIMINADO' ORDER BY cr.fecha_certificacion DESC,cr.certificado_responsable_id DESC`);
-  return r.recordset;
+    WHERE cr.proyecto_id=@p AND cr.estado<>'ELIMINADO' ORDER BY cr.fecha_certificacion DESC,cr.certificado_responsable_id DESC${paginado?` OFFSET ${offset} ROWS FETCH NEXT ${pageSize} ROWS ONLY`:''};
+    ${paginado?`SELECT COUNT_BIG(*) total FROM CertificadoResponsable WHERE proyecto_id=@p AND estado<>'ELIMINADO';`:''}`);
+  if(!paginado)return r.recordset;
+  const total=Number(r.recordsets[1][0].total);
+  return{data:r.recordsets[0],page:{index:page,size:pageSize,total,totalPages:Math.ceil(total/pageSize)}};
 }
 
 async function detalle(pool,proyectoId,certificadoId){

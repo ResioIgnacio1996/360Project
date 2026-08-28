@@ -1,4 +1,5 @@
 const { conectarDB, sql } = require('../../DB/dbConection');
+const { parsePagedQuery, pagedResponse, parseOptionalDate, parseOptionalId } = require('../../utils/list-pagination');
 
 const ESTADOS_REMITO_HABILITADOS = ['CREADA', 'PARCIAL', 'PARCIAL CON DEMORAS'];
 
@@ -25,9 +26,72 @@ const responderError = (res, error, contexto) => {
     });
 };
 
-const getRemitos = async (req, res) => {
+const listarRemitos = async (req, res, registroCompraId = null, contexto = 'Error al obtener remitos') => {
     try {
+        const pagination = parsePagedQuery(req.query, {
+            numero: 'numero', fecha: 'fecha', registroCompra: 'registro_compra_numero',
+            proveedor: 'razon_social', estado: 'estado_liberacion'
+        }, 'fecha', { registroCompraId });
+        const registroId = pagination.paged ? parseOptionalId(registroCompraId, 'registroCompraId') : registroCompraId;
+        const fechaDesde = pagination.paged ? parseOptionalDate(req.query.fechaDesde, 'fechaDesde') : null;
+        const fechaHasta = pagination.paged ? parseOptionalDate(req.query.fechaHasta, 'fechaHasta') : null;
         const pool = await conectarDB();
+
+        if (pagination.paged) {
+            const result = await pool.request()
+                .input('offset', sql.Int, pagination.offset)
+                .input('pageSize', sql.Int, pagination.pageSize)
+                .input('registroCompraId', sql.BigInt, registroId)
+                .input('search', sql.NVarChar(200), String(req.query.search || '').trim() || null)
+                .input('estado', sql.VarChar(20), req.query.estado && req.query.estado !== 'TODOS' ? req.query.estado : null)
+                .input('fechaDesde', sql.Date, fechaDesde)
+                .input('fechaHasta', sql.Date, fechaHasta)
+                .query(`
+                    WITH Detalle AS (
+                        SELECT remito_id,COUNT_BIG(*) cantidad_items FROM Detalle_Remito GROUP BY remito_id
+                    ), Datos AS (
+                        SELECT r.remito_id,r.numero,r.fecha,r.liberado,r.idRegistroDeCompra,
+                            rc.numero registro_compra_numero,rc.tipo registro_compra_tipo,rc.proyecto_id,
+                            pr.nombre proyecto_nombre,p.proveedor_id,p.razon_social,e.nombre estado_registro_compra,
+                            CASE WHEN ISNULL(r.liberado,0)=1 THEN 'LIBERADO' ELSE ISNULL(el.estado_liberacion,'PENDIENTE') END estado_liberacion,
+                            el.cantidad_pendiente,ISNULL(d.cantidad_items,0) cantidad_items
+                        FROM Remito r
+                        INNER JOIN registroDecompra rc ON rc.registro_compra_id=r.idRegistroDeCompra
+                        INNER JOIN Proveedor p ON p.proveedor_id=rc.proveedor_id
+                        LEFT JOIN Proyecto pr ON pr.proyecto_id=rc.proyecto_id
+                        LEFT JOIN estado_registroDecompra e ON e.estado_registroDecompra_id=rc.estado_registroDecompra_id
+                        LEFT JOIN vw_EstadoLiberacionRemito el ON el.remito_id=r.remito_id
+                        LEFT JOIN Detalle d ON d.remito_id=r.remito_id
+                        WHERE ISNULL(r.activo,1)=1 AND (@registroCompraId IS NULL OR r.idRegistroDeCompra=@registroCompraId)
+                          AND (@fechaDesde IS NULL OR r.fecha>=@fechaDesde) AND (@fechaHasta IS NULL OR r.fecha<=@fechaHasta)
+                          AND (@estado IS NULL OR CASE WHEN ISNULL(r.liberado,0)=1 THEN 'LIBERADO' ELSE ISNULL(el.estado_liberacion,'PENDIENTE') END=@estado)
+                          AND (@search IS NULL OR r.numero LIKE '%'+@search+'%' OR rc.numero LIKE '%'+@search+'%'
+                               OR p.razon_social LIKE '%'+@search+'%' OR e.nombre LIKE '%'+@search+'%')
+                    )
+                    SELECT * INTO #Datos FROM Datos;
+                    SELECT COUNT_BIG(*) total FROM #Datos;
+                    SELECT * FROM #Datos
+                    ORDER BY ${pagination.orderBy} ${pagination.direction},remito_id DESC
+                    OFFSET @offset ROWS FETCH NEXT @pageSize ROWS ONLY
+                `);
+            return res.json(pagedResponse(result.recordsets[1], pagination.page, pagination.pageSize, result.recordsets[0][0].total));
+        }
+
+        if (registroCompraId !== null) {
+            const result = await pool.request()
+                .input('idRegistroDeCompra', sql.BigInt, registroCompraId)
+                .query(`
+                    SELECT r.remito_id,r.numero,r.fecha,r.liberado,r.idRegistroDeCompra,
+                        CASE WHEN ISNULL(r.liberado,0)=1 THEN 'LIBERADO' ELSE ISNULL(el.estado_liberacion,'PENDIENTE') END estado_liberacion,
+                        el.cantidad_pendiente,COUNT(dr.detalle_remito_id) cantidad_items
+                    FROM Remito r LEFT JOIN vw_EstadoLiberacionRemito el ON el.remito_id=r.remito_id
+                    LEFT JOIN Detalle_Remito dr ON dr.remito_id=r.remito_id
+                    WHERE r.idRegistroDeCompra=@idRegistroDeCompra AND ISNULL(r.activo,1)=1
+                    GROUP BY r.remito_id,r.numero,r.fecha,r.liberado,r.idRegistroDeCompra,el.estado_liberacion,el.cantidad_pendiente
+                    ORDER BY r.remito_id DESC
+                `);
+            return res.json(result.recordset);
+        }
 
         const result = await pool.request().query(`
             SELECT
@@ -59,9 +123,11 @@ const getRemitos = async (req, res) => {
         res.json(result.recordset);
 
     } catch (error) {
-        responderError(res, error, 'Error al obtener remitos');
+        responderError(res, error, contexto);
     }
 };
+
+const getRemitos = (req, res) => listarRemitos(req, res);
 
 const getMaterialesBomProyecto = async (req, res) => {
     const proyectoId = Number(req.params.proyectoId);
@@ -178,45 +244,13 @@ const getRemitoById = async (req, res) => {
 };
 
 const getRemitosByRegistroCompra = async (req, res) => {
+    let registroCompraId;
     try {
-        const { id } = req.params;
-        const pool = await conectarDB();
-
-        const result = await pool.request()
-            .input('idRegistroDeCompra', sql.BigInt, id)
-            .query(`
-                SELECT
-                    r.remito_id,
-                    r.numero,
-                    r.fecha,
-                    r.liberado,
-                    r.idRegistroDeCompra,
-                    CASE WHEN ISNULL(r.liberado,0)=1 THEN 'LIBERADO'
-                         ELSE ISNULL(el.estado_liberacion,'PENDIENTE') END AS estado_liberacion,
-                    el.cantidad_pendiente,
-                    COUNT(dr.detalle_remito_id) AS cantidad_items
-                FROM Remito r
-                LEFT JOIN vw_EstadoLiberacionRemito el ON el.remito_id=r.remito_id
-                LEFT JOIN Detalle_Remito dr
-                    ON dr.remito_id = r.remito_id
-                WHERE r.idRegistroDeCompra = @idRegistroDeCompra
-                  AND ISNULL(r.activo,1)=1
-                GROUP BY
-                    r.remito_id,
-                    r.numero,
-                    r.fecha,
-                    r.liberado,
-                    r.idRegistroDeCompra,
-                    el.estado_liberacion,
-                    el.cantidad_pendiente
-                ORDER BY r.remito_id DESC
-            `);
-
-        res.json(result.recordset);
-
+        registroCompraId = parseOptionalId(req.params.id, 'registroCompraId');
     } catch (error) {
-        responderError(res, error, 'Error al obtener remitos por registro de compra');
+        return responderError(res, error, 'Registro de compra invalido');
     }
+    return listarRemitos(req, res, registroCompraId, 'Error al obtener remitos por registro de compra');
 };
 
 const cancelarRemito = async (req, res) => {

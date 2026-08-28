@@ -115,7 +115,7 @@
     <section *ngIf="tab === 'dashboard'" class="dashboard-section">
       <div class="section-title">
         <div><small>CONTROL ECONÓMICO</small><h2>Dashboard planificado vs. real</h2></div>
-        <button (click)="cargarDashboard()" [disabled]="cargandoDashboard"><mat-icon>refresh</mat-icon> Actualizar</button>
+        <button (click)="actualizarDashboard()" [disabled]="cargandoDashboard"><mat-icon>refresh</mat-icon> Actualizar</button>
       </div>
       <div class="loading" *ngIf="cargandoDashboard">Calculando curvas y márgenes...</div>
       <ng-container *ngIf="dashboardData && !cargandoDashboard">

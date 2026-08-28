@@ -1,4 +1,4 @@
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { Observable, map } from 'rxjs';
 
@@ -99,6 +99,22 @@ export class Remitos {
     );
   }
 
+  getRemitosPaginados(query: Record<string, string | number | null | undefined>): Observable<any> {
+    let params = new HttpParams();
+    for (const [key, value] of Object.entries(query)) {
+      if (value !== null && value !== undefined && value !== '') params = params.set(key, String(value));
+    }
+    return this.http.get<any>(this.apiUrl, { params }).pipe(map(response => this.normalizarPagina(response, query)));
+  }
+
+  getRemitosRegistroCompraPaginados(idRegistroCompra: number, query: Record<string, string | number | null | undefined>): Observable<any> {
+    let params = new HttpParams();
+    for (const [key, value] of Object.entries(query)) {
+      if (value !== null && value !== undefined && value !== '') params = params.set(key, String(value));
+    }
+    return this.http.get<any>(`${this.apiUrl}/registro-compra/${idRegistroCompra}`, { params }).pipe(map(response => this.normalizarPagina(response, query)));
+  }
+
   getRemitoById(id: number): Observable<Remito> {
     return this.http.get<any>(`${this.apiUrl}/${id}`).pipe(
       map(response => this.normalizarRemitoDetalle(response))
@@ -158,6 +174,18 @@ export class Remitos {
       ,estadoLiberacion: item.estado_liberacion ?? item.estadoLiberacion
       ,cantidadPendiente: Number(item.cantidad_pendiente ?? item.cantidadPendiente ?? 0)
     };
+  }
+
+  private normalizarPagina(response: any, query: Record<string, string | number | null | undefined>): any {
+    const lista = Array.isArray(response) ? response : response?.data ?? response?.recordset ?? response?.rows ?? [];
+    const data = lista.map((item: any) => this.normalizarRemito(item));
+    const page = response?.page ?? {};
+    return { data, page: {
+      index: Number(page.index ?? query['page'] ?? 0),
+      size: Number(page.size ?? query['pageSize'] ?? data.length),
+      total: Number(page.total ?? data.length),
+      totalPages: Number(page.totalPages ?? (data.length ? 1 : 0))
+    }};
   }
 
   private normalizarRemitoDetalle(response: any): Remito {

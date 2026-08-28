@@ -14,6 +14,11 @@ const hoyISO = () => {
 const puedeCorregirFechas = usuario => ['ADMIN', 'SUPERVISOR', 'OPERARIO', 'DEMO']
   .includes(String(usuario?.rol_nombre || '').toUpperCase());
 const fechaValida = fecha => /^\d{4}-\d{2}-\d{2}$/.test(String(fecha || '')) && String(fecha) <= hoyISO();
+const paginacion = (query, predeterminado) => {
+  const pagina = Math.max(1, Number.parseInt(query?.pagina, 10) || 1);
+  const limite = Math.min(100, Math.max(1, Number.parseInt(query?.limite, 10) || predeterminado));
+  return { pagina, limite, offset: (pagina - 1) * limite };
+};
 const validarFechaEntreDependencias = async (tx, operacionId, fecha, tipo) => {
   const limites = await new sql.Request(tx).input('id', sql.BigInt, operacionId).query(`
     SELECT TOP 1 p.secuencia,p.nombre,p.fecha_fin_real
@@ -96,39 +101,6 @@ const obtener = async (req, res) => {
                e.codigo,e.nombre,eo.codigo,eo.label_es,ua.codigo,r.nombre
       ORDER BY o.secuencia;
 
-      SELECT a.avance_id,a.operacion_id,a.pct_avance_anterior,a.pct_avance_nuevo,a.cantidad_hoy,
-             a.fecha_registro,a.fecha_creacion,a.es_primer_avance,a.foto_url,a.nota,
-             u.nombre registrado_por_nombre
-      FROM AvanceOperacion a
-      LEFT JOIN Usuario u ON u.usuario_id=a.registrado_por
-      WHERE a.proyecto_id=@proyecto
-      ORDER BY a.fecha_creacion DESC;
-
-      SELECT b.bom_id,b.operacion_id,b.material_id,b.numero_linea,b.descripcion_libre,
-             b.cantidad_teorica,b.preaviso_dias,b.sin_codigo,u.uom_id,u.nombre uom_nombre,
-             b.descripcion_libre material_nombre,
-             ISNULL((SELECT SUM(CASE WHEN c.anulado=0 THEN c.cantidad_consumida ELSE 0 END)
-                     FROM ConsumoMaterialOperacion c WHERE c.bom_id=b.bom_id),0) cantidad_consumida,
-             ISNULL((SELECT SUM(ct.cantidad_actual)
-                     FROM Container ct
-                     JOIN StockGeneral sg ON sg.stock_general_id=ct.stock_general_id
-                     WHERE ct.id_proyecto=b.proyecto_id AND sg.id_material=b.material_id AND ct.activo=1),0) stock_disponible
-      FROM BomOperacion b
-      JOIN UoM u ON u.uom_id=b.uom_id
-      WHERE b.proyecto_id=@proyecto
-      ORDER BY b.operacion_id,b.numero_linea;
-
-      SELECT c.consumo_id,c.operacion_id,c.bom_id,c.container_id,c.cantidad_consumida,c.fecha_consumo,c.fecha_creacion,c.nota,
-             c.afecta_stock,c.anulado,c.fecha_anulacion,c.motivo_anulacion,
-             u.nombre uom_nombre,b.descripcion_libre material_nombre,b.numero_linea,b.cantidad_teorica,
-             SUM(CASE WHEN c.anulado=0 THEN c.cantidad_consumida ELSE 0 END)
-               OVER (PARTITION BY c.bom_id ORDER BY c.fecha_creacion,c.consumo_id ROWS UNBOUNDED PRECEDING) consumo_acumulado
-      FROM ConsumoMaterialOperacion c
-      JOIN UoM u ON u.uom_id=c.uom_id
-      JOIN BomOperacion b ON b.bom_id=c.bom_id
-      WHERE c.proyecto_id=@proyecto
-      ORDER BY c.fecha_creacion DESC;
-
       SELECT TOP 1 * FROM CalendarioProyecto WHERE proyecto_id=@proyecto;
       SELECT ex.* FROM ExcepcionCalendario ex
       JOIN CalendarioProyecto cp ON cp.calendario_id=ex.calendario_id
@@ -138,7 +110,7 @@ const obtener = async (req, res) => {
     res.json({
       proyecto: result.recordsets[0][0],
       operaciones: result.recordsets[1].map(o => {
-        const calendario = result.recordsets[5][0] || null;
+        const calendario = result.recordsets[2][0] || null;
         const inicioReprogramado = fechaISO(o.fecha_inicio_real || o.fecha_inicio_estimada);
         return {
           ...o,
@@ -147,16 +119,110 @@ const obtener = async (req, res) => {
           fecha_inicio_real: fechaISO(o.fecha_inicio_real),
           fecha_fin_real: fechaISO(o.fecha_fin_real),
           fecha_fin_reprog: fechaISO(o.fecha_fin_real) ||
-            sumarDiasLaborales(inicioReprogramado, o.duracion_hs, calendario, result.recordsets[6])
+            sumarDiasLaborales(inicioReprogramado, o.duracion_hs, calendario, result.recordsets[3])
         };
-      }),
-      avances: result.recordsets[2],
-      bom: result.recordsets[3],
-      consumos: result.recordsets[4]
+      })
     });
   } catch (error) {
     res.status(500).json({ message: 'No se pudo cargar el avance de operaciones', error: error.message });
   }
+};
+
+const obtenerOperacion = async (req, res) => {
+  if (!idValido(req.params.id)) return res.status(400).json({ message: 'Operación inválida' });
+  try {
+    const pool = await conectarDB();
+    const result = await pool.request().input('id', sql.BigInt, req.params.id).query(`
+      SELECT o.operacion_id,o.proyecto_id,o.secuencia,o.nombre,o.descripcion,o.criterio_cierre,
+             o.duracion_hs,o.cantidad_meta,o.cantidad_acumulada,o.pct_avance_actual,o.fecha_inicio_estimada,
+             o.fecha_fin_estimada,o.fecha_inicio_real,o.fecha_fin_real,o.fecha_no_antes_del,
+             e.codigo etapa_codigo,e.nombre etapa_nombre,eo.codigo estado_codigo,eo.label_es estado_label,
+             ua.codigo unidad_avance,r.nombre responsable_nombre,
+             STRING_AGG(CONVERT(varchar(20),pred.secuencia),',') dependencias_secuencia
+      FROM Operacion o
+      JOIN VersionPlan vp ON vp.version_id=o.version_id AND vp.es_activa=1
+      JOIN EtapaOperacion e ON e.etapa_id=o.etapa_id
+      JOIN estado_operacion eo ON eo.estado_id=o.estado_id
+      JOIN unidad_avance ua ON ua.unidad_avance_id=o.unidad_avance_id
+      LEFT JOIN ResponsableOperacion r ON r.responsable_id=o.responsable_id
+      LEFT JOIN OperacionDependencia od ON od.operacion_id=o.operacion_id
+      LEFT JOIN Operacion pred ON pred.operacion_id=od.operacion_predecesora_id
+      WHERE o.operacion_id=@id AND ISNULL(o.archivada,0)=0
+      GROUP BY o.operacion_id,o.proyecto_id,o.secuencia,o.nombre,o.descripcion,o.criterio_cierre,
+               o.duracion_hs,o.cantidad_meta,o.cantidad_acumulada,o.pct_avance_actual,o.fecha_inicio_estimada,
+               o.fecha_fin_estimada,o.fecha_inicio_real,o.fecha_fin_real,o.fecha_no_antes_del,
+               e.codigo,e.nombre,eo.codigo,eo.label_es,ua.codigo,r.nombre;
+      SELECT TOP 1 * FROM CalendarioProyecto WHERE proyecto_id=(SELECT proyecto_id FROM Operacion WHERE operacion_id=@id);
+      SELECT ex.* FROM ExcepcionCalendario ex JOIN CalendarioProyecto cp ON cp.calendario_id=ex.calendario_id
+      WHERE cp.proyecto_id=(SELECT proyecto_id FROM Operacion WHERE operacion_id=@id);
+    `);
+    if (!result.recordsets[0].length) return res.status(404).json({ message: 'Operación no encontrada' });
+    const o = result.recordsets[0][0];
+    const inicio = fechaISO(o.fecha_inicio_real || o.fecha_inicio_estimada);
+    res.json({ operacion: { ...o, fecha_inicio_estimada: fechaISO(o.fecha_inicio_estimada), fecha_fin_estimada: fechaISO(o.fecha_fin_estimada),
+      fecha_inicio_real: fechaISO(o.fecha_inicio_real), fecha_fin_real: fechaISO(o.fecha_fin_real),
+      fecha_fin_reprog: fechaISO(o.fecha_fin_real) || sumarDiasLaborales(inicio, o.duracion_hs, result.recordsets[1][0] || null, result.recordsets[2]) } });
+  } catch (error) { res.status(500).json({ message: 'No se pudo cargar la operación', error: error.message }); }
+};
+
+const obtenerBom = async (req, res) => {
+  if (!idValido(req.params.id)) return res.status(400).json({ message: 'Operación inválida' });
+  try {
+    const pool = await conectarDB();
+    const result = await pool.request().input('id', sql.BigInt, req.params.id).query(`
+      SELECT b.bom_id,b.operacion_id,b.material_id,b.numero_linea,b.descripcion_libre,b.cantidad_teorica,
+             b.preaviso_dias,b.sin_codigo,u.uom_id,u.nombre uom_nombre,b.descripcion_libre material_nombre,
+             ISNULL(c.cantidad_consumida,0) cantidad_consumida,ISNULL(s.stock_disponible,0) stock_disponible
+      FROM BomOperacion b JOIN UoM u ON u.uom_id=b.uom_id
+      LEFT JOIN (SELECT c.bom_id,SUM(CASE WHEN c.anulado=0 THEN c.cantidad_consumida ELSE 0 END) cantidad_consumida
+                 FROM ConsumoMaterialOperacion c JOIN BomOperacion bo ON bo.bom_id=c.bom_id
+                 WHERE bo.operacion_id=@id GROUP BY c.bom_id) c ON c.bom_id=b.bom_id
+      LEFT JOIN (SELECT ct.id_proyecto,sg.id_material,SUM(ct.cantidad_actual) stock_disponible
+                 FROM Container ct JOIN StockGeneral sg ON sg.stock_general_id=ct.stock_general_id
+                 WHERE ct.activo=1 AND ct.id_proyecto=(SELECT proyecto_id FROM Operacion WHERE operacion_id=@id)
+                 GROUP BY ct.id_proyecto,sg.id_material) s
+        ON s.id_proyecto=b.proyecto_id AND s.id_material=b.material_id
+      WHERE b.operacion_id=@id ORDER BY b.numero_linea;
+    `);
+    res.json({ bom: result.recordset });
+  } catch (error) { res.status(500).json({ message: 'No se pudo cargar la BOM de la operación', error: error.message }); }
+};
+
+const obtenerAvances = async (req, res) => {
+  if (!idValido(req.params.id)) return res.status(400).json({ message: 'Operación inválida' });
+  const { pagina, limite, offset } = paginacion(req.query, 5);
+  try {
+    const pool = await conectarDB();
+    const result = await pool.request().input('id', sql.BigInt, req.params.id).input('offset', sql.Int, offset).input('limite', sql.Int, limite).query(`
+      SELECT a.avance_id,a.operacion_id,a.pct_avance_anterior,a.pct_avance_nuevo,a.cantidad_hoy,a.fecha_registro,
+             a.fecha_creacion,a.es_primer_avance,a.foto_url,a.nota,u.nombre registrado_por_nombre
+      FROM AvanceOperacion a LEFT JOIN Usuario u ON u.usuario_id=a.registrado_por
+      WHERE a.operacion_id=@id ORDER BY a.fecha_creacion DESC,a.avance_id DESC
+      OFFSET @offset ROWS FETCH NEXT @limite ROWS ONLY;
+      SELECT COUNT(*) total FROM AvanceOperacion WHERE operacion_id=@id;
+    `);
+    res.json({ avances: result.recordsets[0], paginacion: { pagina, limite, total: Number(result.recordsets[1][0]?.total || 0) } });
+  } catch (error) { res.status(500).json({ message: 'No se pudo cargar el historial de avances', error: error.message }); }
+};
+
+const obtenerConsumos = async (req, res) => {
+  if (!idValido(req.params.id)) return res.status(400).json({ message: 'Operación inválida' });
+  const { pagina, limite, offset } = paginacion(req.query, 10);
+  try {
+    const pool = await conectarDB();
+    const result = await pool.request().input('id', sql.BigInt, req.params.id).input('offset', sql.Int, offset).input('limite', sql.Int, limite).query(`
+      SELECT c.consumo_id,c.operacion_id,c.bom_id,c.container_id,c.cantidad_consumida,c.fecha_consumo,c.fecha_creacion,c.nota,
+             c.afecta_stock,c.anulado,c.fecha_anulacion,c.motivo_anulacion,u.nombre uom_nombre,
+             b.descripcion_libre material_nombre,b.numero_linea,b.cantidad_teorica,
+             (SELECT SUM(CASE WHEN ca.anulado=0 THEN ca.cantidad_consumida ELSE 0 END) FROM ConsumoMaterialOperacion ca
+              WHERE ca.bom_id=c.bom_id AND (ca.fecha_creacion<c.fecha_creacion OR (ca.fecha_creacion=c.fecha_creacion AND ca.consumo_id<=c.consumo_id))) consumo_acumulado
+      FROM ConsumoMaterialOperacion c JOIN UoM u ON u.uom_id=c.uom_id JOIN BomOperacion b ON b.bom_id=c.bom_id
+      WHERE c.operacion_id=@id ORDER BY c.fecha_creacion DESC,c.consumo_id DESC
+      OFFSET @offset ROWS FETCH NEXT @limite ROWS ONLY;
+      SELECT COUNT(*) total FROM ConsumoMaterialOperacion WHERE operacion_id=@id;
+    `);
+    res.json({ consumos: result.recordsets[0], paginacion: { pagina, limite, total: Number(result.recordsets[1][0]?.total || 0) } });
+  } catch (error) { res.status(500).json({ message: 'No se pudo cargar el historial de consumos', error: error.message }); }
 };
 
 const iniciar = async (req, res) => {
@@ -628,11 +694,16 @@ const anularConsumo = async (req, res) => {
 
 module.exports = {
   obtener,
+  obtenerOperacion,
+  obtenerBom,
+  obtenerAvances,
+  obtenerConsumos,
   iniciar,
   modificarFechaInicio,
   finalizar,
   modificarFechaFin,
   registrarAvance,
   registrarConsumos: registrarConsumosConStock,
-  anularConsumo
+  anularConsumo,
+  paginacion
 };

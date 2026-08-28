@@ -93,7 +93,7 @@
   <section class="block">
     <div class="block-header">
       <h2 class="block-title">Listado maestro</h2>
-      <span class="chip chip-no-dot chip-teal">{{ dataSource.data.length }} REMITOS</span>
+      <span class="chip chip-no-dot chip-teal">{{ totalRemitos }} REMITOS</span>
     </div>
 
     <div class="state-message" *ngIf="cargando">Cargando remitos...</div>
@@ -105,6 +105,7 @@
         matSortActive="fecha"
         matSortDirection="desc"
         matSortDisableClear
+        (matSortChange)="cambiarOrden($event)"
         [dataSource]="dataSource"
         class="remito-table mat-elevation-z0">
         <ng-container matColumnDef="numero">
@@ -189,8 +190,11 @@
 
     <mat-paginator
       *ngIf="!cargando && dataSource.data.length > 0"
-      [pageSize]="10"
+      [length]="totalRemitos"
+      [pageIndex]="pageIndex"
+      [pageSize]="pageSize"
       [pageSizeOptions]="[10, 25, 50]"
+      (page)="cambiarPagina($event)"
       showFirstLastButtons>
     </mat-paginator>
   </section>

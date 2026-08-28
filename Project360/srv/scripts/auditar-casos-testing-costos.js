@@ -24,7 +24,7 @@ async function debeRechazar(pool,id,esperado){
   if(datos.recordsets[1][0])resultado.proyecto_sin_cliente=await debeRechazar(pool,Number(datos.recordsets[1][0].proyecto_id),'cliente');
   else resultado.proyecto_sin_cliente='SIN_DATO_PARA_PROBAR';
   const activo=Number(datos.recordsets[2][0]?.proyecto_id||0);
-  if(activo){const p=await certificacion.generarPreview(pool,activo,hoy);const conteo=await pool.request().input('p',sql.BigInt,activo).query(`SELECT SUM(CASE WHEN archivada=0 THEN 1 ELSE 0 END) vigentes,SUM(CASE WHEN archivada=1 THEN 1 ELSE 0 END) archivadas FROM Operacion o JOIN VersionPlan v ON v.version_id=o.version_id AND v.es_activa=1 WHERE o.proyecto_id=@p`);resultado.operaciones_archivadas_excluidas=p.lineas.length===Number(conteo.recordset[0].vigentes||0);}
+  if(activo){const p=await certificacion.generarPreview(pool,activo,hoy);const archivadas=await pool.request().input('p',sql.BigInt,activo).query(`SELECT o.operacion_id FROM Operacion o JOIN VersionPlan v ON v.version_id=o.version_id AND v.es_activa=1 WHERE o.proyecto_id=@p AND ISNULL(o.archivada,0)=1`);const idsArchivadas=new Set(archivadas.recordset.map(x=>Number(x.operacion_id)));resultado.operaciones_archivadas_excluidas=p.lineas.every(linea=>!idsArchivadas.has(Number(linea.operacion_id)));}
   resultado.decimales_19_4=datos.recordsets[3].length===2&&datos.recordsets[3].every(x=>x.precision===19&&x.scale===4);
   resultado.certificado=datos.recordsets[4][0]||null;
 

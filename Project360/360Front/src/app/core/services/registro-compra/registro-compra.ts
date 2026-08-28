@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 
@@ -43,6 +43,26 @@ export class RegistroCompraService {
 
   cancelarRegistro(id: number): Observable<any> {
     return this.http.put(`${this.apiUrl}/${id}/cancelar`, {});
+  }
+
+  getRegistrosPaginados(query: Record<string, string | number | null | undefined>): Observable<any> {
+    let params = new HttpParams();
+    for (const [key, value] of Object.entries(query)) {
+      if (value !== null && value !== undefined && value !== '') params = params.set(key, String(value));
+    }
+    return this.http.get<any>(this.apiUrl, { params }).pipe(map(response => {
+      const data = this.extraerLista(response).map((registro: any) => this.normalizarRegistro(registro));
+      const page = response?.page ?? {};
+      return {
+        data,
+        page: {
+          index: Number(page.index ?? query['page'] ?? 0),
+          size: Number(page.size ?? query['pageSize'] ?? data.length),
+          total: Number(page.total ?? data.length),
+          totalPages: Number(page.totalPages ?? (data.length ? 1 : 0))
+        }
+      };
+    }));
   }
 
   obtenerImpactoCancelacion(id: number): Observable<any> {

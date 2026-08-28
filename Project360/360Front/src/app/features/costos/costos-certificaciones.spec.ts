@@ -7,6 +7,10 @@ import { CostosCertificaciones } from './costos-certificaciones';
 class CostosServiceMock {
   ultimoPreview: any;
   ultimoPreviewResponsable: any;
+  llamadasCertificados = 0;
+  llamadasCertificadosResponsable = 0;
+  llamadasDashboard = 0;
+  llamadasMovimientos = 0;
   permisos = () => of([
     'COSTOS_VER', 'ECONOMIA_OPERACION_EDITAR', 'CERTIFICADO_CLIENTE_PREVIEW',
     'CERTIFICADO_CLIENTE_EMITIR', 'CERTIFICADO_CLIENTE_VER', 'CERTIFICADO_CLIENTE_ELIMINAR',
@@ -20,7 +24,7 @@ class CostosServiceMock {
       { operacion_id: 2, responsable_id:10, responsable_nombre:'Contratista A', secuencia: 200, nombre: 'Operación 200', etapa_nombre: 'Etapa A', pct_avance_actual: 0, precio_cliente: 2000, costo_responsable: 900 }
     ]
   });
-  certificados = () => of([{ certificado_cliente_id: 3, fecha_certificacion: '2026-08-27', total: 8000, total_cobrado: 3000, saldo_cobro: 5000, estado_pago: 'PAGADO_PARCIAL', creado_por_nombre: 'Admin', metodo_corte: 'POR_FECHA', estado: 'EMITIDO', es_ultimo_emitido: true }]);
+  certificados = () => { this.llamadasCertificados++; return of([{ certificado_cliente_id: 3, fecha_certificacion: '2026-08-27', total: 8000, total_cobrado: 3000, saldo_cobro: 5000, estado_pago: 'PAGADO_PARCIAL', creado_por_nombre: 'Admin', metodo_corte: 'POR_FECHA', estado: 'EMITIDO', es_ultimo_emitido: true }]); };
   preview = (_proyectoId: number, corte: any) => {
     this.ultimoPreview = corte;
     return of({ ...corte, operacion_corte: corte.metodo_corte === 'POR_OPERACION' ? { secuencia: 200, nombre: 'Operación 200' } : null, lineas: [] });
@@ -34,10 +38,11 @@ class CostosServiceMock {
   eliminarCertificado = () => of({ certificado_anterior_vigente: { certificado_cliente_id: 2 } });
   previewResponsable = (_proyectoId:number,corte:any) => {this.ultimoPreviewResponsable=corte;return of({...corte,responsable:{responsable_id:10,nombre:'Contratista A'},lineas:[]});};
   emitirResponsable = () => of({certificado_responsable_id:9});
-  certificadosResponsable = () => of([{certificado_responsable_id:9,responsable_id:10,responsable_nombre:'Contratista A',fecha_certificacion:'2026-08-25',total:400,total_pagado:100,saldo_pago:300,estado_pago:'PAGADO_PARCIAL',metodo_corte:'POR_FECHA',estado:'EMITIDO',es_ultimo_emitido:true}]);
+  certificadosResponsable = () => { this.llamadasCertificadosResponsable++; return of([{certificado_responsable_id:9,responsable_id:10,responsable_nombre:'Contratista A',fecha_certificacion:'2026-08-25',total:400,total_pagado:100,saldo_pago:300,estado_pago:'PAGADO_PARCIAL',metodo_corte:'POR_FECHA',estado:'EMITIDO',es_ultimo_emitido:true}]); };
   certificadoResponsable = () => of({certificado:{certificado_responsable_id:9,responsable_nombre:'Contratista A',fecha_certificacion:'2026-08-25',total:400,total_pagado:100,saldo_pago:300,estado_pago:'PAGADO_PARCIAL',metodo_corte:'POR_FECHA',es_ultimo_emitido:true},etapas:[],detalles:[],pagos:[]});
   eliminarCertificadoResponsable = () => of({certificado_anterior_vigente:null});
-  movimientos = () => of({resumen:{ingresos:3000,egresos:500,saldo:2500},movimientos:[{movimiento_id:1,tipo:'INGRESO',fecha:'2026-08-25',importe:3000,descripcion:'Cobro',vinculo_tipo:'CERTIFICADO_CLIENTE',certificado_cliente_id:3,medio_pago:'TRANSFERENCIA',referencia:'TRX-1',estado:'ACTIVO'}],certificados_cliente:[],registros_compra:[],certificados_responsable:[{certificado_responsable_id:9,responsable_nombre:'Contratista A',saldo:300,estado_pago:'PAGADO_PARCIAL'}]});
+  movimientos = () => { this.llamadasMovimientos++; return of({resumen:{ingresos:3000,egresos:500,saldo:2500},movimientos:[{movimiento_id:1,tipo:'INGRESO',fecha:'2026-08-25',importe:3000,descripcion:'Cobro',vinculo_tipo:'CERTIFICADO_CLIENTE',certificado_cliente_id:3,medio_pago:'TRANSFERENCIA',referencia:'TRX-1',estado:'ACTIVO'}],certificados_cliente:[],registros_compra:[],certificados_responsable:[{certificado_responsable_id:9,responsable_nombre:'Contratista A',saldo:300,estado_pago:'PAGADO_PARCIAL'}]}); };
+  dashboard = () => { this.llamadasDashboard++; return of({resumen:{},curva:[]}); };
   crearMovimiento = () => of({message:'Movimiento registrado correctamente',movimiento_id:2});
   anularMovimiento = () => of({message:'Movimiento anulado correctamente'});
 }
@@ -71,6 +76,44 @@ describe('CostosCertificaciones', () => {
     expect(texto).toContain('CRONOGRAMA CERT. CLIENTE');
     expect(texto).toContain('N° CERT. CLIENTE');
     expect(texto).toContain('Cargar CSV');
+  });
+
+  it('carga inicialmente solo economia y deja los datos de otras pestañas bajo demanda', () => {
+    expect(api.llamadasCertificados).toBe(0);
+    expect(api.llamadasCertificadosResponsable).toBe(0);
+    expect(api.llamadasDashboard).toBe(0);
+    expect(api.llamadasMovimientos).toBe(0);
+  });
+
+  it('reutiliza el cache al volver a cada pestaña', () => {
+    component.cambiarTab('historial');
+    component.cambiarTab('economia');
+    component.cambiarTab('historial');
+    component.cambiarTab('responsable_historial');
+    component.cambiarTab('economia');
+    component.cambiarTab('responsable_historial');
+    component.cambiarTab('dashboard');
+    component.cambiarTab('economia');
+    component.cambiarTab('dashboard');
+    component.cambiarTab('movimientos');
+    component.cambiarTab('economia');
+    component.cambiarTab('movimientos');
+
+    expect(api.llamadasCertificados).toBe(1);
+    expect(api.llamadasCertificadosResponsable).toBe(1);
+    expect(api.llamadasDashboard).toBe(1);
+    expect(api.llamadasMovimientos).toBe(1);
+  });
+
+  it('permite actualizar explicitamente el dashboard sin perder el cache de las otras pestañas', () => {
+    component.cambiarTab('dashboard');
+    component.cambiarTab('historial');
+    component.actualizarDashboard();
+
+    expect(api.llamadasDashboard).toBe(2);
+    expect(api.llamadasCertificados).toBe(1);
+    expect(api.llamadasCertificadosResponsable).toBe(0);
+    expect(api.llamadasMovimientos).toBe(0);
   });
 
   it('envia corte por operacion con fecha documental y operacion elegida', () => {

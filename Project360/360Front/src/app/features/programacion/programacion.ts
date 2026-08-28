@@ -9,11 +9,12 @@ import {
 } from '../../core/services/programacion/programacion';
 import { CalendarioService } from '../../core/services/calendario/calendario.service';
 import { BomService } from '../../core/services/bom/bom';
+import { GanttDayTooltipDirective } from './gantt-day-tooltip.directive';
 
 @Component({
   selector: 'app-programacion',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, GanttDayTooltipDirective],
   templateUrl: './programacion.html',
   styleUrl: './programacion.css',
 })
@@ -310,6 +311,9 @@ export class Programacion implements OnInit, OnDestroy {
   }
   detalleDia(i: number): string {
     return this.detallesDia[i] || '';
+  }
+  get detallesDiasGantt(): readonly string[] {
+    return this.detallesDia;
   }
   private calcularDetalleDia(i: number): string {
     const excepcion = this.excepcionDia(i);

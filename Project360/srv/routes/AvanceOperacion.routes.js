@@ -3,6 +3,10 @@ const { verificarToken } = require('../middlewares/auth.middleware');
 const controller = require('../controllers/AvanceOperacion.controller');
 
 router.get('/proyectos/:id', verificarToken, controller.obtener);
+router.get('/operaciones/:id', verificarToken, controller.obtenerOperacion);
+router.get('/operaciones/:id/bom', verificarToken, controller.obtenerBom);
+router.get('/operaciones/:id/avances', verificarToken, controller.obtenerAvances);
+router.get('/operaciones/:id/consumos', verificarToken, controller.obtenerConsumos);
 router.post('/operaciones/:id/iniciar', verificarToken, controller.iniciar);
 router.patch('/operaciones/:id/fecha-inicio', verificarToken, controller.modificarFechaInicio);
 router.post('/operaciones/:id/finalizar', verificarToken, controller.finalizar);
