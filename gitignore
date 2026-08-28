@@ -1,0 +1,30 @@
+# Dependencias
+node_modules/
+
+# Variables de entorno / secretos
+.env
+.env.*
+!.env.example
+
+# Archivos/carpetas que no se despliegan
+input/
+output/
+documentacion/
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Sistema operativo
+.DS_Store
+Thumbs.db
+
+# Editores
+.vscode/
+.idea/
+
+# Temporales
+*.tmp
+*.temp
