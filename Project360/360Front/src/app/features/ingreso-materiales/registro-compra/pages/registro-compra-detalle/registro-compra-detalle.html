@@ -144,7 +144,7 @@
                   </ng-container>
 
                   <ng-container matColumnDef="estadoLiberacion">
-                
+                    <th mat-header-cell *matHeaderCellDef>Estado liberación</th>
                     <td mat-cell *matCellDef="let item">
                       <span class="estado-badge" [ngClass]="(item.estadoLiberacion || 'PENDIENTE').toLowerCase()">
                         {{ item.estadoLiberacion || 'PENDIENTE' }}
