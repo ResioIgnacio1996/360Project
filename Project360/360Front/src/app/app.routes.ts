@@ -45,6 +45,8 @@ export const routes: Routes = [
     },
     { path: 'proyectos/:id/avances', loadComponent: () => import('./features/avance-operaciones/avance-operaciones').then(m => m.AvanceOperaciones) },
     { path: 'proyectos/:id/costos', loadComponent: () => import('./features/costos/costos-certificaciones').then(m => m.CostosCertificaciones) },
+    { path: 'proyectos/:id/panel-general', loadComponent: () => import('./features/panel-general/panel-general').then(m => m.PanelGeneral) },
+    { path: 'proyectos/:id/alarmas', loadComponent: () => import('./features/alarmas/alarmas-proyecto').then(m => m.AlarmasProyecto) },
     {
       path: 'proyectos/:id/dependencias',
       loadComponent: () => import('./features/dependencias-operaciones/dependencias-operaciones')

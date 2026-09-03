@@ -79,7 +79,9 @@ export class AvanceOperaciones implements OnInit {
     return [...lista].sort((a, b) => {
       let resultado = 0;
       if (this.orden === 'avance') resultado = Number(a.pct_avance_actual) - Number(b.pct_avance_actual);
+      else if (this.orden === 'inicioPlan') resultado = String(a.fecha_inicio_estimada || '').localeCompare(String(b.fecha_inicio_estimada || ''));
       else if (this.orden === 'fecha') resultado = String(a.fecha_fin_estimada || '').localeCompare(String(b.fecha_fin_estimada || ''));
+      else if (this.orden === 'inicioReprog') resultado = String(a.fecha_inicio_reprog || '').localeCompare(String(b.fecha_inicio_reprog || ''));
       else if (this.orden === 'reprog') resultado = String(a.fecha_fin_reprog || '').localeCompare(String(b.fecha_fin_reprog || ''));
       else if (this.orden === 'nombre') resultado = String(a.nombre || '').localeCompare(String(b.nombre || ''));
       else if (this.orden === 'responsable') resultado = String(a.responsable_nombre || '').localeCompare(String(b.responsable_nombre || ''));

@@ -31,7 +31,9 @@
         <button type="button" (click)="ordenar('secuencia')">OP.<mat-icon>{{ iconoOrden('secuencia') }}</mat-icon></button>
         <button type="button" (click)="ordenar('nombre')">OPERACIÓN / ETAPA<mat-icon>{{ iconoOrden('nombre') }}</mat-icon></button>
         <button type="button" (click)="ordenar('responsable')">RESPONSABLE<mat-icon>{{ iconoOrden('responsable') }}</mat-icon></button>
+        <button type="button" (click)="ordenar('inicioPlan')">INICIO PLAN<mat-icon>{{ iconoOrden('inicioPlan') }}</mat-icon></button>
         <button type="button" (click)="ordenar('fecha')">FIN PLAN<mat-icon>{{ iconoOrden('fecha') }}</mat-icon></button>
+        <button type="button" (click)="ordenar('inicioReprog')">INICIO REPROG.<mat-icon>{{ iconoOrden('inicioReprog') }}</mat-icon></button>
         <button type="button" (click)="ordenar('reprog')">FIN REPROG.<mat-icon>{{ iconoOrden('reprog') }}</mat-icon></button>
         <button type="button" (click)="ordenar('estado')">ESTADO<mat-icon>{{ iconoOrden('estado') }}</mat-icon></button>
         <button type="button" (click)="ordenar('avance')">AVANCE<mat-icon>{{ iconoOrden('avance') }}</mat-icon></button>
@@ -45,7 +47,9 @@
         <span class="mono op-code">{{ op.secuencia }}</span>
         <span class="op-name"><strong>{{ op.nombre }}</strong><small>{{ op.etapa_codigo }} · {{ op.etapa_nombre }}</small></span>
         <span>{{ op.responsable_nombre || 'Sin asignar' }}</span>
+        <span class="date-main"><small>INICIO PLAN</small><strong>{{ formatearFechaCalendario(op.fecha_inicio_estimada) || '—' }}</strong></span>
         <span class="date-main"><small>PLAN</small><strong>{{ formatearFechaCalendario(op.fecha_fin_estimada) || '—' }}</strong></span>
+        <span class="date-main reprog"><small>INICIO REPROG.</small><strong>{{ formatearFechaCalendario(op.fecha_inicio_reprog) || '—' }}</strong></span>
         <span class="date-main reprog"><small>REPROG.</small><strong>{{ formatearFechaCalendario(op.fecha_fin_reprog) || '—' }}</strong></span>
         <span><b class="status" [ngClass]="claseEstado(op)">{{ op.estado_label || op.estado_codigo }}</b></span>
         <span class="progress-cell"><span class="bar"><i [style.width.%]="op.pct_avance_actual"></i></span><b>{{ op.pct_avance_actual | number:'1.0-1' }}%</b></span>

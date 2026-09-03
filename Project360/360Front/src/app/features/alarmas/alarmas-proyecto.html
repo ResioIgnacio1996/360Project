@@ -1,0 +1,86 @@
+<div class="module-page alarm-config-page">
+  <header class="page-header">
+    <div><a class="breadcrumb" [routerLink]="['/proyectos',proyectoId]">← Volver al proyecto</a><h1>Alarmas del proyecto</h1><p>Solo se generarán las alarmas que el usuario configure expresamente.</p></div>
+    <button class="primary-button" *ngIf="tab==='CONFIGURACION'" type="button" (click)="abrirNueva()"><span class="material-icons">add</span>Nueva regla</button>
+  </header>
+  <nav class="alarm-tabs"><button type="button" [class.active]="tab==='CONFIGURACION'" (click)="cambiarTab('CONFIGURACION')">Configuración Alarmas</button><button type="button" [class.active]="tab==='ALARMAS'" (click)="cambiarTab('ALARMAS')">Alarmas</button></nav>
+  <div class="message error" *ngIf="error">{{error}}</div>
+
+  <ng-container *ngIf="tab==='CONFIGURACION'">
+
+  <section class="alarm-category-grid">
+    <button class="alarm-category" type="button" *ngFor="let c of categorias" (click)="abrirNueva(c.clave)">
+      <span class="material-icons">{{c.icono}}</span><div><small>{{c.clave}}</small><h2>{{c.titulo}}</h2><p>{{c.descripcion}}</p></div><em>{{cantidad(c.clave)}} reglas activas · Crear regla</em>
+    </button>
+  </section>
+
+  <section class="block rules-block">
+    <div class="block-header"><h2 class="block-title">Reglas configuradas</h2></div>
+    <div class="alarm-state" *ngIf="cargando">Cargando...</div>
+    <div class="alarm-state" *ngIf="!cargando&&!reglas.length">No hay alarmas predeterminadas. Creá solamente las que necesites.</div>
+    <article class="rule-row" *ngFor="let r of reglas">
+      <span class="rule-status" [class.paused]="r.estado==='PAUSADA'"></span>
+      <div><strong>{{r.nombre}}</strong><p>{{r.mensaje}}</p><small>{{r.categoria}} · {{r.tipo}} · {{r.estado}}</small><small class="rule-target" *ngIf="r.categoria==='OPERACIONES'">{{nombresOperaciones(r)}}</small></div>
+      <div class="rule-actions"><button type="button" (click)="pausar(r)">{{r.estado==='ACTIVA'?'Pausar':'Activar'}}</button><button type="button" (click)="editar(r)">Editar</button><button class="danger" type="button" (click)="eliminar(r)">Eliminar</button></div>
+    </article>
+  </section>
+  </ng-container>
+
+  <section class="alarms-management" *ngIf="tab==='ALARMAS'">
+    <div class="alarms-toolbar"><div><strong>Alarmas del proyecto</strong><span>Las activas se muestran por defecto.</span></div><label>Estado<select [(ngModel)]="filtroEstado" (ngModelChange)="cargarAlarmas()"><option value="ACTIVA">Activas</option><option value="ACEPTADA">Aceptadas</option><option value="TODAS">Todas</option></select></label></div>
+    <div class="alarm-state" *ngIf="cargandoAlarmas">Cargando alarmas...</div>
+    <div class="alarm-state" *ngIf="!cargandoAlarmas&&!alarmas.length">No hay alarmas para el filtro seleccionado.</div>
+    <div class="managed-table-wrap" *ngIf="alarmas.length"><table class="managed-table"><thead><tr><th>Fecha</th><th>Mensaje configurado</th><th>Tipo</th><th>Estado</th><th>Aceptada por</th><th>Comentario</th><th></th></tr></thead><tbody><tr *ngFor="let a of alarmas"><td>{{a.fecha_disparo|date:'dd/MM/yyyy HH:mm'}}</td><td><strong>{{a.mensaje}}</strong></td><td>{{a.categoria}} · {{a.severidad}}</td><td><span class="management-status" [class.accepted]="a.estado_gestion==='ACEPTADA'">{{a.estado_gestion}}</span></td><td>{{a.aceptada_por_nombre||'-'}}<small *ngIf="a.fecha_aceptacion">{{a.fecha_aceptacion|date:'dd/MM/yyyy HH:mm'}}</small></td><td>{{a.comentario_aceptacion||'-'}}</td><td><button type="button" *ngIf="a.estado_gestion==='ACTIVA'" (click)="abrirAceptar(a)">Aceptar</button></td></tr></tbody></table></div>
+  </section>
+
+  <div class="modal-backdrop" *ngIf="modal" (click)="cerrar()">
+    <section class="rule-modal" (click)="$event.stopPropagation()">
+      <header><div><small>{{regla.regla_id?'EDITAR':'NUEVA'}} REGLA</small><h2>{{regla.nombre||'Alarma'}}</h2></div><button type="button" title="Cerrar" (click)="cerrar()"><span class="material-icons">close</span></button></header>
+      <form (ngSubmit)="guardar()">
+        <label>Categoría<select name="categoria" [ngModel]="regla.categoria" (ngModelChange)="cambioCategoria($event)"><option *ngFor="let c of categorias" [ngValue]="c.clave">{{c.titulo}}</option></select></label>
+        <label>Tipo de alarma<select name="tipo" [(ngModel)]="regla.tipo" (ngModelChange)="cambioTipo()"><option *ngFor="let t of tipos[regla.categoria]" [value]="t.valor">{{t.texto}}</option></select></label>
+        <label>Nombre<input name="nombre" [(ngModel)]="regla.nombre" maxlength="150" required></label>
+
+        <label *ngIf="regla.tipo==='INICIO_PROXIMO'||regla.tipo==='FIN_PROXIMO'||regla.tipo==='SIN_AVANCE'">Días<input name="dias" type="number" min="0" [(ngModel)]="regla.parametros['dias']"></label>
+        <label *ngIf="regla.tipo==='CONSUMO_SUPERA_TEORICO'">Porcentaje del teórico<input name="porcentaje" type="number" min="1" [(ngModel)]="regla.parametros['porcentaje']"><span class="field-help">110% permite un 10% de tolerancia.</span></label>
+        <label *ngIf="regla.categoria==='BOM'" class="material-bom-picker">Material del BOM<input name="buscarMaterialBom" [(ngModel)]="filtroMaterialBom" placeholder="Buscar material por nombre" autocomplete="off"><select name="materialBom" size="5" [ngModel]="regla.entidades[0]||null" (ngModelChange)="regla.entidades=[$event]"><option *ngFor="let m of materialesBomFiltrados()" [ngValue]="m.material_id">{{m.nombre}} · {{m.unidad}}</option></select><span class="field-help" *ngIf="!materialesBomFiltrados().length">No se encontraron materiales.</span></label>
+        <label *ngIf="regla.tipo==='STOCK_MINIMO'">Cantidad mínima<input name="minimo" type="number" min="0" step="0.01" [(ngModel)]="regla.parametros['minimo']"></label>
+        <label *ngIf="regla.tipo==='PREAVISO_PEDIDO'">Avisar N días antes<input name="diasBom" type="number" min="0" [(ngModel)]="regla.parametros['dias']"></label>
+        <label *ngIf="regla.categoria==='CERTIFICACIONES'">Días de anticipación / mora<input name="diasCertificacion" type="number" min="0" [(ngModel)]="regla.parametros['dias']"><span class="field-help">En emisión próxima se avisa exactamente N días antes. En mora, cuando supera N días con saldo pendiente.</span></label>
+        <label *ngIf="regla.categoria==='CERTIFICACIONES'&&regla.tipo!=='RESPONSABLE_SIN_PAGO'">Alcance<select name="alcanceCertificacion" [(ngModel)]="regla.alcance" (ngModelChange)="$event==='TODAS' ? regla.entidades=[] : null"><option value="TODAS">Todas las certificaciones</option><option value="SELECCIONADAS">Algunas seleccionadas</option></select></label>
+        <fieldset class="state-options" *ngIf="regla.tipo==='CAMBIO_ESTADO_RIESGO'"><legend>Estados que generan alarma</legend><label><input type="checkbox" [checked]="estadoSeleccionado('EN_RIESGO')" (change)="alternarEstado('EN_RIESGO',$any($event.target).checked)"> En riesgo</label><label><input type="checkbox" [checked]="estadoSeleccionado('ATRASADA')" (change)="alternarEstado('ATRASADA',$any($event.target).checked)"> Atrasada</label></fieldset>
+
+        <div class="wide operation-picker" *ngIf="regla.categoria==='OPERACIONES'">
+          <div class="operation-picker-head"><label>Operaciones alcanzadas <strong>{{regla.entidades.length}} de {{operaciones.length}} seleccionada/s</strong></label></div>
+          <div class="operation-filter single-filter"><span class="material-icons">search</span><input name="filtroOperaciones" [(ngModel)]="filtroOperaciones" autocomplete="off" placeholder="Filtrar por OP, nombre, etapa, responsable o estado"></div>
+          <div class="operation-table-wrap">
+            <table class="operation-table">
+              <thead><tr><th class="check-cell"><input type="checkbox" title="Seleccionar todas las operaciones" [checked]="todasOperacionesSeleccionadas()" (change)="alternarTodasOperaciones($any($event.target).checked)"></th><th>OP</th><th>Nombre</th><th>Etapa</th></tr></thead>
+              <tbody>
+                <tr *ngFor="let op of operacionesFiltradas()" [class.selected]="operacionSeleccionada(op.operacion_id)" (click)="alternarOperacion(op.operacion_id,!operacionSeleccionada(op.operacion_id))"><td class="check-cell"><input type="checkbox" [checked]="operacionSeleccionada(op.operacion_id)" (click)="$event.stopPropagation()" (change)="alternarOperacion(op.operacion_id,$any($event.target).checked)"></td><td>OP-{{op.secuencia}}</td><td>{{op.nombre}}</td><td>{{op.etapa_nombre||'-'}}</td></tr>
+                <tr *ngIf="!operacionesFiltradas().length"><td colspan="4" class="empty-operations">No se encontraron operaciones con ese filtro.</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="operation-picker-foot"><span>El checkbox del encabezado selecciona o desmarca todas las operaciones del proyecto.</span><button type="button" *ngIf="regla.entidades.length" (click)="alternarTodasOperaciones(false)">Limpiar selección</button></div>
+        </div>
+
+        <div class="wide operation-picker certification-picker" *ngIf="regla.categoria==='CERTIFICACIONES'&&regla.alcance==='SELECCIONADAS'">
+          <div class="operation-picker-head"><label>Certificaciones alcanzadas <strong>{{regla.entidades.length}} seleccionada/s</strong></label></div>
+          <div class="operation-filter single-filter"><span class="material-icons">search</span><input name="filtroCertificaciones" [(ngModel)]="filtroCertificaciones" autocomplete="off" placeholder="Filtrar por número, fecha, estado o responsable"></div>
+          <div class="operation-table-wrap"><table class="operation-table certification-table"><thead><tr><th class="check-cell"><input type="checkbox" [checked]="todasCertificacionesSeleccionadas()" (change)="alternarTodasCertificaciones($any($event.target).checked)"></th><th>Certificado</th><th>Fecha</th><th *ngIf="regla.tipo!=='EMISION_PROXIMA'">Estado / responsable</th><th>{{regla.tipo==='EMISION_PROXIMA'?'Operaciones':'Saldo'}}</th></tr></thead><tbody>
+            <tr *ngFor="let c of certificacionesFiltradas()" [class.selected]="certificacionSeleccionada(c)" (click)="alternarCertificacion(c,!certificacionSeleccionada(c))"><td class="check-cell"><input type="checkbox" [checked]="certificacionSeleccionada(c)" (click)="$event.stopPropagation()" (change)="alternarCertificacion(c,$any($event.target).checked)"></td><td>#{{idCertificacion(c)}}</td><td>{{(c.fecha_prevista||c.fecha_certificacion)|date:'dd/MM/yyyy'}}</td><td *ngIf="regla.tipo!=='EMISION_PROXIMA'">{{c.responsable_nombre||c.estado_pago}}</td><td>{{regla.tipo==='EMISION_PROXIMA'?c.operaciones:(c.saldo|number:'1.2-2')}}</td></tr>
+            <tr *ngIf="!certificacionesFiltradas().length"><td [attr.colspan]="regla.tipo==='EMISION_PROXIMA'?4:5" class="empty-operations">No hay certificaciones disponibles para esta regla.</td></tr>
+          </tbody></table></div>
+          <div class="operation-picker-foot"><span>Podés seleccionar una, varias o todas juntas.</span><button type="button" *ngIf="regla.entidades.length" (click)="alternarTodasCertificaciones(false)">Limpiar selección</button></div>
+        </div>
+
+        <label class="wide">Mensaje<textarea name="mensaje" rows="3" [(ngModel)]="regla.mensaje" maxlength="500" required></textarea></label>
+        <label>Estado<select name="estado" [(ngModel)]="regla.estado"><option value="ACTIVA">Activa</option><option value="PAUSADA">Pausada</option></select></label>
+        <div class="form-error wide" *ngIf="errorFormulario">{{errorFormulario}}</div>
+        <footer><button type="button" class="secondary-button" (click)="cerrar()">Cancelar</button><button type="submit" class="primary-button" [disabled]="guardando">{{guardando?'Guardando...':'Guardar regla'}}</button></footer>
+      </form>
+    </section>
+  </div>
+  <div class="modal-backdrop" *ngIf="modalAceptar" (click)="modalAceptar=false"><section class="accept-modal" (click)="$event.stopPropagation()"><header><h2>Aceptar alarma</h2><button type="button" (click)="modalAceptar=false"><span class="material-icons">close</span></button></header><p>{{alarmaAceptar?.mensaje}}</p><label>Comentario<textarea rows="4" maxlength="1000" [(ngModel)]="comentarioAceptacion" placeholder="Indicá la acción tomada o el motivo de aceptación"></textarea></label><footer><button class="secondary-button" type="button" (click)="modalAceptar=false">Cancelar</button><button class="primary-button" type="button" [disabled]="!comentarioAceptacion.trim()||guardando" (click)="aceptarAlarma()">{{guardando?'Guardando...':'Aceptar alarma'}}</button></footer></section></div>
+</div>

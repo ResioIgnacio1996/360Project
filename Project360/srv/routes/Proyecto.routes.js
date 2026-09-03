@@ -12,6 +12,7 @@ const {
     updateProyecto,
     deleteProyecto
 } = require('../controllers/Proyecto.controller');
+const panelGeneral = require('../controllers/PanelGeneral.controller');
 
 
 // GET TODOS
@@ -20,6 +21,8 @@ router.get(
     verificarToken,
     getProyectos
 );
+
+router.get('/:id/panel-general', verificarToken, panelGeneral.obtener);
 
 
 // GET POR ID

@@ -1,0 +1,50 @@
+.alarm-tools {
+  display: flex;
+  align-items: flex-end;
+  gap: 10px;
+}
+
+.alarm-tools label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  color: var(--text-muted);
+  font: 7px var(--font-tech);
+  letter-spacing: 1px;
+}
+
+.alarm-tools select {
+  height: 28px;
+  min-width: 106px;
+  padding: 0 8px;
+  border: 1px solid var(--border-2);
+  border-radius: 5px;
+  background: var(--surface-card-2);
+  color: var(--text);
+  font-size: 11px;
+}
+
+.alarm.accepted mat-icon,
+.alarm.accepted em {
+  color: var(--green);
+}
+
+.alarm-loading,
+.alarm-error {
+  padding: 20px;
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+.alarm-error {
+  color: var(--red);
+}
+
+@media (max-width: 600px) {
+  .alarms header,
+  .alarm-tools {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}

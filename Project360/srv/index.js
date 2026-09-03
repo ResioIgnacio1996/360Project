@@ -154,6 +154,8 @@ app.use(
   require('./routes/MovimientoFinanciero.routes')
 );
 
+app.use('/api/alarmas', require('./routes/Alarma.routes'));
+
 
 // ======================================================
 // API - BOM

@@ -174,7 +174,7 @@
 .sheet-head,
 .sheet-row {
   display: grid;
-  grid-template-columns: 44px 58px minmax(220px, 2fr) minmax(115px, 0.9fr) 108px 118px 112px 140px 96px;
+  grid-template-columns: 44px 58px minmax(220px, 2fr) minmax(115px, 0.9fr) 108px 108px 118px 118px 112px 140px 96px;
   align-items: center;
 }
 .sheet-head {
@@ -789,7 +789,7 @@
   }
   .sheet-head,
   .sheet-row {
-    min-width: 950px;
+    min-width: 1180px;
   }
 }
 @media (max-width: 700px) {

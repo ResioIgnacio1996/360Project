@@ -1,0 +1,38 @@
+.client-plan-line {
+  stroke: var(--text-muted);
+  stroke-dasharray: 7 5;
+}
+
+.client-real-line {
+  stroke: var(--primary);
+}
+
+.responsible-plan-line {
+  stroke: var(--purple);
+  stroke-dasharray: 7 5;
+}
+
+.responsible-real-line {
+  stroke: var(--orange);
+}
+
+.legend {
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.legend .client-plan::before {
+  background: var(--text-muted);
+}
+
+.legend .client-real::before {
+  background: var(--primary);
+}
+
+.legend .responsible-plan::before {
+  background: var(--purple);
+}
+
+.legend .responsible-real::before {
+  background: var(--orange);
+}

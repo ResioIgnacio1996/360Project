@@ -68,6 +68,11 @@
           <strong>Costos y Certificaciones</strong>
         </button>
 
+        <a class="module-card module-red" [routerLink]="['/proyectos', proyectoId, 'alarmas']">
+          <mat-icon class="module-icon">notifications_active</mat-icon>
+          <strong>Alarmas</strong>
+        </a>
+
         <button class="module-card module-red pending" type="button" disabled>
           <mat-icon class="module-icon">warning_amber</mat-icon>
           <strong>No Conformidades</strong>
@@ -78,9 +83,9 @@
           <strong>Cuadrillas</strong>
         </button>
 
-        <button class="module-card module-green pending" type="button" disabled>
+        <button class="module-card module-green" type="button" (click)="abrirPanelGeneral()">
           <mat-icon class="module-icon">bar_chart</mat-icon>
-          <strong>Dashboard</strong>
+          <strong>Panel General</strong>
         </button>
       </div>
     </main>
